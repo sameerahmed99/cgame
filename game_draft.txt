@@ -1,0 +1,15 @@
+Top down mouse aiming keyboard moving shooter
+
+You are sphere with some indication for orientation
+
+Kill other enemies which may be spherical or other simple shapes
+
+You can only attack with and use what you pick up
+
+For example pick up one cannon ammo and shoot it for explosion damage
+
+Pick up 10 bullets and shoot semi automatically
+
+Overall design doesn't need to be perfect, just something that works and we can test to learn a thing or two about programming and game design
+
+*10 day project

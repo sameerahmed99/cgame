@@ -1,0 +1,5 @@
+BasedOnStyle: LLVM
+Language: C
+ColumnLimit: 500
+
+
