@@ -40,8 +40,8 @@ global_variable HDC DeviceContext;
 global_variable int WindowHeight, WindowWidth;
 global_variable RECT WindowRect;
 
-global_variable const int SAMPLE_RATE_DEFAULT=44100;
-global_variable const int BIT_DEPTH = 16;
+global_variable const int SAMPLE_RATE_DEFAULT=48000;
+global_variable const int BIT_DEPTH = 24;
 global_variable const int SOUND_BUFFER_LENGTH_SECONDS = 2;
 global_variable const int MAX_SOURCE_VOICES = 32;
 global_variable  LARGE_INTEGER PerformanceQueryFrequency;
@@ -69,7 +69,7 @@ global_variable XAUDIO2_BUFFER GlobalSoundBuffer;
 
 typedef struct Win32Voice {
   IXAudio2SourceVoice* underlyingVoice;
-  int currentIndex;
+
 } Win32Voice;
 
 typedef struct Win32VoicePool{
@@ -189,6 +189,8 @@ HRESULT win32_read_riff_chunk_data(HANDLE hFile, void * buffer, DWORD buffersize
 }
 
 
+
+
 int win32_get_window_height(HWND windowhandle){
   RECT r;
 
@@ -247,6 +249,193 @@ StretchDIBits(
    SRCCOPY
 );
 }
+
+
+
+void win32_play_audio_buffer(XAUDIO2_BUFFER _buffer){
+  if(GlobalVoicePool.used == MAX_SOURCE_VOICES){
+
+    OutputDebugString(L"No audio voices available, not going to play this audio\n");
+  }
+
+  Win32Voice poppedVoice = GlobalVoicePool.voices[MAX_SOURCE_VOICES-1];
+  Win32Voice newEndVoice = GlobalVoicePool.voices[GlobalVoicePool.used];
+
+  GlobalVoicePool.voices[MAX_SOURCE_VOICES-1] = newEndVoice;
+  GlobalVoicePool.voices[GlobalVoicePool.used] = poppedVoice;
+  GlobalVoicePool.used++;
+
+
+  IXAudio2SourceVoice *v = poppedVoice.underlyingVoice;
+  v->lpVtbl->SubmitSourceBuffer(v,&_buffer, NULL);
+  v->lpVtbl->Start(v,0,XAUDIO2_COMMIT_NOW);
+}
+
+void win32_play_wave_file(const char* path){
+
+  
+
+  WAVEFORMATEXTENSIBLE wfx = {0};
+  XAUDIO2_BUFFER buffer = {0};
+
+
+  HANDLE hFile = CreateFileA(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,0,NULL);
+
+  if(hFile == INVALID_HANDLE_VALUE){
+    printf("OPENING FILE FAILED\n");
+  }
+  // read riff chunk
+  DWORD chunkSize=0, chunkPos=0;
+  win32_find_riff_chunk(hFile, fourccRIFF, &chunkSize, &chunkPos);
+
+  DWORD fileType;
+  win32_read_riff_chunk_data(hFile, &fileType, sizeof(DWORD), chunkPos);
+
+
+  // read FMT chunk
+  win32_find_riff_chunk(hFile, fourccFMT, &chunkSize, &chunkPos);
+  win32_read_riff_chunk_data(hFile, &wfx, chunkSize, chunkPos);
+
+  // read data chunk
+  win32_find_riff_chunk(hFile, fourccDATA, &chunkSize, &chunkPos);
+  BYTE* bufferData = (malloc(chunkSize));
+  win32_read_riff_chunk_data(hFile, bufferData, chunkSize, chunkPos);
+
+  CloseHandle(hFile);
+
+  
+  buffer.AudioBytes = chunkSize;
+  buffer.pAudioData = bufferData;
+  buffer.Flags = XAUDIO2_END_OF_STREAM;
+
+
+  win32_play_audio_buffer(buffer);
+
+}
+
+
+
+//@NOTE Sample rate and all other format things need to be constant for source files, decide on the format and stick to it for all files
+// otherwise the audio just cuts out, there seems to be no auto conversion going on
+// if you want to do some conversion, perhaps do it when baking/importing assets
+
+void win32_init_xaudio2(uint32_t sampleRate, uint32_t bitDepth, uint32_t numVoices, Win32VoicePool* _data){
+
+
+
+  HMODULE xaudio2 = LoadLibrary(L"XAudio2_9.dll");
+  if(xaudio2 == NULL){
+    printf("XAudio2_9.dll not found\n");
+    return;
+  }
+  
+  HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
+  
+  if (FAILED(hr)) {
+    printf("Couldn't initial COM\n");
+    return;
+  };
+  printf("Initialized COM \n");
+
+  IXAudio2 *xAudio;
+  xaudio2_create *XAudio2Create= (xaudio2_create*) GetProcAddress(xaudio2, "XAudio2Create");
+
+
+ 
+
+  int numChannels =2;
+  int bytesInASample =  numChannels*bitDepth /8;
+  WAVEFORMATEX format= {};
+  format.wFormatTag=WAVE_FORMAT_PCM;
+  format.nChannels=numChannels;
+  format.nSamplesPerSec=sampleRate;
+  format.nAvgBytesPerSec = bytesInASample*sampleRate;
+  format.nBlockAlign=bytesInASample;
+  format.wBitsPerSample = bitDepth;
+  format.cbSize=0;
+
+  
+
+
+  HRESULT res=  XAudio2Create(&xAudio, 0, XAUDIO2_DEFAULT_PROCESSOR);
+  if(res!=S_OK){
+    printf("Couldn't create XAudio2\n");
+  }
+
+  IXAudio2MasteringVoice* masteringVoice;
+
+
+  res=  xAudio->lpVtbl->CreateMasteringVoice(
+					     xAudio,
+					     &masteringVoice,
+					     numChannels,
+					     sampleRate,
+					     XAUDIO2_NO_VIRTUAL_AUDIO_CLIENT,
+					     NULL,
+					     NULL,
+					     // @NOTE: for now, just use other. I don't know the implications of using GameEffects
+					     AudioCategory_Other);
+
+  if(res!=S_OK){
+    printf("Couldn't create XAudio Mastering Voice\n");
+  }
+
+  IXAudio2SubmixVoice * pSFXSubmixVoice;
+  IXAudio2_CreateSubmixVoice(xAudio, &pSFXSubmixVoice,numChannels,sampleRate,0,0,0,0);
+
+  XAUDIO2_SEND_DESCRIPTOR SFXSend = {0,(IXAudio2Voice*) pSFXSubmixVoice};
+  XAUDIO2_VOICE_SENDS SFXSendList = {1, &SFXSend};
+
+
+  if(_data->voices){
+    VirtualFree(_data->voices,0, MEM_RELEASE);
+  }
+  _data->voices = VirtualAlloc(
+			       0,
+			       sizeof(Win32Voice)*numVoices,
+			       MEM_COMMIT | MEM_RESERVE,
+			       PAGE_READWRITE 
+			       );
+  _data->used = 0;
+ 
+  for(int i=0;i<numVoices;i++){
+    IXAudio2SourceVoice* srcVoice;
+    if(FAILED(IXAudio2_CreateSourceVoice(xAudio, &srcVoice,&format,0,XAUDIO2_DEFAULT_FREQ_RATIO,NULL,&SFXSendList,NULL))){
+      printf("Couldn't create source voice\n");
+    }
+    Win32Voice voice;
+    voice.underlyingVoice = srcVoice;
+    _data->voices[i] = voice;
+
+
+  }
+}
+
+
+
+void temp_print_time_stamp(LARGE_INTEGER _compareToStamp){
+
+  LARGE_INTEGER perfTimeStamp;
+    QueryPerformanceCounter(&perfTimeStamp);
+    LARGE_INTEGER currentStamp = perfTimeStamp;
+
+    int64_t dif = currentStamp.QuadPart - _compareToStamp.QuadPart;
+
+    int32_t ElapsedSeconds = dif / PerformanceQueryFrequency.QuadPart;
+
+    int32_t ElapsedMS = (dif*1000) / PerformanceQueryFrequency.QuadPart;
+
+    int32_t ElapsedMicroSeconds =(dif *1000 * 1000) / PerformanceQueryFrequency.QuadPart;
+
+    float FPS = 1.0/((float)ElapsedMS/1000);
+
+
+
+
+    //    FPS = 1/FPS;
+    //    printf("Elapsed:%dms, FPS:%f\n", ElapsedMS, FPS);
+}
+
 LRESULT Win32CallbackFunc(HWND _window, UINT _msgId, WPARAM param3, LPARAM param4){
 
 
@@ -299,6 +488,7 @@ LRESULT Win32CallbackFunc(HWND _window, UINT _msgId, WPARAM param3, LPARAM param
       switch(code) {
       case 'W' : {
 	printf("W was down %d, is down %d\n", wasDown, isDown);
+	win32_play_wave_file("g:/wave-file.wav");
       }break;
       case VK_F4 : {
 	bool alting = (param4 & (1<<29)) !=0;
@@ -323,256 +513,6 @@ LRESULT Win32CallbackFunc(HWND _window, UINT _msgId, WPARAM param3, LPARAM param
 
   return result;
 }
-
-
-
-
-/*void win32_read_wave_file_test(){
-
-  HMODULE xaudio2 = LoadLibrary(L"XAudio2_9.dll");
-  if(xaudio2 == NULL){
-    printf("XAudio2_9.dll not found\n");
-    return;
-  }
-  
-  HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
-  
-  if (FAILED(hr)) {
-    printf("Couldn't initial COM\n");
-    return;
-  };
-
-
-  int bitDepth = 16;
-  int numChannels =2;
-  int bytesInASample =  numChannels*bitDepth /8;
-  WAVEFORMATEX format= {};
-  format.wFormatTag=WAVE_FORMAT_PCM;
-  format.nChannels=numChannels;
-  format.nSamplesPerSec=sampleRate;
-  format.nAvgBytesPerSec = bytesInASample*sampleRate;
-  format.nBlockAlign=bytesInASample;
-  format.wBitsPerSample = bitDepth;
-  format.cbSize=0;
-} WAVEFORMATEX;
-  
-  printf("Initialized COM \n");
-  WAVEFORMATEXTENSIBLE wfx = {0};
-  XAUDIO2_BUFFER buffer = {0};
-
-
-  HANDLE hFile = CreateFile(L"g:\\wave-file.wav", GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,0,NULL);
-
-
-  // read riff chunk
-  DWORD chunkSize=0, chunkPos=0;
-  win32_find_riff_chunk(hFile, fourccRIFF, &chunkSize, &chunkPos);
-
-  DWORD fileType;
-  win32_read_riff_chunk_data(hFile, &fileType, sizeof(DWORD), chunkPos);
-
-
-  // read FMT chunk
-  win32_find_riff_chunk(hFile, fourccFMT, &chunkSize, &chunkPos);
-  win32_read_riff_chunk_data(hFile, &wfx, chunkSize, chunkPos);
-
-  // read data chunk
-  win32_find_riff_chunk(hFile, fourccDATA, &chunkSize, &chunkPos);
-  BYTE* bufferData = (malloc(chunkSize));
-  win32_read_riff_chunk_data(hFile, bufferData, chunkSize, chunkPos);
-
-  buffer.AudioBytes = chunkSize;
-  buffer.pAudioData = bufferData;
-  buffer.Flags = XAUDIO2_END_OF_STREAM;
-  
-
-			
-  IXAudio2 *xAudio;
-  xaudio2_create *XAudio2Create= (xaudio2_create*) GetProcAddress(xaudio2, "XAudio2Create");
-
-
-  HRESULT res=  XAudio2Create(&xAudio, 0, XAUDIO2_DEFAULT_PROCESSOR);
-  if(res!=S_OK){
-    printf("Hoo Leesh It\n");
-  }
-
-  IXAudio2MasteringVoice* masteringVoice;
-
-
-  res=  xAudio->lpVtbl->CreateMasteringVoice(
-  xAudio,
-  &masteringVoice,
-  XAUDIO2_DEFAULT_CHANNELS,
-  XAUDIO2_DEFAULT_SAMPLERATE,
-  XAUDIO2_NO_VIRTUAL_AUDIO_CLIENT,
-  NULL,
-  NULL,
-
-  // @NOTE: for now, just use other. I don't know the implications of using GameEffects
-  AudioCategory_Other);
-
-  if(res!=S_OK){
-    printf("SUM TIN VERY WONG\n");
-  }
-
-  IXAudio2SubmixVoice * pSFXSubmixVoice;
-  IXAudio2_CreateSubmixVoice(xAudio, &pSFXSubmixVoice,2,SAMPLE_RATE_DEFAULT,0,0,0,0);
-
-  XAUDIO2_SEND_DESCRIPTOR SFXSend = {0,(IXAudio2Voice*) pSFXSubmixVoice};
-  XAUDIO2_VOICE_SENDS SFXSendList = {1, &SFXSend};
-
-  
- 
-  IXAudio2SourceVoice* srcVoice;
-
-  if(FAILED(IXAudio2_CreateSourceVoice(xAudio, &srcVoice,(WAVEFORMATEX*)&wfx,0,XAUDIO2_DEFAULT_FREQ_RATIO,NULL,&SFXSendList,NULL))){
-      printf("Couldn't create source voice\n");
-    }
-  srcVoice->lpVtbl->SubmitSourceBuffer(srcVoice,&buffer, NULL);
-  srcVoice->lpVtbl->Start(srcVoice,0,XAUDIO2_COMMIT_NOW);
-  }*/
-
-void win32_init_xaudio2(uint32_t sampleRate, uint32_t bitDepth, uint32_t numVoices, Win32VoicePool* _data){
-
-  HMODULE xaudio2 = LoadLibrary(L"XAudio2_9.dll");
-  if(xaudio2 == NULL){
-    printf("XAudio2_9.dll not found\n");
-    return;
-  }
-  
-  HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
-  
-  if (FAILED(hr)) {
-    printf("Couldn't initial COM\n");
-    return;
-  };
-  printf("Initialized COM \n");
-
-
-  int numChannels =2;
-  int bytesInASample =  numChannels*bitDepth /8;
-  WAVEFORMATEX format= {};
-  format.wFormatTag=WAVE_FORMAT_PCM;
-  format.nChannels=numChannels;
-  format.nSamplesPerSec=sampleRate;
-  format.nAvgBytesPerSec = bytesInASample*sampleRate;
-  format.nBlockAlign=bytesInASample;
-  format.wBitsPerSample = bitDepth;
-  format.cbSize=0;
-
-  
-
-  
-
-
-  /* BYTE *bufferData = VirtualAlloc( */
-  /* 				  0, */
-  /* 				  bufferSize, */
-  /* 				  MEM_COMMIT | MEM_RESERVE, */
-  /* 				  PAGE_READWRITE  */
-  /* 				  ); */
-
-  /* GlobalSoundBuffer.AudioBytes = bufferSize; */
-  /* GlobalSoundBuffer.pAudioData = bufferData; */
-  /* GlobalSoundBuffer.Flags = XAUDIO2_END_OF_STREAM; */
-  /* GlobalSoundBuffer.LoopCount=XAUDIO2_LOOP_INFINITE; */
-  /* GlobalSoundBuffer.LoopBegin=0; */
-  /* GlobalSoundBuffer.LoopLength=0; */
-
-  /* for(int i=0;i<bufferSize;i++){ */
-  /*   bufferData[i] = 0; */
-  /* } */
-
-  
-
-			
-  IXAudio2 *xAudio;
-  xaudio2_create *XAudio2Create= (xaudio2_create*) GetProcAddress(xaudio2, "XAudio2Create");
-
-
-  HRESULT res=  XAudio2Create(&xAudio, 0, XAUDIO2_DEFAULT_PROCESSOR);
-  if(res!=S_OK){
-    printf("Couldn't create XAudio2\n");
-  }
-
-  IXAudio2MasteringVoice* masteringVoice;
-
-
-  res=  xAudio->lpVtbl->CreateMasteringVoice(
-  xAudio,
-  &masteringVoice,
-  numChannels,
-  sampleRate,
-  XAUDIO2_NO_VIRTUAL_AUDIO_CLIENT,
-  NULL,
-  NULL,
-  // @NOTE: for now, just use other. I don't know the implications of using GameEffects
-  AudioCategory_Other);
-
-  if(res!=S_OK){
-    printf("Couldn't create XAudio Mastering Voice\n");
-  }
-
-  IXAudio2SubmixVoice * pSFXSubmixVoice;
-  IXAudio2_CreateSubmixVoice(xAudio, &pSFXSubmixVoice,numChannels,sampleRate,0,0,0,0);
-
-  XAUDIO2_SEND_DESCRIPTOR SFXSend = {0,(IXAudio2Voice*) pSFXSubmixVoice};
-  XAUDIO2_VOICE_SENDS SFXSendList = {1, &SFXSend};
-
-
-  if(_data->voices){
-    VirtualFree(_data->voices,0, MEM_RELEASE);
-  }
-  _data->voices = VirtualAlloc(
-  0,
-  sizeof(Win32Voice)*numVoices,
-  MEM_COMMIT | MEM_RESERVE,
-  PAGE_READWRITE 
-);
-  _data->used = 0;
- 
-  for(int i=0;i<numVoices;i++){
-      IXAudio2SourceVoice* srcVoice;
-    if(FAILED(IXAudio2_CreateSourceVoice(xAudio, &srcVoice,&format,0,XAUDIO2_DEFAULT_FREQ_RATIO,NULL,&SFXSendList,NULL))){
-      printf("Couldn't create source voice\n");
-    }
-    Win32Voice voice;
-    voice.underlyingVoice = srcVoice;
-    voice.currentIndex = i;
-    _data->voices[i] = voice;
-  }
-
-
-  //  GlobalSoundVoice->lpVtbl->SubmitSourceBuffer(GlobalSoundVoice,&GlobalSoundBuffer, NULL);
-  //  GlobalSoundVoice->lpVtbl->Start(GlobalSoundVoice,0,XAUDIO2_COMMIT_NOW);
-}
-
-
-
-void temp_print_time_stamp(LARGE_INTEGER _compareToStamp){
-
-  LARGE_INTEGER perfTimeStamp;
-    QueryPerformanceCounter(&perfTimeStamp);
-    LARGE_INTEGER currentStamp = perfTimeStamp;
-
-    int64_t dif = currentStamp.QuadPart - _compareToStamp.QuadPart;
-
-    int32_t ElapsedSeconds = dif / PerformanceQueryFrequency.QuadPart;
-
-    int32_t ElapsedMS = (dif*1000) / PerformanceQueryFrequency.QuadPart;
-
-    int32_t ElapsedMicroSeconds =(dif *1000 * 1000) / PerformanceQueryFrequency.QuadPart;
-
-    float FPS = 1.0/((float)ElapsedMS/1000);
-
-
-
-
-    //    FPS = 1/FPS;
-    printf("Elapsed:%dms, FPS:%f\n", ElapsedMS, FPS);
-}
-
-
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow){
 
 
@@ -619,7 +559,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
   AppRunning = true;
 
 
- 
+
+
+
   MSG msg={0};
   printf("Created Window, starting app\n");
   while(AppRunning){
