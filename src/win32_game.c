@@ -46,8 +46,10 @@ global_variable const int SOUND_BUFFER_LENGTH_SECONDS = 2;
 global_variable const int MAX_SOURCE_VOICES = 32;
 global_variable  LARGE_INTEGER PerformanceQueryFrequency;
 global_variable XAUDIO2_BUFFER GlobalSoundBuffer;
+global_variable CG_Input GlobalInput;
 
 
+global_variable float GlobalDeltaTime;
 // missing from mingw64's xaudio2.h header
 // copied from windows 10 sdk's xaudio2.h
 #define XAUDIO2_NO_VIRTUAL_AUDIO_CLIENT       0x10000   // Used in CreateMasteringVoice to create a virtual audio client
@@ -87,7 +89,7 @@ typedef struct Win32VoicePool{
   // When a voice says it's free, swap it with voices[used-1]
   // and then decreased used by 1
   
-  bool used;
+  uint32_t used;
   Win32Voice *voices;
 } Win32VoicePool;
 
@@ -253,9 +255,12 @@ StretchDIBits(
 
 
 void win32_play_audio_buffer(XAUDIO2_BUFFER _buffer){
+
+  printf("Trying to play another sound, used before playing: %d\n", GlobalVoicePool.used);
   if(GlobalVoicePool.used == MAX_SOURCE_VOICES){
 
-    OutputDebugString(L"No audio voices available, not going to play this audio\n");
+    printf("No audio voices available, not going to play this audio\n");
+    return;
   }
 
   Win32Voice poppedVoice = GlobalVoicePool.voices[MAX_SOURCE_VOICES-1];
@@ -265,7 +270,7 @@ void win32_play_audio_buffer(XAUDIO2_BUFFER _buffer){
   GlobalVoicePool.voices[GlobalVoicePool.used] = poppedVoice;
   GlobalVoicePool.used++;
 
-
+  printf("Just played another sound, total used voices: %d\n", GlobalVoicePool.used);
   IXAudio2SourceVoice *v = poppedVoice.underlyingVoice;
   v->lpVtbl->SubmitSourceBuffer(v,&_buffer, NULL);
   v->lpVtbl->Start(v,0,XAUDIO2_COMMIT_NOW);
@@ -283,6 +288,7 @@ void win32_play_wave_file(const char* path){
 
   if(hFile == INVALID_HANDLE_VALUE){
     printf("OPENING FILE FAILED\n");
+    return;
   }
   // read riff chunk
   DWORD chunkSize=0, chunkPos=0;
@@ -421,20 +427,38 @@ void temp_print_time_stamp(LARGE_INTEGER _compareToStamp){
 
     int64_t dif = currentStamp.QuadPart - _compareToStamp.QuadPart;
 
-    int32_t ElapsedSeconds = dif / PerformanceQueryFrequency.QuadPart;
+    int64_t ElapsedSeconds = dif / PerformanceQueryFrequency.QuadPart;
 
-    int32_t ElapsedMS = (dif*1000) / PerformanceQueryFrequency.QuadPart;
+    int64_t ElapsedMS = (dif*1000) / PerformanceQueryFrequency.QuadPart;
 
-    int32_t ElapsedMicroSeconds =(dif *1000 * 1000) / PerformanceQueryFrequency.QuadPart;
+    int64_t ElapsedMicroSeconds =(dif *1000 * 1000) / PerformanceQueryFrequency.QuadPart;
 
     float FPS = 1.0/((float)ElapsedMS/1000);
 
 
 
 
-    //    FPS = 1/FPS;
-    //    printf("Elapsed:%dms, FPS:%f\n", ElapsedMS, FPS);
+    FPS = 1/FPS;
+    printf("Elapsed:%dms, FPS:%f\n", ElapsedMS, FPS);
 }
+
+
+void win32_set_key_state(CG_InputKey *key, bool wasDownedThisFrame, bool isPressed, bool wasReleasedThisFrame){
+  key->WasDownedThisFrame = wasDownedThisFrame;
+  key->IsPressed = isPressed;
+  key->WasReleasedThisFrame = wasReleasedThisFrame;
+
+}
+
+void win32_reset_key_state(CG_InputKey *key, bool preserveIsPressed)
+{
+  bool isPressed = key->IsPressed;
+  if(!preserveIsPressed){
+    isPressed = false;
+  }
+  win32_set_key_state(key, false, isPressed, false);
+};
+
 
 LRESULT Win32CallbackFunc(HWND _window, UINT _msgId, WPARAM param3, LPARAM param4){
 
@@ -482,14 +506,29 @@ LRESULT Win32CallbackFunc(HWND _window, UINT _msgId, WPARAM param3, LPARAM param
     {
       bool wasDown = ((param4 & (1<<30)) !=0);
       bool isDown = ((param4 & (1<<31)) ==0);
+      bool wasDownedThisFrame = !wasDown && isDown;
+      bool wasReleasedThisFrame = !isDown && wasDown;
+      
       uint32_t code = param3;
 
 
       switch(code) {
       case 'W' : {
-	printf("W was down %d, is down %d\n", wasDown, isDown);
-	win32_play_wave_file("g:/wave-file.wav");
+	//	printf("W was down %d, is down %d\n", wasDown, isDown);
+        win32_set_key_state(&GlobalInput.Keyboard.w,wasDownedThisFrame, isDown, wasReleasedThisFrame);
       }break;
+      case 'S' : {
+        win32_set_key_state(&GlobalInput.Keyboard.s,wasDownedThisFrame, isDown, wasReleasedThisFrame);
+      }break;
+	
+      case 'A' : {
+	//	printf("W was down %d, is down %d\n", wasDown, isDown);
+        win32_set_key_state(&GlobalInput.Keyboard.a,wasDownedThisFrame, isDown, wasReleasedThisFrame);
+      }break;
+      case 'D' : {
+        win32_set_key_state(&GlobalInput.Keyboard.d,wasDownedThisFrame, isDown, wasReleasedThisFrame);
+      }break;
+
       case VK_F4 : {
 	bool alting = (param4 & (1<<29)) !=0;
 	if(alting){
@@ -513,6 +552,13 @@ LRESULT Win32CallbackFunc(HWND _window, UINT _msgId, WPARAM param3, LPARAM param
 
   return result;
 }
+
+
+
+
+
+
+
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow){
 
 
@@ -561,12 +607,40 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 
 
 
+  win32_reset_key_state(&GlobalInput.Keyboard.w, false);
+  win32_reset_key_state(&GlobalInput.Keyboard.a, false);
+  win32_reset_key_state(&GlobalInput.Keyboard.s, false);
+  win32_reset_key_state(&GlobalInput.Keyboard.d, false);
+
 
   MSG msg={0};
   printf("Created Window, starting app\n");
+
+  LARGE_INTEGER previousFrameTimeStamp;
+  QueryPerformanceCounter(&previousFrameTimeStamp);
+  
   while(AppRunning){
     LARGE_INTEGER perfTimeStamp;
+
+
     QueryPerformanceCounter(&perfTimeStamp);
+    int64_t dif = perfTimeStamp.QuadPart - previousFrameTimeStamp.QuadPart;
+
+    int64_t ElapsedMicroSeconds =(dif *1000 * 1000) / PerformanceQueryFrequency.QuadPart;
+
+    float ElapsedSeconds = ElapsedMicroSeconds / (1000.0 * 1000.0);
+    //   printf("DeltaTime: %f\n", ElapsedSeconds);
+    GlobalDeltaTime = ElapsedSeconds;
+
+    previousFrameTimeStamp = perfTimeStamp;
+
+
+
+
+    win32_reset_key_state(&GlobalInput.Keyboard.w, true);
+    win32_reset_key_state(&GlobalInput.Keyboard.a, true);
+    win32_reset_key_state(&GlobalInput.Keyboard.s, true);
+    win32_reset_key_state(&GlobalInput.Keyboard.d, true);
 
     while(PeekMessage(&msg,NULL,0,0,PM_REMOVE)){
       TranslateMessage(&msg);
@@ -577,21 +651,24 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     DeviceContext = GetDC(hwnd);
   
 
-    temp_print_time_stamp(perfTimeStamp);
 
-    CGameOffscreenBuffer buffer;
+
+    CG_OffscreenBuffer buffer;
     buffer.Memory = GlobalOffscreenBuffer.Memory;
     buffer.Height = GlobalOffscreenBuffer.Height;
     buffer.Width = GlobalOffscreenBuffer.Width;
     buffer.BytesPerPixel = GlobalOffscreenBuffer.BytesPerPixel;
-    cgame_update(&buffer);
+
+    
+    cg_update(&buffer, &GlobalInput, GlobalDeltaTime);
+    
     win32_copy_buffer_to_window(GlobalOffscreenBuffer, DeviceContext,win32_get_window_width(hwnd), win32_get_window_height(hwnd));
 
 
 
     //      printf("Played %d bytes out of %d and %d samples out of %d\n", soundBufferBytesPlayedThisLoop,soundBufferSize, soundBufferSamplesPlayedThisLoop, samplesInBuffer);
     ReleaseDC(hwnd, DeviceContext);
-
+    //    temp_print_time_stamp(perfTimeStamp);
 
 
 
@@ -601,3 +678,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 }
  
 
+// platform api implementation
+
+void platform_play_wave_file(const char* path){
+  win32_play_wave_file(path);
+}
