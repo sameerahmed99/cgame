@@ -9,8 +9,12 @@ internal uint32_t cg_create_color_from_channels(uint8_t r, uint8_t g, uint8_t b)
 internal float tempOffsetX, tempOffsetY;
 
 float speed = .25;
-internal void cg_update(CG_OffscreenBuffer *_screenBuffer, CG_Input *_playerInput, float _deltaTime){
+internal void cg_update(CG_Memory* _memory, CG_OffscreenBuffer *_screenBuffer, CG_Input *_playerInput, float _deltaTime){
 
+  Assert(sizeof(CG_GameState) <= _memory->PersistantStorageSize);
+  
+  CG_GameState *state = (CG_GameState*)_memory;
+  
   CG_KeyboardKeys k = _playerInput->Keyboard;
 
   if(k.w.IsPressed){

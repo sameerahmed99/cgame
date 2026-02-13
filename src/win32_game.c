@@ -276,7 +276,9 @@ void win32_play_audio_buffer(XAUDIO2_BUFFER _buffer){
   v->lpVtbl->Start(v,0,XAUDIO2_COMMIT_NOW);
 }
 
-void win32_play_wave_file(const char* path){
+
+
+void win32_play_wave_file(char* path){
 
   
 
@@ -329,7 +331,7 @@ void win32_init_xaudio2(uint32_t sampleRate, uint32_t bitDepth, uint32_t numVoic
 
 
 
-  HMODULE xaudio2 = LoadLibrary(L"XAudio2_9.dll");
+  HMODULE xaudio2 = LoadLibraryA("XAudio2_9.dll");
   if(xaudio2 == NULL){
     printf("XAudio2_9.dll not found\n");
     return;
@@ -351,7 +353,7 @@ void win32_init_xaudio2(uint32_t sampleRate, uint32_t bitDepth, uint32_t numVoic
 
   int numChannels =2;
   int bytesInASample =  numChannels*bitDepth /8;
-  WAVEFORMATEX format= {};
+  WAVEFORMATEX format= {0};
   format.wFormatTag=WAVE_FORMAT_PCM;
   format.nChannels=numChannels;
   format.nSamplesPerSec=sampleRate;
@@ -578,10 +580,11 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
   windclass.lpszClassName=L"cgame";
   
 
-  RegisterClass(&windclass);
+  RegisterClassW(&windclass);
 
-  HWND hwnd = CreateWindowEx(
+  HWND hwnd = CreateWindowExW(
 			     0,                              // Optional window styles.
+
 			     windclass.lpszClassName,                     // Window class
 			     L"cgame",    // Window text
 			     WS_OVERLAPPEDWINDOW|WS_VISIBLE,            // Window style
@@ -606,11 +609,38 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 
 
 
-
+  // set initial state of all keys here
   win32_reset_key_state(&GlobalInput.Keyboard.w, false);
   win32_reset_key_state(&GlobalInput.Keyboard.a, false);
   win32_reset_key_state(&GlobalInput.Keyboard.s, false);
   win32_reset_key_state(&GlobalInput.Keyboard.d, false);
+
+
+  // main game memory allocation
+  CG_Memory gameMemory = {0};
+
+
+  #ifdef CGAME_DEVELOPMENT
+  LPVOID baseAddress = (LPVOID)Terabytes((uint64_t)2);
+
+  #else
+  LPVOID  baseAddress = NULL;
+  #endif
+
+
+  gameMemory.PersistantStorageSize =  Megabytes((uint64_t)64);
+  gameMemory.VolatileStorageSize = Gigabytes((uint64_t)4);
+  uint64_t totalSize = gameMemory.PersistantStorageSize + gameMemory.VolatileStorageSize;
+  gameMemory.PersistantStorage =  VirtualAlloc(
+					       baseAddress,
+					       totalSize,
+					       MEM_COMMIT | MEM_RESERVE,
+					       PAGE_READWRITE 
+					       );
+
+  gameMemory.VolatileStorage =  (uint8_t*)gameMemory.PersistantStorage + gameMemory.PersistantStorageSize;
+
+  //  printf("persistant: %d, volatile: %d\n", (uint32_t)baseAddress, gameMemory.VolatileStorage);
 
 
   MSG msg={0};
@@ -618,6 +648,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 
   LARGE_INTEGER previousFrameTimeStamp;
   QueryPerformanceCounter(&previousFrameTimeStamp);
+
+
   
   while(AppRunning){
     LARGE_INTEGER perfTimeStamp;
@@ -660,7 +692,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     buffer.BytesPerPixel = GlobalOffscreenBuffer.BytesPerPixel;
 
     
-    cg_update(&buffer, &GlobalInput, GlobalDeltaTime);
+    cg_update(&gameMemory,&buffer, &GlobalInput, GlobalDeltaTime);
     
     win32_copy_buffer_to_window(GlobalOffscreenBuffer, DeviceContext,win32_get_window_width(hwnd), win32_get_window_height(hwnd));
 
@@ -680,6 +712,48 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 
 // platform api implementation
 
-void platform_play_wave_file(const char* path){
+void platform_play_wave_file(char* path){
   win32_play_wave_file(path);
+}
+
+void *platform_read_whole_file(char* path){
+HANDLE hnd=CreateFileA(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,0,NULL);
+ void *content=NULL;
+ if(hnd == INVALID_HANDLE_VALUE){
+   return NULL;
+ }
+ LARGE_INTEGER fileSize;
+ if(GetFileSizeEx(hnd, &fileSize)){
+
+   content= VirtualAlloc(NULL, fileSize.QuadPart, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+   // ReadFile can read a maximum of sizeof(DWORD) bytes
+   // so fileSize.QuadPart should be less than that
+   Assert(fileSize.QuadPart <= 0xFFFFFFFF);
+   DWORD bytesRead;
+   if(ReadFile(hnd,content, fileSize.QuadPart, &bytesRead, NULL) && (bytesRead == fileSize.QuadPart)){
+
+   }
+   else{
+     platform_free_file_memory(content);
+     content = NULL;
+   }
+   
+ }
+ else{
+ }
+
+ CloseHandle(hnd);
+ return content;
+}
+
+
+void platform_free_file_memory(void* memory){
+ if(memory!=NULL){
+    VirtualFree(memory,0, MEM_RELEASE);
+ }
+}
+
+
+void platform_write_or_overwrite_file(char* path, void* bytes, uint64_t size){
+  HANDLE hnd=CreateFileA(path, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS,0,NULL);
 }
