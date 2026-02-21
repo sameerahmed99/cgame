@@ -7,7 +7,15 @@
 #include <stdint.h>
 #include <synchapi.h>
 
+#include <initguid.h>
+#include <mmdeviceapi.h>
+#include <audioclient.h>
+#include <audiopolicy.h>
 
+//@TODO Consider switching to WASAPI
+// instead of XAudio. This way we can let the game control the audio buffer
+// and just use wasapi to play the buffer
+// from a quick read, it seems like this will let us do something similar on linux using pulse audio
 
 // mingw64 headers need this macro defined
 // if you want to use xaudio2 helper macros for calling functions from C instead of C++
@@ -30,6 +38,17 @@
 
 
 
+
+// REFERENCE_TIME is 100 nano-second units
+// so 1 REFERENCE_TIME is 100 nano-seconds
+// 1 milliseconds has 100,000 nano seconds
+// so 1 milliseconds has 10,000 REFERENCE_TIME units
+
+#define MsToReftimeUnits(Value) (Value*10000)
+#define SecToReftimeUnits(Value) (Value*10000000)
+const int TEMP_HNS_BUF_DURATION = SecToReftimeUnits(0.020);
+
+
 global_variable bool AppRunning;
 
 
@@ -46,15 +65,23 @@ global_variable const int SOUND_BUFFER_LENGTH_SECONDS = 2;
 global_variable const int MAX_SOURCE_VOICES = 32;
 global_variable  LARGE_INTEGER PerformanceQueryFrequency;
 global_variable XAUDIO2_BUFFER GlobalSoundBuffer;
-global_variable CG_Input GlobalInput;
+global_variable IAudioClient *WasapiAudioClient;
+global_variable IAudioRenderClient *WasapiRenderClient;
+global_variable WAVEFORMATEX AudioFormat;
 
+
+global_variable uint32_t WasapiNumTotalBufferFrames;
+global_variable CG_Input GlobalInput;
+global_variable CG_PlatformConfig PlatformConfig;
 
 global_variable float GlobalDeltaTime;
+
+
 // missing from mingw64's xaudio2.h header
 // copied from windows 10 sdk's xaudio2.h
 #define XAUDIO2_NO_VIRTUAL_AUDIO_CLIENT       0x10000   // Used in CreateMasteringVoice to create a virtual audio client
 
-
+ 
 
 
 // @NOTE: i checked in xaudio2.h and they have this COM interface thing that is supposed to be an object oriented thing to work with c++
@@ -243,7 +270,7 @@ internal void win32_copy_buffer_to_window(Win32OffscreenBuffer buffer, HDC hdc, 
 
 StretchDIBits(
    hdc,
-   0,0,winWidth, winHeight,
+   0,0,buffer.Width, buffer.Height,
    0,0,buffer.Width, buffer.Height,
    buffer.Memory,
    &buffer.Info,
@@ -327,6 +354,163 @@ void win32_play_wave_file(char* path){
 // otherwise the audio just cuts out, there seems to be no auto conversion going on
 // if you want to do some conversion, perhaps do it when baking/importing assets
 
+
+
+void win32_init_wasapi(uint32_t sampleRate, uint32_t bitDepth){
+  IMMDevice *device;
+
+  IMMDeviceEnumerator* enumerator;
+HRESULT  hr = CoCreateInstance(
+			&CLSID_MMDeviceEnumerator, NULL,
+			CLSCTX_ALL, &IID_IMMDeviceEnumerator,
+			(void**)&enumerator);
+ hr=
+   enumerator->lpVtbl->GetDefaultAudioEndpoint(enumerator,
+			    eRender,
+			    eMultimedia,
+			    &device
+			    );
+
+
+ void *ppInterface;
+ device->lpVtbl->Activate(
+			  device,
+			  &IID_IAudioClient,
+			  CLSCTX_ALL,
+			  NULL,
+			  &ppInterface
+);
+
+ int numChannels =2;
+ int bytesInASample =  numChannels*bitDepth /8;
+ WAVEFORMATEX format;
+
+  format.wFormatTag=WAVE_FORMAT_PCM;
+  format.nChannels=numChannels;
+  format.nSamplesPerSec=sampleRate;
+  format.nAvgBytesPerSec = bytesInASample*sampleRate;
+  format.nBlockAlign=bytesInASample;
+  format.wBitsPerSample = bitDepth;
+  format.cbSize=0;
+
+ AudioFormat = format; 
+
+ IAudioClient *audioClient = (IAudioClient*)ppInterface;
+
+ hr = audioClient->lpVtbl->Initialize(audioClient,
+
+				      AUDCLNT_SHAREMODE_SHARED,
+				      0,
+				      TEMP_HNS_BUF_DURATION,
+				      0,
+				      &AudioFormat,
+				      NULL
+				      );
+
+ 
+				 
+ if(hr!=S_OK){
+   printf("Sumtin wong init wasapi function\n");
+   return;
+ }
+
+
+ 
+
+ IAudioRenderClient *renderClient= NULL;
+ audioClient->lpVtbl->GetService(audioClient,&IID_IAudioRenderClient, (void**)&renderClient);
+
+ audioClient->lpVtbl->Start(audioClient);
+
+
+
+ WasapiAudioClient = audioClient;
+ WasapiRenderClient = renderClient;
+ 
+hr = WasapiAudioClient->lpVtbl->GetBufferSize(WasapiAudioClient, &WasapiNumTotalBufferFrames);
+
+ uint8_t *data;
+ hr = WasapiRenderClient->lpVtbl->GetBuffer(WasapiRenderClient, WasapiNumTotalBufferFrames, &data);
+
+ memset(data,0, WasapiNumTotalBufferFrames*AudioFormat.nBlockAlign);
+
+ hr = WasapiRenderClient->lpVtbl->ReleaseBuffer(WasapiRenderClient, WasapiNumTotalBufferFrames,0);
+
+
+
+}
+
+void win32_wasapi_process(){
+  uint32_t numFramesPadding=0;
+ 
+
+ 
+  WasapiAudioClient->lpVtbl->GetCurrentPadding(WasapiAudioClient, &numFramesPadding);
+
+  uint32_t numFramesAvailable = WasapiNumTotalBufferFrames - numFramesPadding;
+
+  //  printf("Num buffer frames: %d\n, padding: %d\n", WasapiNumTotalBufferFrames, numFramesPadding);
+
+  //  printf("num frames available: %d\n", numFramesAvailable);
+  if(numFramesAvailable == 0) return;
+  uint8_t *data;
+HRESULT hr=  WasapiRenderClient->lpVtbl->GetBuffer(WasapiRenderClient, numFramesAvailable,&data);
+
+ float wave_frequency = 10;
+ float amplitude = 0.2;
+
+
+ float numPhasesPerSec = wave_frequency;
+ float phasePerSample = numPhasesPerSec / AudioFormat.nSamplesPerSec;
+ local_persist float phase = 0.0;
+ // printf("Phase per sample:%f\n", phasePerSample);
+ // printf("Sample rate:%d\n", AudioFormat.nSamplesPerSec);
+
+ int bytesInOneChannel = AudioFormat.nBlockAlign/AudioFormat.nChannels;
+ if(BIT_DEPTH == 24){
+    // 24 bit max value
+
+   for(int i=0;i<numFramesAvailable;i++){
+     uint8_t* p = data + i*AudioFormat.nBlockAlign;
+     float val = (phase>0.5) ? 1.0 : -1.0;
+     int32_t intAmplitude = (int32_t)(amplitude*8388607*val);
+
+     for(int c=0;c<AudioFormat.nChannels;c++){
+       p[0] =(intAmplitude) & 0xFF;
+       p[1] = (intAmplitude >> 8) & 0xFF;
+       p[2] = (intAmplitude >> 16) & 0xFF;
+
+       p+=3;
+     }
+
+     phase+=phasePerSample;
+
+     if(phase>=1.0){
+       phase -=1.0;
+     }
+
+
+   }
+ }
+
+ //   printf("Phase: %f\n", phase);
+hr =  WasapiRenderClient->lpVtbl->ReleaseBuffer(WasapiRenderClient, numFramesAvailable,0);
+ if(hr!=S_OK){
+   exit(1);
+ }
+ 
+}
+
+void win32_init_com_api(){
+  HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
+  
+  if (FAILED(hr)) {
+    printf("Couldn't initial COM\n");
+    return;
+  };
+  printf("Initialized COM \n");
+
+}
 void win32_init_xaudio2(uint32_t sampleRate, uint32_t bitDepth, uint32_t numVoices, Win32VoicePool* _data){
 
 
@@ -337,13 +521,6 @@ void win32_init_xaudio2(uint32_t sampleRate, uint32_t bitDepth, uint32_t numVoic
     return;
   }
   
-  HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
-  
-  if (FAILED(hr)) {
-    printf("Couldn't initial COM\n");
-    return;
-  };
-  printf("Initialized COM \n");
 
   IXAudio2 *xAudio;
   xaudio2_create *XAudio2Create= (xaudio2_create*) GetProcAddress(xaudio2, "XAudio2Create");
@@ -440,7 +617,7 @@ void temp_print_time_stamp(LARGE_INTEGER _compareToStamp){
 
 
 
-    FPS = 1/FPS;
+
     printf("Elapsed:%dms, FPS:%f\n", ElapsedMS, FPS);
 }
 
@@ -604,6 +781,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
   }
 
 
+  win32_init_com_api();
+  win32_init_wasapi(SAMPLE_RATE_DEFAULT, BIT_DEPTH);
   win32_init_xaudio2(SAMPLE_RATE_DEFAULT, BIT_DEPTH,MAX_SOURCE_VOICES, &GlobalVoicePool);
   AppRunning = true;
 
@@ -650,6 +829,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
   QueryPerformanceCounter(&previousFrameTimeStamp);
 
 
+  //  void* fileContents=  platform_read_whole_file(__FILE__);
   
   while(AppRunning){
     LARGE_INTEGER perfTimeStamp;
@@ -699,6 +879,11 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 
 
     //      printf("Played %d bytes out of %d and %d samples out of %d\n", soundBufferBytesPlayedThisLoop,soundBufferSize, soundBufferSamplesPlayedThisLoop, samplesInBuffer);
+
+
+    win32_wasapi_process();
+
+	
     ReleaseDC(hwnd, DeviceContext);
     //    temp_print_time_stamp(perfTimeStamp);
 
@@ -717,6 +902,7 @@ void platform_play_wave_file(char* path){
 }
 
 void *platform_read_whole_file(char* path){
+  printf(path);
 HANDLE hnd=CreateFileA(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,0,NULL);
  void *content=NULL;
  if(hnd == INVALID_HANDLE_VALUE){

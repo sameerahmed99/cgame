@@ -20,6 +20,13 @@
 #define global_variable static
 
 
+typedef struct CG_PlatformConfig{
+  uint64_t PersistantStorageSize;
+  uint64_t VolatileStorageSize;
+  uint64_t AudioBufferSizeInSeconds;
+  uint32_t BitDepth;
+} CG_PlatformConfig;
+
 typedef struct CG_Memory{
   uint64_t PersistantStorageSize;
   void* PersistantStorage;
@@ -40,6 +47,8 @@ typedef struct CG_OffscreenBuffer {
 typedef struct CG_GameState{
 
 } CG_GameState;
+
+CG_PlatformConfig cg_get_platform_config();
 
 internal void cg_update(CG_Memory* _memory, CG_OffscreenBuffer* _screenBuffer, CG_Input *_platformInput, float _deltaTime);
 internal uint32_t cg_create_color_from_channels(uint8_t r, uint8_t g, uint8_t b);
