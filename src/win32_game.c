@@ -46,7 +46,7 @@
 
 #define MsToReftimeUnits(Value) (Value*10000)
 #define SecToReftimeUnits(Value) (Value*10000000)
-const int TEMP_HNS_BUF_DURATION = SecToReftimeUnits(0.020);
+//const int TEMP_HNS_BUF_DURATION = SecToReftimeUnits(0.020);
 
 
 global_variable bool AppRunning;
@@ -59,10 +59,6 @@ global_variable HDC DeviceContext;
 global_variable int WindowHeight, WindowWidth;
 global_variable RECT WindowRect;
 
-global_variable const int SAMPLE_RATE_DEFAULT=48000;
-global_variable const int BIT_DEPTH = 24;
-global_variable const int SOUND_BUFFER_LENGTH_SECONDS = 2;
-global_variable const int MAX_SOURCE_VOICES = 32;
 global_variable  LARGE_INTEGER PerformanceQueryFrequency;
 global_variable XAUDIO2_BUFFER GlobalSoundBuffer;
 global_variable IAudioClient *WasapiAudioClient;
@@ -73,13 +69,12 @@ global_variable WAVEFORMATEX AudioFormat;
 global_variable uint32_t WasapiNumTotalBufferFrames;
 global_variable CG_Input GlobalInput;
 global_variable CG_PlatformConfig PlatformConfig;
-
 global_variable float GlobalDeltaTime;
 
 
 // missing from mingw64's xaudio2.h header
 // copied from windows 10 sdk's xaudio2.h
-#define XAUDIO2_NO_VIRTUAL_AUDIO_CLIENT       0x10000   // Used in CreateMasteringVoice to create a virtual audio client
+//#define XAUDIO2_NO_VIRTUAL_AUDIO_CLIENT       0x10000   // Used in CreateMasteringVoice to create a virtual audio client
 
  
 
@@ -96,32 +91,32 @@ global_variable float GlobalDeltaTime;
 // UPDATE: probably because we're using mingw. It has its own xaudio2.h that it uses and
 // the macros are behind a #ifndef COBJOBMACROS so you'll have to define t hat
 
-typedef struct Win32Voice {
-  IXAudio2SourceVoice* underlyingVoice;
+/* typedef struct Win32Voice { */
+/*   IXAudio2SourceVoice* underlyingVoice; */
 
-} Win32Voice;
+/* } Win32Voice; */
 
-typedef struct Win32VoicePool{
+/* typedef struct Win32VoicePool{ */
 
 
-  // @TODO :
-  // used voices will be at the start of the buffer, all voices
-  // after the Win32VoicePool.used index will be free
-  // When a new voice needs to be played
-  // Use the one at the end of the voices array 
-  // swap it with voices[used] so that the one that was at voices[used]
-  // is now at the end of the array
-  // and the new voices[used] is the one we just used.
-  // then increment used
-  // When a voice says it's free, swap it with voices[used-1]
-  // and then decreased used by 1
+/*   // @TODO : */
+/*   // used voices will be at the start of the buffer, all voices */
+/*   // after the Win32VoicePool.used index will be free */
+/*   // When a new voice needs to be played */
+/*   // Use the one at the end of the voices array  */
+/*   // swap it with voices[used] so that the one that was at voices[used] */
+/*   // is now at the end of the array */
+/*   // and the new voices[used] is the one we just used. */
+/*   // then increment used */
+/*   // When a voice says it's free, swap it with voices[used-1] */
+/*   // and then decreased used by 1 */
   
-  uint32_t used;
-  Win32Voice *voices;
-} Win32VoicePool;
+/*   uint32_t used; */
+/*   Win32Voice *voices; */
+/* } Win32VoicePool; */
 
 
-global_variable Win32VoicePool GlobalVoicePool;
+/* global_variable Win32VoicePool GlobalVoicePool; */
 
 typedef struct Win32OffscreenBuffer {
   BITMAPINFO Info;
@@ -281,27 +276,27 @@ StretchDIBits(
 
 
 
-void win32_play_audio_buffer(XAUDIO2_BUFFER _buffer){
+/* void win32_play_audio_buffer(XAUDIO2_BUFFER _buffer){ */
 
-  printf("Trying to play another sound, used before playing: %d\n", GlobalVoicePool.used);
-  if(GlobalVoicePool.used == MAX_SOURCE_VOICES){
+/*   printf("Trying to play another sound, used before playing: %d\n", GlobalVoicePool.used); */
+/*   if(GlobalVoicePool.used == MAX_SOURCE_VOICES){ */
 
-    printf("No audio voices available, not going to play this audio\n");
-    return;
-  }
+/*     printf("No audio voices available, not going to play this audio\n"); */
+/*     return; */
+/*   } */
 
-  Win32Voice poppedVoice = GlobalVoicePool.voices[MAX_SOURCE_VOICES-1];
-  Win32Voice newEndVoice = GlobalVoicePool.voices[GlobalVoicePool.used];
+/*   Win32Voice poppedVoice = GlobalVoicePool.voices[MAX_SOURCE_VOICES-1]; */
+/*   Win32Voice newEndVoice = GlobalVoicePool.voices[GlobalVoicePool.used]; */
 
-  GlobalVoicePool.voices[MAX_SOURCE_VOICES-1] = newEndVoice;
-  GlobalVoicePool.voices[GlobalVoicePool.used] = poppedVoice;
-  GlobalVoicePool.used++;
+/*   GlobalVoicePool.voices[MAX_SOURCE_VOICES-1] = newEndVoice; */
+/*   GlobalVoicePool.voices[GlobalVoicePool.used] = poppedVoice; */
+/*   GlobalVoicePool.used++; */
 
-  printf("Just played another sound, total used voices: %d\n", GlobalVoicePool.used);
-  IXAudio2SourceVoice *v = poppedVoice.underlyingVoice;
-  v->lpVtbl->SubmitSourceBuffer(v,&_buffer, NULL);
-  v->lpVtbl->Start(v,0,XAUDIO2_COMMIT_NOW);
-}
+/*   printf("Just played another sound, total used voices: %d\n", GlobalVoicePool.used); */
+/*   IXAudio2SourceVoice *v = poppedVoice.underlyingVoice; */
+/*   v->lpVtbl->SubmitSourceBuffer(v,&_buffer, NULL); */
+/*   v->lpVtbl->Start(v,0,XAUDIO2_COMMIT_NOW); */
+/* } */
 
 
 
@@ -344,7 +339,7 @@ void win32_play_wave_file(char* path){
   buffer.Flags = XAUDIO2_END_OF_STREAM;
 
 
-  win32_play_audio_buffer(buffer);
+  //  win32_play_audio_buffer(buffer);
 
 }
 
@@ -356,7 +351,7 @@ void win32_play_wave_file(char* path){
 
 
 
-void win32_init_wasapi(uint32_t sampleRate, uint32_t bitDepth){
+void win32_init_wasapi(uint32_t sampleRate, uint32_t bitDepth, float _bufferDurationSec, uint8_t numChannels){
   IMMDevice *device;
 
   IMMDeviceEnumerator* enumerator;
@@ -381,7 +376,7 @@ HRESULT  hr = CoCreateInstance(
 			  &ppInterface
 );
 
- int numChannels =2;
+
  int bytesInASample =  numChannels*bitDepth /8;
  WAVEFORMATEX format;
 
@@ -401,7 +396,7 @@ HRESULT  hr = CoCreateInstance(
 
 				      AUDCLNT_SHAREMODE_SHARED,
 				      0,
-				      TEMP_HNS_BUF_DURATION,
+				      SecToReftimeUnits(_bufferDurationSec),
 				      0,
 				      &AudioFormat,
 				      NULL
@@ -440,61 +435,24 @@ hr = WasapiAudioClient->lpVtbl->GetBufferSize(WasapiAudioClient, &WasapiNumTotal
 
 }
 
-void win32_wasapi_process(){
-  uint32_t numFramesPadding=0;
- 
+
+
+void win32_wasapi_copy_buffer(uint8_t* _sourceBuffer, uint32_t _writePosBytes, uint32_t _writeLengthBytes){
+
+
+  if(_writeLengthBytes == 0) return;
 
  
-  WasapiAudioClient->lpVtbl->GetCurrentPadding(WasapiAudioClient, &numFramesPadding);
 
-  uint32_t numFramesAvailable = WasapiNumTotalBufferFrames - numFramesPadding;
 
-  //  printf("Num buffer frames: %d\n, padding: %d\n", WasapiNumTotalBufferFrames, numFramesPadding);
+  uint32_t numWriteFrames = _writeLengthBytes / AudioFormat.nBlockAlign;
 
-  //  printf("num frames available: %d\n", numFramesAvailable);
-  if(numFramesAvailable == 0) return;
   uint8_t *data;
-HRESULT hr=  WasapiRenderClient->lpVtbl->GetBuffer(WasapiRenderClient, numFramesAvailable,&data);
+HRESULT hr=  WasapiRenderClient->lpVtbl->GetBuffer(WasapiRenderClient, numWriteFrames,&data);
 
- float wave_frequency = 10;
- float amplitude = 0.2;
+ memcpy(data, _sourceBuffer+_writePosBytes,_writeLengthBytes);
 
-
- float numPhasesPerSec = wave_frequency;
- float phasePerSample = numPhasesPerSec / AudioFormat.nSamplesPerSec;
- local_persist float phase = 0.0;
- // printf("Phase per sample:%f\n", phasePerSample);
- // printf("Sample rate:%d\n", AudioFormat.nSamplesPerSec);
-
- int bytesInOneChannel = AudioFormat.nBlockAlign/AudioFormat.nChannels;
- if(BIT_DEPTH == 24){
-    // 24 bit max value
-
-   for(int i=0;i<numFramesAvailable;i++){
-     uint8_t* p = data + i*AudioFormat.nBlockAlign;
-     float val = (phase>0.5) ? 1.0 : -1.0;
-     int32_t intAmplitude = (int32_t)(amplitude*8388607*val);
-
-     for(int c=0;c<AudioFormat.nChannels;c++){
-       p[0] =(intAmplitude) & 0xFF;
-       p[1] = (intAmplitude >> 8) & 0xFF;
-       p[2] = (intAmplitude >> 16) & 0xFF;
-
-       p+=3;
-     }
-
-     phase+=phasePerSample;
-
-     if(phase>=1.0){
-       phase -=1.0;
-     }
-
-
-   }
- }
-
- //   printf("Phase: %f\n", phase);
-hr =  WasapiRenderClient->lpVtbl->ReleaseBuffer(WasapiRenderClient, numFramesAvailable,0);
+hr =  WasapiRenderClient->lpVtbl->ReleaseBuffer(WasapiRenderClient, numWriteFrames,0);
  if(hr!=S_OK){
    exit(1);
  }
@@ -511,90 +469,90 @@ void win32_init_com_api(){
   printf("Initialized COM \n");
 
 }
-void win32_init_xaudio2(uint32_t sampleRate, uint32_t bitDepth, uint32_t numVoices, Win32VoicePool* _data){
+/* void win32_init_xaudio2(uint32_t sampleRate, uint32_t bitDepth, uint32_t numVoices, Win32VoicePool* _data){ */
 
 
 
-  HMODULE xaudio2 = LoadLibraryA("XAudio2_9.dll");
-  if(xaudio2 == NULL){
-    printf("XAudio2_9.dll not found\n");
-    return;
-  }
+/*   HMODULE xaudio2 = LoadLibraryA("XAudio2_9.dll"); */
+/*   if(xaudio2 == NULL){ */
+/*     printf("XAudio2_9.dll not found\n"); */
+/*     return; */
+/*   } */
   
 
-  IXAudio2 *xAudio;
-  xaudio2_create *XAudio2Create= (xaudio2_create*) GetProcAddress(xaudio2, "XAudio2Create");
+/*   IXAudio2 *xAudio; */
+/*   xaudio2_create *XAudio2Create= (xaudio2_create*) GetProcAddress(xaudio2, "XAudio2Create"); */
 
 
  
 
-  int numChannels =2;
-  int bytesInASample =  numChannels*bitDepth /8;
-  WAVEFORMATEX format= {0};
-  format.wFormatTag=WAVE_FORMAT_PCM;
-  format.nChannels=numChannels;
-  format.nSamplesPerSec=sampleRate;
-  format.nAvgBytesPerSec = bytesInASample*sampleRate;
-  format.nBlockAlign=bytesInASample;
-  format.wBitsPerSample = bitDepth;
-  format.cbSize=0;
+/*   int numChannels =2; */
+/*   int bytesInASample =  numChannels*bitDepth /8; */
+/*   WAVEFORMATEX format= {0}; */
+/*   format.wFormatTag=WAVE_FORMAT_PCM; */
+/*   format.nChannels=numChannels; */
+/*   format.nSamplesPerSec=sampleRate; */
+/*   format.nAvgBytesPerSec = bytesInASample*sampleRate; */
+/*   format.nBlockAlign=bytesInASample; */
+/*   format.wBitsPerSample = bitDepth; */
+/*   format.cbSize=0; */
 
   
 
 
-  HRESULT res=  XAudio2Create(&xAudio, 0, XAUDIO2_DEFAULT_PROCESSOR);
-  if(res!=S_OK){
-    printf("Couldn't create XAudio2\n");
-  }
+/*   HRESULT res=  XAudio2Create(&xAudio, 0, XAUDIO2_DEFAULT_PROCESSOR); */
+/*   if(res!=S_OK){ */
+/*     printf("Couldn't create XAudio2\n"); */
+/*   } */
 
-  IXAudio2MasteringVoice* masteringVoice;
-
-
-  res=  xAudio->lpVtbl->CreateMasteringVoice(
-					     xAudio,
-					     &masteringVoice,
-					     numChannels,
-					     sampleRate,
-					     XAUDIO2_NO_VIRTUAL_AUDIO_CLIENT,
-					     NULL,
-					     NULL,
-					     // @NOTE: for now, just use other. I don't know the implications of using GameEffects
-					     AudioCategory_Other);
-
-  if(res!=S_OK){
-    printf("Couldn't create XAudio Mastering Voice\n");
-  }
-
-  IXAudio2SubmixVoice * pSFXSubmixVoice;
-  IXAudio2_CreateSubmixVoice(xAudio, &pSFXSubmixVoice,numChannels,sampleRate,0,0,0,0);
-
-  XAUDIO2_SEND_DESCRIPTOR SFXSend = {0,(IXAudio2Voice*) pSFXSubmixVoice};
-  XAUDIO2_VOICE_SENDS SFXSendList = {1, &SFXSend};
+/*   IXAudio2MasteringVoice* masteringVoice; */
 
 
-  if(_data->voices){
-    VirtualFree(_data->voices,0, MEM_RELEASE);
-  }
-  _data->voices = VirtualAlloc(
-			       0,
-			       sizeof(Win32Voice)*numVoices,
-			       MEM_COMMIT | MEM_RESERVE,
-			       PAGE_READWRITE 
-			       );
-  _data->used = 0;
+/*   res=  xAudio->lpVtbl->CreateMasteringVoice( */
+/* 					     xAudio, */
+/* 					     &masteringVoice, */
+/* 					     numChannels, */
+/* 					     sampleRate, */
+/* 					     XAUDIO2_NO_VIRTUAL_AUDIO_CLIENT, */
+/* 					     NULL, */
+/* 					     NULL, */
+/* 					     // @NOTE: for now, just use other. I don't know the implications of using GameEffects */
+/* 					     AudioCategory_Other); */
+
+/*   if(res!=S_OK){ */
+/*     printf("Couldn't create XAudio Mastering Voice\n"); */
+/*   } */
+
+/*   IXAudio2SubmixVoice * pSFXSubmixVoice; */
+/*   IXAudio2_CreateSubmixVoice(xAudio, &pSFXSubmixVoice,numChannels,sampleRate,0,0,0,0); */
+
+/*   XAUDIO2_SEND_DESCRIPTOR SFXSend = {0,(IXAudio2Voice*) pSFXSubmixVoice}; */
+/*   XAUDIO2_VOICE_SENDS SFXSendList = {1, &SFXSend}; */
+
+
+/*   if(_data->voices){ */
+/*     VirtualFree(_data->voices,0, MEM_RELEASE); */
+/*   } */
+/*   _data->voices = VirtualAlloc( */
+/* 			       0, */
+/* 			       sizeof(Win32Voice)*numVoices, */
+/* 			       MEM_COMMIT | MEM_RESERVE, */
+/* 			       PAGE_READWRITE  */
+/* 			       ); */
+/*   _data->used = 0; */
  
-  for(int i=0;i<numVoices;i++){
-    IXAudio2SourceVoice* srcVoice;
-    if(FAILED(IXAudio2_CreateSourceVoice(xAudio, &srcVoice,&format,0,XAUDIO2_DEFAULT_FREQ_RATIO,NULL,&SFXSendList,NULL))){
-      printf("Couldn't create source voice\n");
-    }
-    Win32Voice voice;
-    voice.underlyingVoice = srcVoice;
-    _data->voices[i] = voice;
+/*   for(int i=0;i<numVoices;i++){ */
+/*     IXAudio2SourceVoice* srcVoice; */
+/*     if(FAILED(IXAudio2_CreateSourceVoice(xAudio, &srcVoice,&format,0,XAUDIO2_DEFAULT_FREQ_RATIO,NULL,&SFXSendList,NULL))){ */
+/*       printf("Couldn't create source voice\n"); */
+/*     } */
+/*     Win32Voice voice; */
+/*     voice.underlyingVoice = srcVoice; */
+/*     _data->voices[i] = voice; */
 
 
-  }
-}
+/*   } */
+/* } */
 
 
 
@@ -781,10 +739,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
   }
 
 
-  win32_init_com_api();
-  win32_init_wasapi(SAMPLE_RATE_DEFAULT, BIT_DEPTH);
-  win32_init_xaudio2(SAMPLE_RATE_DEFAULT, BIT_DEPTH,MAX_SOURCE_VOICES, &GlobalVoicePool);
-  AppRunning = true;
 
 
 
@@ -794,7 +748,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
   win32_reset_key_state(&GlobalInput.Keyboard.s, false);
   win32_reset_key_state(&GlobalInput.Keyboard.d, false);
 
-
+  // INIT APPLICATION HERE
+  
   // main game memory allocation
   CG_Memory gameMemory = {0};
 
@@ -805,10 +760,16 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
   #else
   LPVOID  baseAddress = NULL;
   #endif
+  
+  PlatformConfig = cg_get_platform_config();
 
+  win32_init_com_api();
+  win32_init_wasapi(PlatformConfig.AudioSampleRate, PlatformConfig.AudioBitDepth, PlatformConfig.AudioBufferSizeInSeconds, PlatformConfig.AudioChannelsCount);
+  //  win32_init_xaudio2(SAMPLE_RATE_DEFAULT, BIT_DEPTH,MAX_SOURCE_VOICES, &GlobalVoicePool);
+  AppRunning = true;
 
-  gameMemory.PersistantStorageSize =  Megabytes((uint64_t)64);
-  gameMemory.VolatileStorageSize = Gigabytes((uint64_t)4);
+  gameMemory.PersistantStorageSize =  PlatformConfig.PersistantStorageSize;
+  gameMemory.VolatileStorageSize = PlatformConfig.VolatileStorageSize;
   uint64_t totalSize = gameMemory.PersistantStorageSize + gameMemory.VolatileStorageSize;
   gameMemory.PersistantStorage =  VirtualAlloc(
 					       baseAddress,
@@ -818,6 +779,13 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 					       );
 
   gameMemory.VolatileStorage =  (uint8_t*)gameMemory.PersistantStorage + gameMemory.PersistantStorageSize;
+
+
+  
+  gameMemory.AudioBufferCurrentWriteLengthFrames = 0;
+  gameMemory.AudioBufferCurrentWritePositionFrames = 0;
+  
+  gameMemory.AudioBuffer = VirtualAlloc(0, WasapiNumTotalBufferFrames * AudioFormat.nBlockAlign, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 
   //  printf("persistant: %d, volatile: %d\n", (uint32_t)baseAddress, gameMemory.VolatileStorage);
 
@@ -830,7 +798,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 
 
   //  void* fileContents=  platform_read_whole_file(__FILE__);
-  
+
+
+
   while(AppRunning){
     LARGE_INTEGER perfTimeStamp;
 
@@ -871,6 +841,11 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     buffer.Width = GlobalOffscreenBuffer.Width;
     buffer.BytesPerPixel = GlobalOffscreenBuffer.BytesPerPixel;
 
+    uint32_t wasapiNumFramesPadding;
+    WasapiAudioClient->lpVtbl->GetCurrentPadding(WasapiAudioClient, &wasapiNumFramesPadding);
+    uint32_t numFramesToWrite = WasapiNumTotalBufferFrames - wasapiNumFramesPadding;
+
+    gameMemory.AudioBufferCurrentWriteLengthFrames = numFramesToWrite;
     
     cg_update(&gameMemory,&buffer, &GlobalInput, GlobalDeltaTime);
     
@@ -881,9 +856,11 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     //      printf("Played %d bytes out of %d and %d samples out of %d\n", soundBufferBytesPlayedThisLoop,soundBufferSize, soundBufferSamplesPlayedThisLoop, samplesInBuffer);
 
 
-    win32_wasapi_process();
 
-	
+      win32_wasapi_copy_buffer(gameMemory.AudioBuffer, gameMemory.AudioBufferCurrentWritePositionFrames * AudioFormat.nBlockAlign, gameMemory.AudioBufferCurrentWriteLengthFrames * AudioFormat.nBlockAlign);
+
+      gameMemory.AudioBufferCurrentWritePositionFrames = numFramesToWrite % WasapiNumTotalBufferFrames;
+    	
     ReleaseDC(hwnd, DeviceContext);
     //    temp_print_time_stamp(perfTimeStamp);
 
