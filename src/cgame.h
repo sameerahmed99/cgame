@@ -2,7 +2,7 @@
 #define CG_
 #include "platform.h"
 #include <stdint.h>
-
+#include "./math.h"
 
 #if CGAME_DEVELOPMENT
 #define Assert(Expression) if(!(Expression)){*(int*)0=0;}
@@ -27,6 +27,8 @@ typedef struct CG_PlatformConfig{
   uint32_t AudioBitDepth;
   uint32_t AudioSampleRate;
   uint8_t AudioChannelsCount;
+  uint32_t ScreenWidth;
+  uint32_t ScreenHeight;
 } CG_PlatformConfig;
 
 typedef struct CG_Memory{
@@ -55,6 +57,24 @@ typedef struct CG_OffscreenBuffer {
 typedef struct CG_GameState{
 
 } CG_GameState;
+
+
+enum CG_EntityType {
+  ENTITY_TYPE_PLAYER,
+  ENTITY_TYPE_WORLD_LAYER,
+  ENTITY_TYPE_TEST_ENEMY
+}
+typedef struct CG_Entity{
+  enum CG_EntityType Type;
+  CG_Vec3 Pos;
+  float ZRot;
+  float Scale;
+}
+typedef struct CG_WorldLayer{
+  CG_Entity* Entities;
+  CG_Vec3 Pos;
+}
+
 
 CG_PlatformConfig cg_get_platform_config();
 

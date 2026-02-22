@@ -221,7 +221,7 @@ internal void win32_resize_dib_section(Win32OffscreenBuffer *buffer, int _width,
 
   buffer->Info.bmiHeader.biSize = sizeof(buffer->Info.bmiHeader);
   buffer->Info.bmiHeader.biWidth = _width;
-  buffer->Info.bmiHeader.biHeight = -_height;
+  buffer->Info.bmiHeader.biHeight = _height;
   buffer->Info.bmiHeader.biPlanes = 1;
   buffer->Info.bmiHeader.biBitCount = buffer->BytesPerPixel * 8;
   buffer->Info.bmiHeader.biCompression = BI_RGB;
@@ -229,7 +229,17 @@ internal void win32_resize_dib_section(Win32OffscreenBuffer *buffer, int _width,
   buffer->Memory = VirtualAlloc(0, _width * _height * buffer->BytesPerPixel, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 }
 
-internal void win32_copy_buffer_to_window(Win32OffscreenBuffer buffer, HDC hdc, int winWidth, int winHeight) { StretchDIBits(hdc, 0, 0, buffer.Width, buffer.Height, 0, 0, buffer.Width, buffer.Height, buffer.Memory, &buffer.Info, DIB_RGB_COLORS, SRCCOPY); }
+
+internal void win32_copy_buffer_to_window(Win32OffscreenBuffer buffer, HDC hdc, int winWidth, int winHeight)
+{
+  StretchDIBits(hdc, 0, 0,
+		buffer.Width,
+		buffer.Height,
+		0, 0, buffer.Width, buffer.Height,
+		buffer.Memory, &buffer.Info, DIB_RGB_COLORS, SRCCOPY);
+
+}
+
 
 /* void win32_play_audio_buffer(XAUDIO2_BUFFER _buffer){ */
 
@@ -582,6 +592,9 @@ LRESULT Win32CallbackFunc(HWND _window, UINT _msgId, WPARAM param3, LPARAM param
   case WM_SIZE: {
 
   } break;
+  case WM_SIZING:{
+    break;
+  }
   case WM_ACTIVATEAPP: {
     OutputDebugStringW(L"VM_ACTIVATEAPP\n");
   } break;
@@ -653,11 +666,11 @@ LRESULT Win32CallbackFunc(HWND _window, UINT _msgId, WPARAM param3, LPARAM param
 }
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow) {
-
+  PlatformConfig = cg_get_platform_config();
   QueryPerformanceFrequency(&PerformanceQueryFrequency);
 
   WNDCLASSW windclass = {0};
-  win32_resize_dib_section(&GlobalOffscreenBuffer, 1280, 720);
+  win32_resize_dib_section(&GlobalOffscreenBuffer, PlatformConfig.ScreenWidth, PlatformConfig.ScreenHeight);
 
   windclass.style = CS_HREDRAW | CS_VREDRAW;
   windclass.lpfnWndProc = Win32CallbackFunc;
@@ -676,7 +689,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
                               WS_OVERLAPPEDWINDOW | WS_VISIBLE, // Window style
 
                               // Size and position
-                              CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
+                              CW_USEDEFAULT, CW_USEDEFAULT,
+			      PlatformConfig.ScreenWidth,
+			      PlatformConfig.ScreenHeight,
 
                               NULL,      // Parent window
                               NULL,      // Menu
@@ -707,7 +722,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
   LPVOID baseAddress = NULL;
 #endif
 
-  PlatformConfig = cg_get_platform_config();
+
 
   win32_init_com_api();
   win32_init_wasapi(PlatformConfig.AudioSampleRate, PlatformConfig.AudioBitDepth, PlatformConfig.AudioBufferSizeInSeconds, PlatformConfig.AudioChannelsCount);

@@ -6,6 +6,11 @@ internal CG_PlatformConfig PlatformConfig;
 
 
 internal CG_Memory *TEMP_gameMemory;
+internal CG_WorldLayer StarsLayer;
+internal CG_WorldLayer MasterLayer;
+
+
+
 
 
 CG_PlatformConfig cg_get_platform_config(){
@@ -16,7 +21,9 @@ CG_PlatformConfig cg_get_platform_config(){
    .AudioBufferSizeInSeconds=.06f,
    .AudioBitDepth = 24,
    .AudioSampleRate = 48000,
-   .AudioChannelsCount = 2
+   .AudioChannelsCount = 2,
+   .ScreenWidth = 1280,
+   .ScreenHeight = 720
 };
 
  return config;
@@ -38,7 +45,7 @@ internal float playerPosX, playerPosY;
 
 
 float speed = .25;
-float playerSpeed = 75;
+float playerSpeed = 150;
 
 internal float SquareWaveFrequency = 100;
 
@@ -94,9 +101,16 @@ internal void write_square_wave_to_audio_buffer(uint8_t* _writeTo, uint32_t fram
 
 
 
+internal void draw_player(CG_OffscreenBuffer *_to, int32_t _circleRadius, uint32_t _color, int32_t _x, int32_t _y){
 
+  draw_circle(_to, _circleRadius, _color, _x, _y);
+
+
+  draw_rectangle(_to, _color, _x, _y, 50,50);
+}
 internal void cg_update(CG_Memory* _memory, CG_OffscreenBuffer *_screenBuffer, CG_Input *_playerInput, float _deltaTime){
 
+  draw_rectangle(_screenBuffer,cg_create_color_from_channels(0,0,0),0,0, _screenBuffer->Width, _screenBuffer->Height);
   TEMP_gameMemory = _memory;
   Assert(sizeof(CG_GameState) <= _memory->PersistantStorageSize);
   
@@ -113,35 +127,41 @@ internal void cg_update(CG_Memory* _memory, CG_OffscreenBuffer *_screenBuffer, C
     playerPosY-=_deltaTime*playerSpeed;
   }
   if(k.a.IsPressed){
-    tempOffsetX+=_deltaTime*speed;
-        playerPosX+=_deltaTime*playerSpeed;
-  }
-  if(k.d.IsPressed){
     tempOffsetX-=_deltaTime*speed;
     playerPosX-=_deltaTime*playerSpeed;
+
+
+  }
+  if(k.d.IsPressed){
+    tempOffsetX+=_deltaTime*speed;
+    playerPosX+=_deltaTime*playerSpeed;
   }
 
   //  printf("player: %f / %f\n", playerPosX, playerPosY);
   
   
   //  printf("offset %f / %f\n", tempOffsetX, tempOffsetY);
- int rowStride = _screenBuffer->BytesPerPixel * _screenBuffer->Width;
- uint8_t* row = (uint8_t*)_screenBuffer->Memory;
-  for(int y=0;y<_screenBuffer->Height;y++){
-    uint32_t* pixel = (uint32_t*)row;
-    for(int x=0;x<_screenBuffer->Width;x++){
-      float uvx = (float)x/_screenBuffer->Width;
-      float uvy = (float)y/_screenBuffer->Height;
-      uint8_t colR = uvx*255;
-      uint8_t colG = uvy*255;
-      pixel[x] = cg_create_color_from_channels(colR,colG,0);
+
+  // UV DRAWING TEST
+ /* int rowStride = _screenBuffer->BytesPerPixel * _screenBuffer->Width; */
+ /* uint8_t* row = (uint8_t*)_screenBuffer->Memory; */
+ /*  for(int y=0;y<_screenBuffer->Height;y++){ */
+ /*    uint32_t* pixel = (uint32_t*)row; */
+ /*    for(int x=0;x<_screenBuffer->Width;x++){ */
+ /*      float uvx = (float)x/_screenBuffer->Width; */
+ /*      float uvy = (float)y/_screenBuffer->Height; */
+ /*      uint8_t colR = uvx*255; */
+ /*      uint8_t colG = uvy*255; */
+ /*      pixel[x] = cg_create_color_from_channels(colR,colG,0); */
 
 
-    }
-    row+=rowStride;
-  }
+ /*    } */
+ /*    row+=rowStride; */
+ /*  } */
+  uint32_t color = cg_create_color_from_channels(125,5,5);
 
-  draw_circle(_screenBuffer, 25,125,5,5, _screenBuffer->Width/2+(int32_t)playerPosX,_screenBuffer->Height/2+(int32_t)playerPosY);
+
+  draw_player(_screenBuffer, 25,color, _screenBuffer->Width/2+(int32_t)playerPosX,_screenBuffer->Height/2+(int32_t)playerPosY);
 
 
   //  printf("W state - Is Pressed: %d, Was Downed: %d, Was released: %d\n",w.IsPressed, w.WasDownedThisFrame, w.WasReleasedThisFrame);
