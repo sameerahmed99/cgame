@@ -23,7 +23,7 @@
 typedef struct CG_PlatformConfig{
   uint64_t PersistantStorageSize;
   uint64_t VolatileStorageSize;
-  uint64_t AudioBufferSizeInSeconds;
+  float AudioBufferSizeInSeconds;
   uint32_t AudioBitDepth;
   uint32_t AudioSampleRate;
   uint8_t AudioChannelsCount;
@@ -39,6 +39,8 @@ typedef struct CG_Memory{
   uint8_t* AudioBuffer;
   uint32_t AudioBufferCurrentWriteLengthFrames;
   uint32_t AudioBufferCurrentWritePositionFrames;
+  uint32_t AudioBufferTotalFrames;
+  uint32_t AudioBufferTotalBytes;
 } CG_Memory;
 
 typedef struct CG_OffscreenBuffer {
@@ -60,6 +62,8 @@ CG_PlatformConfig cg_get_platform_config();
 internal void cg_init();
 internal void cg_update(CG_Memory* _memory, CG_OffscreenBuffer* _screenBuffer, CG_Input *_platformInput, float _deltaTime);
 internal uint32_t cg_create_color_from_channels(uint8_t r, uint8_t g, uint8_t b);
+
+void write_sound_test();
 
 
 #endif // CG_

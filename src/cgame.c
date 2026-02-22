@@ -1,15 +1,19 @@
 #include "cgame.h"
 #include "draw.h"
 #include "draw.c"
-
+#include <math.h>
 internal CG_PlatformConfig PlatformConfig;
+
+
+internal CG_Memory *TEMP_gameMemory;
+
 
 CG_PlatformConfig cg_get_platform_config(){
   
    CG_PlatformConfig config = {
    .PersistantStorageSize= Megabytes((uint64_t)64),
    .VolatileStorageSize=Gigabytes((uint64_t)4),
-   .AudioBufferSizeInSeconds=0.02,
+   .AudioBufferSizeInSeconds=.06f,
    .AudioBitDepth = 24,
    .AudioSampleRate = 48000,
    .AudioChannelsCount = 2
@@ -38,36 +42,40 @@ float playerSpeed = 75;
 
 internal float SquareWaveFrequency = 100;
 
-internal void write_square_wave_to_audio_buffer(uint8_t* _writeTo, uint32_t framesToWrite, uint32_t writePosFrames){
+internal void write_square_wave_to_audio_buffer(uint8_t* _writeTo, uint32_t framesToWrite, uint32_t writePosFrames, uint32_t _totalFramesInBuffer){
 
   if(framesToWrite == 0) return;
   float wave_frequency = SquareWaveFrequency;
-  float amplitude = 0.2;
+  float amplitude = 0.1;
 
 
   float numPhasesPerSec = wave_frequency;
   float phasePerSample = numPhasesPerSec / PlatformConfig.AudioSampleRate;
-  uint32_t bytesInAFrame = (PlatformConfig.AudioBitDepth/8) * 2;
+  uint32_t bytesInAFrame = (PlatformConfig.AudioBitDepth/8) * PlatformConfig.AudioChannelsCount;
   local_persist float phase = 0.0;
   // printf("Phase per sample:%f\n", phasePerSample);
   // printf("Sample rate:%d\n", AudioFormat.nSamplesPerSec);
 
   int bytesInOneChannel = bytesInAFrame/PlatformConfig.AudioChannelsCount;
 
-  uint8_t* data = _writeTo + writePosFrames * bytesInAFrame;
+
   if(PlatformConfig.AudioBitDepth == 24){
 
 
     for(int i=0;i<framesToWrite;i++){
-      uint8_t* p = data + i*bytesInAFrame;
+      uint32_t frameIndex = (writePosFrames + i) % _totalFramesInBuffer;
+      uint8_t* p = _writeTo + frameIndex*bytesInAFrame;
       float val = (phase>0.5) ? 1.0 : -1.0;
+      float sinVal = phase;
+      sinVal = sinf(sinVal*(44.0/7.0)); // 2 pi
+
       // 24 bit max value
       int32_t intAmplitude = (int32_t)(amplitude*8388607*val);
-
+      int32_t intAmplitudeSin = (int32_t)(amplitude*8388607*sinVal);
       for(int c=0;c<PlatformConfig.AudioChannelsCount;c++){
-	p[0] =(intAmplitude) & 0xFF;
-	p[1] = (intAmplitude >> 8) & 0xFF;
-	p[2] = (intAmplitude >> 16) & 0xFF;
+	p[0] =(intAmplitudeSin) & 0xFF;
+	p[1] = (intAmplitudeSin >> 8) & 0xFF;
+	p[2] = (intAmplitudeSin >> 16) & 0xFF;
 
 	p+=3;
       }
@@ -89,6 +97,7 @@ internal void write_square_wave_to_audio_buffer(uint8_t* _writeTo, uint32_t fram
 
 internal void cg_update(CG_Memory* _memory, CG_OffscreenBuffer *_screenBuffer, CG_Input *_playerInput, float _deltaTime){
 
+  TEMP_gameMemory = _memory;
   Assert(sizeof(CG_GameState) <= _memory->PersistantStorageSize);
   
   CG_GameState *state = (CG_GameState*)_memory;
@@ -144,10 +153,13 @@ internal void cg_update(CG_Memory* _memory, CG_OffscreenBuffer *_screenBuffer, C
   }
 
 
-  printf("Square wave: %f\n", SquareWaveFrequency);
+  //  printf("Square wave: %f\n", SquareWaveFrequency);
 
-  write_square_wave_to_audio_buffer(_memory->AudioBuffer, _memory->AudioBufferCurrentWriteLengthFrames, _memory->AudioBufferCurrentWritePositionFrames);
+
 }
-
+void write_sound_test(){
+  CG_Memory *_memory = TEMP_gameMemory;
+    write_square_wave_to_audio_buffer(_memory->AudioBuffer, _memory->AudioBufferCurrentWriteLengthFrames, _memory->AudioBufferCurrentWritePositionFrames, _memory->AudioBufferTotalFrames);
+}
 
 
