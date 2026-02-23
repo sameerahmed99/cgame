@@ -10,12 +10,12 @@ internal CG_Memory *TEMP_gameMemory;
 
 
 
+Arena* ArenaEntities;
+
 
 CG_PlatformConfig cg_get_platform_config(){
   
    CG_PlatformConfig config = {
-   .PersistantStorageSize= Megabytes((uint64_t)64),
-   .VolatileStorageSize=Gigabytes((uint64_t)4),
    .AudioBufferSizeInSeconds=.06f,
    .AudioBitDepth = 24,
    .AudioSampleRate = 48000,
@@ -29,6 +29,7 @@ CG_PlatformConfig cg_get_platform_config(){
 
 internal void cg_init(){
   PlatformConfig = cg_get_platform_config();
+  ArenaEntities = arena_create(Gigabytes(4), Megabytes(4));
 }
 internal uint32_t cg_create_color_from_channels(uint8_t r, uint8_t g, uint8_t b){
   uint32_t col = 0;
@@ -50,28 +51,28 @@ internal void write_square_wave_to_audio_buffer(uint8_t* _writeTo, uint32_t fram
 
   if(framesToWrite == 0) return;
   float wave_frequency = SquareWaveFrequency;
-  float amplitude = 0.1;
+  float amplitude = 0.1f;
 
 
   float numPhasesPerSec = wave_frequency;
-  float phasePerSample = numPhasesPerSec / PlatformConfig.AudioSampleRate;
+  float phasePerSample = (float)numPhasesPerSec / (float)PlatformConfig.AudioSampleRate;
   uint32_t bytesInAFrame = (PlatformConfig.AudioBitDepth/8) * PlatformConfig.AudioChannelsCount;
   local_persist float phase = 0.0;
   // printf("Phase per sample:%f\n", phasePerSample);
   // printf("Sample rate:%d\n", AudioFormat.nSamplesPerSec);
 
-  int bytesInOneChannel = bytesInAFrame/PlatformConfig.AudioChannelsCount;
+  //  u64 bytesInOneChannel = bytesInAFrame/PlatformConfig.AudioChannelsCount;
 
 
   if(PlatformConfig.AudioBitDepth == 24){
 
 
-    for(int i=0;i<framesToWrite;i++){
+    for(u32 i=0;i<framesToWrite;i++){
       uint32_t frameIndex = (writePosFrames + i) % _totalFramesInBuffer;
       uint8_t* p = _writeTo + frameIndex*bytesInAFrame;
       float val = (phase>0.5) ? 1.0 : -1.0;
       float sinVal = phase;
-      sinVal = sinf(sinVal*(44.0/7.0)); // 2 pi
+      sinVal = sinf(sinVal*(44.0f/7.0f)); // 2 pi
 
       // 24 bit max value
       int32_t intAmplitude = (int32_t)(amplitude*8388607*val);
@@ -86,8 +87,8 @@ internal void write_square_wave_to_audio_buffer(uint8_t* _writeTo, uint32_t fram
 
       phase+=phasePerSample;
 
-      if(phase>=1.0){
-	phase -=1.0;
+      if(phase>=1.0f){
+	phase -=1.0f;
       }
 
 
@@ -109,7 +110,7 @@ internal void cg_update(CG_Memory* _memory, CG_OffscreenBuffer *_screenBuffer, C
 
   draw_rectangle(_screenBuffer,cg_create_color_from_channels(0,0,0),0,0, _screenBuffer->Width, _screenBuffer->Height);
   TEMP_gameMemory = _memory;
-  Assert(sizeof(CG_GameState) <= _memory->PersistantStorageSize);
+
   
   CG_GameState *state = (CG_GameState*)_memory;
   

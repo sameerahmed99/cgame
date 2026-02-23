@@ -2,6 +2,7 @@
 #define CG_PLATFORM_
 #include <stdbool.h>
 #include <stdint.h>
+#include "types.h"
 
 typedef struct CG_InputKey{
   bool WasDownedThisFrame;
@@ -31,5 +32,12 @@ void platform_play_wave_file(char* path);
 void *platform_read_whole_file(char* path);
 void platform_free_file_memory(void* memory);
 void platform_write_or_overwrite_file(char* path, void* bytes, uint64_t size);
+
+
+u64 platform_memory_get_page_size();
+void *platform_memory_reserve(u64 _size);
+b32 platform_memory_commit(void* _mem, u64 _size);
+b32 platform_memory_decommit(void* _mem, u64 _size);
+b32 platform_memory_free(void* _mem, u64 _size);
 
 #endif //CG_PLATFORM_

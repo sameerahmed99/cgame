@@ -12,10 +12,10 @@
 #define Assert(Expression)
 #endif
 
-#define Kilobytes(Value) ((Value)*1024)
-#define Megabytes(Value) (Kilobytes(Value)*1024)
-#define Gigabytes(Value) (Megabytes(Value)*1024)
-#define Terabytes(Value) (Gigabytes(Value)*1024)
+#define Kilobytes(Value) ((u64)(Value)*1024)
+#define Megabytes(Value) (Kilobytes((u64)(Value))*1024)
+#define Gigabytes(Value) (Megabytes((u64)(Value))*1024)
+#define Terabytes(Value) (Gigabytes((u64)(Value))*1024)
 
 #define internal static
 #define local_persist static
@@ -34,11 +34,6 @@ typedef struct CG_PlatformConfig{
 } CG_PlatformConfig;
 
 typedef struct CG_Memory{
-  uint64_t PersistantStorageSize;
-  void* PersistantStorage;
-
-  uint64_t VolatileStorageSize;
-  void* VolatileStorage;
 
   uint8_t* AudioBuffer;
   uint32_t AudioBufferCurrentWriteLengthFrames;

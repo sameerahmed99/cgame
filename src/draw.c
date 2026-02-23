@@ -39,8 +39,8 @@ void draw_circle(CG_OffscreenBuffer *_to, int32_t _radius, uint32_t _color, int3
     for(int32_t x = (_x-_radius);x<(_x+_radius);x++){
       
     if(x < 0 || x > _to->Width-1) continue;
-    float dx = abs(x-_x);
-    float dy = abs(y-_y);
+    i32 dx = abs(x-_x);
+    i32 dy = abs(y-_y);
     if((dx*dx+dy*dy) >_radius*_radius) continue;
     
     int32_t pixelCoordinate = y* ( _to->Width) + x;

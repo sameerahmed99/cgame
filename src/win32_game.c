@@ -731,12 +731,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
   //  win32_init_xaudio2(SAMPLE_RATE_DEFAULT, BIT_DEPTH,MAX_SOURCE_VOICES, &GlobalVoicePool);
   AppRunning = true;
 
-  gameMemory.PersistantStorageSize = Win32PlatformConfig.PersistantStorageSize;
-  gameMemory.VolatileStorageSize = Win32PlatformConfig.VolatileStorageSize;
-  uint64_t totalSize = gameMemory.PersistantStorageSize + gameMemory.VolatileStorageSize;
-  gameMemory.PersistantStorage = VirtualAlloc(baseAddress, totalSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 
-  gameMemory.VolatileStorage = (uint8_t *)gameMemory.PersistantStorage + gameMemory.PersistantStorageSize;
 
   gameMemory.AudioBufferCurrentWriteLengthFrames = 0;
   gameMemory.AudioBufferCurrentWritePositionFrames = 0;
@@ -876,4 +871,27 @@ void platform_free_file_memory(void *memory) {
   }
 }
 
+
+//@Incomplete - size is not used here, we're not writing the bytes to the file
 void platform_write_or_overwrite_file(char *path, void *bytes, uint64_t size) { HANDLE hnd = CreateFileA(path, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, 0, NULL); }
+
+
+
+u64 platform_memory_get_page_size(){
+  SYSTEM_INFO sysinfo = {0};
+  GetSystemInfo(&sysinfo);
+
+  return sysinfo.dwPageSize;
+}
+void *platform_memory_reserve(u64 _size){
+  return VirtualAlloc(NULL, _size, MEM_RESERVE, PAGE_READWRITE);
+}
+b32 platform_memory_commit(void* _mem, u64 _size){
+  return VirtualAlloc(_mem, _size, MEM_COMMIT, PAGE_READWRITE) !=NULL;
+}; 
+b32 platform_memory_decommit(void* _mem, u64 _size){
+  return VirtualFree(_mem, _size, MEM_DECOMMIT);
+ }
+b32 platform_memory_free(void* _mem, u64 _size){
+return VirtualFree(_mem, _size, MEM_RELEASE);
+}
