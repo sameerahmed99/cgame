@@ -1,14 +1,12 @@
 #include "cgame.h"
-#include "draw.h"
 #include "draw.c"
-#include <math.h>
+#include "math.c"
+#include "memory.c"
+#include "entity.c"
 internal CG_PlatformConfig PlatformConfig;
 
 
 internal CG_Memory *TEMP_gameMemory;
-internal CG_WorldLayer StarsLayer;
-internal CG_WorldLayer MasterLayer;
-
 
 
 
@@ -27,7 +25,6 @@ CG_PlatformConfig cg_get_platform_config(){
 };
 
  return config;
-
 }
 
 internal void cg_init(){

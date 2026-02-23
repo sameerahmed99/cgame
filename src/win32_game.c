@@ -65,7 +65,9 @@ global_variable WAVEFORMATEX AudioFormat;
 global_variable uint32_t WasapiNumTotalBufferFrames;
 global_variable uint32_t WasapiNumTotalBufferBytes;
 global_variable CG_Input GlobalInput;
-global_variable CG_PlatformConfig PlatformConfig;
+global_variable CG_PlatformConfig Win32PlatformConfig;
+
+
 global_variable float GlobalDeltaTime;
 
 // missing from mingw64's xaudio2.h header
@@ -391,7 +393,7 @@ HRESULT hr=  WasapiRenderClient->lpVtbl->GetBuffer(WasapiRenderClient, numFrames
  // printf("Sample rate:%d\n", AudioFormat.nSamplesPerSec);
 
  int bytesInOneChannel = AudioFormat.nBlockAlign/AudioFormat.nChannels;
- if(PlatformConfig.AudioBitDepth == 24){
+ if(Win32PlatformConfig.AudioBitDepth == 24){
     // 24 bit max value
 
    for(int i=0;i<numFramesAvailable;i++){
@@ -666,11 +668,11 @@ LRESULT Win32CallbackFunc(HWND _window, UINT _msgId, WPARAM param3, LPARAM param
 }
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow) {
-  PlatformConfig = cg_get_platform_config();
+  Win32PlatformConfig = cg_get_platform_config();
   QueryPerformanceFrequency(&PerformanceQueryFrequency);
 
   WNDCLASSW windclass = {0};
-  win32_resize_dib_section(&GlobalOffscreenBuffer, PlatformConfig.ScreenWidth, PlatformConfig.ScreenHeight);
+  win32_resize_dib_section(&GlobalOffscreenBuffer, Win32PlatformConfig.ScreenWidth, Win32PlatformConfig.ScreenHeight);
 
   windclass.style = CS_HREDRAW | CS_VREDRAW;
   windclass.lpfnWndProc = Win32CallbackFunc;
@@ -690,8 +692,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 
                               // Size and position
                               CW_USEDEFAULT, CW_USEDEFAULT,
-			      PlatformConfig.ScreenWidth,
-			      PlatformConfig.ScreenHeight,
+			      Win32PlatformConfig.ScreenWidth,
+			      Win32PlatformConfig.ScreenHeight,
 
                               NULL,      // Parent window
                               NULL,      // Menu
@@ -725,12 +727,12 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 
 
   win32_init_com_api();
-  win32_init_wasapi(PlatformConfig.AudioSampleRate, PlatformConfig.AudioBitDepth, PlatformConfig.AudioBufferSizeInSeconds, PlatformConfig.AudioChannelsCount);
+  win32_init_wasapi(Win32PlatformConfig.AudioSampleRate, Win32PlatformConfig.AudioBitDepth, Win32PlatformConfig.AudioBufferSizeInSeconds, Win32PlatformConfig.AudioChannelsCount);
   //  win32_init_xaudio2(SAMPLE_RATE_DEFAULT, BIT_DEPTH,MAX_SOURCE_VOICES, &GlobalVoicePool);
   AppRunning = true;
 
-  gameMemory.PersistantStorageSize = PlatformConfig.PersistantStorageSize;
-  gameMemory.VolatileStorageSize = PlatformConfig.VolatileStorageSize;
+  gameMemory.PersistantStorageSize = Win32PlatformConfig.PersistantStorageSize;
+  gameMemory.VolatileStorageSize = Win32PlatformConfig.VolatileStorageSize;
   uint64_t totalSize = gameMemory.PersistantStorageSize + gameMemory.VolatileStorageSize;
   gameMemory.PersistantStorage = VirtualAlloc(baseAddress, totalSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 
@@ -750,6 +752,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 
   //  printf("persistant: %d, volatile: %d\n", (uint32_t)baseAddress, gameMemory.VolatileStorage);
 
+  cg_init();
+
+  
   MSG msg = {0};
   printf("Created Window, starting app\n");
 
@@ -823,8 +828,8 @@ gameMemory.AudioBufferCurrentWritePositionFrames =
 
 
 // printf("Buffer write pos/padding/num write frames: %d/%d/%d\n", gameMemory.AudioBufferCurrentWritePositionFrames, wasapiNumFramesPadding, gameMemory.AudioBufferCurrentWriteLengthFrames);
- if(GlobalDeltaTime >= PlatformConfig.AudioBufferSizeInSeconds){
-   printf("BIG MASSIVE FAT DANGEROUS BLACK HOLE LEVEL WARNING: Going to miss audio thing, dt: %f, audio buffer size seconds: %f\n", GlobalDeltaTime, PlatformConfig.AudioBufferSizeInSeconds);
+ if(GlobalDeltaTime >= Win32PlatformConfig.AudioBufferSizeInSeconds){
+   printf("BIG MASSIVE FAT DANGEROUS BLACK HOLE LEVEL WARNING: Going to miss audio thing, dt: %f, audio buffer size seconds: %f\n", GlobalDeltaTime, Win32PlatformConfig.AudioBufferSizeInSeconds);
  }
     ReleaseDC(hwnd, DeviceContext);
    // temp_print_time_stamp(perfTimeStamp);
