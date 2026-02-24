@@ -17,6 +17,8 @@ typedef struct CG_KeyboardKeys {
   CG_InputKey a;
   CG_InputKey s;
   CG_InputKey d;
+
+  CG_InputKey space;
 } CG_KeyboardKeys;
 
 

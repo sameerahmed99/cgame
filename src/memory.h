@@ -15,9 +15,9 @@ typedef struct Arena {
   u64 commitChunkSize;
   u64 pos;
   u64 commitPos;
-
+  u64 numItems;
   b32 singleType;
-  
+    
   ArenaFreeListNode* freeList;  
 } Arena;
 
@@ -35,6 +35,7 @@ typedef struct Arena {
 
 
 
+
 //Arena* arena_create_on_existing_memory(void* _memory, u64 _size);
 Arena* arena_create(u64 _reserveSize, u64 _commitSize, b32 singleType);
 
@@ -42,6 +43,8 @@ void* arena_push(Arena* _arena, u64 _size, b32 _doNotZero);
 
 void arena_pop(Arena* _arena, u64 _howmuch);
 void arena_pop_till_pos(Arena* _arena, u64 _pos);
+
+void* arena_get_at(Arena* _arena, u64 _index, u64 _typeSize);
 
 void arena_clear(Arena* _arena);
 #endif

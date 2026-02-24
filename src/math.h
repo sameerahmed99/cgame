@@ -23,16 +23,22 @@ typedef struct Mat4x4{
     m30,m31,m32,m33;
 } Mat4x4;
 
-
+// @TODO functions for rotating vectors, instead of manually multiplying matrices everywhere
 float math_lerp(float _a, float _b, float _t);
+void math_get_rotated_point(float *x, float *y, float _sinRot, float _cosRot,float _pivotX, float _pivotY);
 
 u64 math_get_aligned_pos_pow2(u64 _pos, u64 _alignTo);
 
 
 Vec3 math_mul_vec3_mat4x4(Vec3 _vec, Mat4x4 _mat);
+Vec3 math_vec3_rotate(Vec3 _vec,Vec3 _pivot,Vec3 _axis, float _degrees);
 
+float math_vec3_sqr_dist(Vec3 _a, Vec3 _b);
+float math_vec3_dist(Vec3 _a, Vec3 _b);
+
+Vec3 math_vec3_scale(Vec3 _vec, float _scale);
 
 Mat4x4 math_mat4x4_create_identity();
-Mat4x4 math_mat4x4_create_rotation(u32 _degrees, Vec3 _axis);
+Mat4x4 math_mat4x4_create_rotation(float _degrees, Vec3 _axis);
 Mat4x4 math_mat4x4_mul(Mat4x4 _a, Mat4x4 _b);
 #endif

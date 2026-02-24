@@ -649,6 +649,9 @@ LRESULT Win32CallbackFunc(HWND _window, UINT _msgId, WPARAM param3, LPARAM param
     case 'D': {
       win32_set_key_state(&GlobalInput.Keyboard.d, wasDownedThisFrame, isDown, wasReleasedThisFrame);
     } break;
+    case VK_SPACE:{
+      win32_set_key_state(&GlobalInput.Keyboard.space, wasDownedThisFrame, isDown, wasReleasedThisFrame);
+    } break;
 
     case VK_F4: {
       bool alting = (param4 & (1 << 29)) != 0;
@@ -784,6 +787,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     win32_reset_key_state(&GlobalInput.Keyboard.a, true);
     win32_reset_key_state(&GlobalInput.Keyboard.s, true);
     win32_reset_key_state(&GlobalInput.Keyboard.d, true);
+    win32_reset_key_state(&GlobalInput.Keyboard.space, true);
 
     while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
       TranslateMessage(&msg);

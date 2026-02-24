@@ -2,29 +2,12 @@
 
 
 
-void get_rotated_point(u32 *x, u32 *y, float _sinRot, float _cosRot, u32 _pivotX, u32 _pivotY){
 
-
-  float localX,localY;
-  localX = (float)*x;
-  localY = (float)*y;
-  localX -=_pivotX;
-  localY -=_pivotY;
-  
-  float finalX = localX * _cosRot - localY * _sinRot;
-  float finalY = localX * _sinRot  + localY * _cosRot;
-
-  finalX+=_pivotX;
-  finalY+=_pivotY;
-  
-  *x = (u32)finalX;
-  *y = (u32)finalY;
-}
 void draw_rectangle(CG_OffscreenBuffer *_to,  uint32_t _color, int32_t _minX, int32_t _minY, int32_t _width, int32_t _height, float _rotation, u32 _rotationPivotX, u32 _rotationPivotY){
 
 
-  float sinRot = sinf(Rad(_rotation));
-  float cosRot = cosf(Rad(_rotation));
+  float sinRot = sinf(-Rad(_rotation));
+  float cosRot = cosf(-Rad(_rotation));
   
   for(int32_t y = _minY;y<(_minY + _height);y++){
 
@@ -34,7 +17,10 @@ void draw_rectangle(CG_OffscreenBuffer *_to,  uint32_t _color, int32_t _minX, in
       // transformed points
       u32 tx=x, ty=y;
       if(_rotation!=0){
-	get_rotated_point(&tx, &ty, sinRot, cosRot, _rotationPivotX, _rotationPivotY);
+	float fx = tx, fy = ty;
+	math_get_rotated_point(&fx, &fy, sinRot, cosRot, (float)_rotationPivotX, (float)_rotationPivotY);
+	tx = (u32)fx;
+	ty = (u32)fy;
       }
       
       if(ty < 0 || ty > _to->Height-1) continue;
