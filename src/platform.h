@@ -33,6 +33,8 @@ void *platform_read_whole_file(char* path);
 void platform_free_file_memory(void* memory);
 void platform_write_or_overwrite_file(char* path, void* bytes, uint64_t size);
 
+u32 platform_get_client_screen_width();
+u32 platform_get_client_screen_height();
 
 u64 platform_memory_get_page_size();
 void *platform_memory_reserve(u64 _size);

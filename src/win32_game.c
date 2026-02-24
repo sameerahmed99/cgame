@@ -53,7 +53,7 @@ global_variable bool AppRunning;
 
 global_variable HDC DeviceContext;
 
-global_variable int WindowHeight, WindowWidth;
+global_variable u32 WindowHeight, WindowWidth;
 global_variable RECT WindowRect;
 
 global_variable LARGE_INTEGER PerformanceQueryFrequency;
@@ -579,6 +579,14 @@ void win32_reset_key_state(CG_InputKey *key, bool preserveIsPressed) {
   win32_set_key_state(key, false, isPressed, false);
 };
 
+void win32_update_window_rect(HWND _window){
+    RECT rect;
+    GetClientRect(_window, &rect);
+    WindowWidth = rect.right - rect.left;
+    WindowHeight = rect.bottom - rect.top;
+    WindowRect = rect;
+
+}
 LRESULT Win32CallbackFunc(HWND _window, UINT _msgId, WPARAM param3, LPARAM param4) {
 
   LRESULT result = 0;
@@ -592,7 +600,7 @@ LRESULT Win32CallbackFunc(HWND _window, UINT _msgId, WPARAM param3, LPARAM param
     AppRunning = false;
   }
   case WM_SIZE: {
-
+    win32_update_window_rect(_window);
   } break;
   case WM_SIZING:{
     break;
@@ -608,11 +616,6 @@ LRESULT Win32CallbackFunc(HWND _window, UINT _msgId, WPARAM param3, LPARAM param
     int width = p.rcPaint.right - p.rcPaint.left;
     int height = p.rcPaint.bottom - p.rcPaint.top;
 
-    RECT rect;
-    GetClientRect(_window, &rect);
-    WindowWidth = rect.right - rect.left;
-    WindowHeight = rect.bottom - rect.top;
-    WindowRect = rect;
 
     //    win32_copy_buffer_to_window(hdc,&rect, x,y,width,height);
 
@@ -672,7 +675,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
   QueryPerformanceFrequency(&PerformanceQueryFrequency);
 
   WNDCLASSW windclass = {0};
-  win32_resize_dib_section(&GlobalOffscreenBuffer, Win32PlatformConfig.ScreenWidth, Win32PlatformConfig.ScreenHeight);
+
 
   windclass.style = CS_HREDRAW | CS_VREDRAW;
   windclass.lpfnWndProc = Win32CallbackFunc;
@@ -692,8 +695,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 
                               // Size and position
                               CW_USEDEFAULT, CW_USEDEFAULT,
-			      Win32PlatformConfig.ScreenWidth,
-			      Win32PlatformConfig.ScreenHeight,
+			      Win32PlatformConfig.RequestedScreenWidth,
+			      Win32PlatformConfig.RequestedScreenHeight,
 
                               NULL,      // Parent window
                               NULL,      // Menu
@@ -747,6 +750,11 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 
   //  printf("persistant: %d, volatile: %d\n", (uint32_t)baseAddress, gameMemory.VolatileStorage);
 
+  Win32PlatformConfig.ScreenWidth = platform_get_client_screen_width();
+  Win32PlatformConfig.ScreenHeight = platform_get_client_screen_height();
+  win32_update_window_rect(hwnd);
+    win32_resize_dib_section(&GlobalOffscreenBuffer, Win32PlatformConfig.ScreenWidth, Win32PlatformConfig.ScreenHeight);
+  
   cg_init();
 
   
@@ -802,7 +810,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 
 
 
-    win32_copy_buffer_to_window(GlobalOffscreenBuffer, DeviceContext, win32_get_window_width(hwnd), win32_get_window_height(hwnd));
+    win32_copy_buffer_to_window(GlobalOffscreenBuffer, DeviceContext, platform_get_client_screen_width(), platform_get_client_screen_height());
 
     //      printf("Played %d bytes out of %d and %d samples out of %d\n", soundBufferBytesPlayedThisLoop,soundBufferSize, soundBufferSamplesPlayedThisLoop, samplesInBuffer);
 
@@ -894,4 +902,12 @@ b32 platform_memory_decommit(void* _mem, u64 _size){
  }
 b32 platform_memory_free(void* _mem, u64 _size){
 return VirtualFree(_mem, _size, MEM_RELEASE);
+}
+
+
+u32 platform_get_client_screen_width(){
+return  WindowWidth;
+}
+u32 platform_get_client_screen_height(){
+  return WindowHeight;
 }

@@ -3,11 +3,22 @@
 #include "types.h"
 #include "math.h"
 
+
+struct ArenaFreeListNode;
+typedef struct ArenaFreeListNode {
+  struct ArenaFreeListNode* next;
+} ArenaFreeListNode;
+
+
 typedef struct Arena {
   u64 reserved;
   u64 commitChunkSize;
   u64 pos;
   u64 commitPos;
+
+  b32 singleType;
+  
+  ArenaFreeListNode* freeList;  
 } Arena;
 
 #define ARENA_BASE_POS sizeof(Arena)
@@ -16,16 +27,16 @@ typedef struct Arena {
 
 
 
-#define ARENA_PUSH_TYPE(arena, T) (T*)arena_push(arena, sizeof(T), false);
-#define ARENA_PUSH_TYPE_DO_NOT_ZERO(arena, T) (T*)arena_push(arena, sizeof(T), true);
-#define ARENA_PUSH_ARRAY(arena, numItems, T) (T*)arena_push(arena, sizeof(T)*(numItems),false)
+#define ARENA_PUSH_TYPE(arena, T) (T*)arena_push((arena), sizeof(T), false)
+#define ARENA_PUSH_TYPE_DO_NOT_ZERO(arena, T) (T*)arena_push((arena), sizeof(T), true)
+#define ARENA_PUSH_ARRAY(arena, numItems, T) (T*)arena_push((arena), sizeof(T)*(numItems),false)
 #define ARENA_PUSH_ARRAY_DO_NOT_ZERO(arena, numItems, T) (T*)arena_push(arena, sizeof(T)*(numItems),true)
 
 
 
 
 //Arena* arena_create_on_existing_memory(void* _memory, u64 _size);
-Arena* arena_create(u64 _reserveSize, u64 _commitSize);
+Arena* arena_create(u64 _reserveSize, u64 _commitSize, b32 singleType);
 
 void* arena_push(Arena* _arena, u64 _size, b32 _doNotZero);
 

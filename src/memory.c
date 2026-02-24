@@ -1,19 +1,21 @@
 #include "memory.h"
 #include "platform.h"
 
-Arena* arena_create(u64 _reserveSize, u64 _commitSize){
+Arena* arena_create(u64 _reserveSize, u64 _commitSize, b32 _isSingletype){
   u64 pageSize = platform_memory_get_page_size();
   u64 resSize = math_get_aligned_pos_pow2(_reserveSize, pageSize);
   u64 comSize = math_get_aligned_pos_pow2(_commitSize, pageSize);
   
   Arena *arena = platform_memory_reserve(resSize);
+  
 
   Assert(platform_memory_commit(arena, comSize));
-
+  arena->singleType = _isSingletype;
   arena->reserved = resSize;
   arena->commitChunkSize = comSize;
   arena->pos = ARENA_BASE_POS;
   arena->commitPos =comSize;
+  arena->freeList = NULL;
   return arena;
 }
 
@@ -27,7 +29,21 @@ Arena* arena_create(u64 _reserveSize, u64 _commitSize){
 /*   return arena; */
 /* } */
 void* arena_push(Arena* _arena, u64 _size, b32 _doNotZero){
-  
+
+  if(_arena->singleType){
+
+    if(_arena->freeList){
+      ArenaFreeListNode* node = _arena->freeList;
+      _arena->freeList = node->next;
+      if(_doNotZero){
+
+      }
+      else {
+	memset(node,0, _size);
+      }
+      return node;
+    }
+  }
   u64 aligned=  math_get_aligned_pos_pow2(_arena->pos, ARENA_ALIGN_SIZE);
   u64 newPos = aligned + _size;
   Assert(aligned < _arena->reserved);
@@ -72,6 +88,12 @@ void arena_free(Arena* _arena){
 void arena_pop(Arena* _arena, u64 _howmuch){
   u64 amount = Min(_arena->pos - ARENA_BASE_POS, _howmuch);
   _arena->pos-=amount;
+}
+
+void arena_add_to_free_list(Arena* _arena, void*_thing){
+  ArenaFreeListNode* node = (ArenaFreeListNode*) _thing;
+  node->next = _arena->freeList;
+  _arena->freeList = node;
 }
 void arena_pop_till_pos(Arena* _arena, u64 _pos) {
   u64 amount = _pos < _arena->pos ? _arena->pos - _pos : 0;

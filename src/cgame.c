@@ -3,6 +3,9 @@
 #include "math.c"
 #include "memory.c"
 #include "entity.c"
+#include <time.h>
+#include <stdlib.h>
+
 internal CG_PlatformConfig PlatformConfig;
 
 
@@ -13,6 +16,20 @@ internal CG_Memory *TEMP_gameMemory;
 Arena* ArenaEntities;
 
 
+CG_Entity* PlayerEntity;
+
+CG_Entity* AsteroidsList;
+u64 NumAsteroids;
+
+
+
+float AsteroidSpawnIntervalMin = 5;
+float AsteroidSpawnIntervalMax = 10;
+
+float AsteroidTimeSinceLastSpawn = 0;
+float AsteroidNextSpawnTime = 2;
+internal float playerPosX, playerPosY;
+
 CG_PlatformConfig cg_get_platform_config(){
   
    CG_PlatformConfig config = {
@@ -20,17 +37,46 @@ CG_PlatformConfig cg_get_platform_config(){
    .AudioBitDepth = 24,
    .AudioSampleRate = 48000,
    .AudioChannelsCount = 2,
-   .ScreenWidth = 1280,
-   .ScreenHeight = 720
+   .ScreenWidth = 0,
+   .ScreenHeight = 0,
+   .RequestedScreenWidth = 1280,
+   .RequestedScreenHeight = 720
 };
 
  return config;
 }
 
-internal void cg_init(){
-  PlatformConfig = cg_get_platform_config();
-  ArenaEntities = arena_create(Gigabytes(4), Megabytes(4));
+
+void create_player(){
+  PlayerEntity = ARENA_PUSH_TYPE(ArenaEntities, CG_Entity);
+  
+  PlayerEntity->pos.x = PlatformConfig.ScreenWidth/2;
+  PlayerEntity->pos.y = 0;
+  PlayerEntity->pos.z = 0;
+
+  PlayerEntity->memoryIndex = ArenaEntities->pos-1;
 }
+
+
+internal void cg_init(){
+  srand(time(NULL));
+  PlatformConfig = cg_get_platform_config();
+  PlatformConfig.ScreenWidth = platform_get_client_screen_width();
+  PlatformConfig.ScreenHeight = platform_get_client_screen_height();
+  /* printf("PlatformConfig.ScreenWidtht: %u\n", PlatformConfig.ScreenWidth); */
+  /* printf("PlatformConfig.ScreenHeight: %u\n", PlatformConfig.ScreenHeight); */
+  
+  ArenaEntities = arena_create(Gigabytes(4), Megabytes(4), true);
+
+
+  create_player();
+}
+
+
+
+
+
+
 internal uint32_t cg_create_color_from_channels(uint8_t r, uint8_t g, uint8_t b){
   uint32_t col = 0;
   col = (r<<16) | (g << 8) | b;
@@ -39,7 +85,7 @@ internal uint32_t cg_create_color_from_channels(uint8_t r, uint8_t g, uint8_t b)
 
 internal float tempOffsetX, tempOffsetY;
 
-internal float playerPosX, playerPosY;
+
 
 
 float speed = .25;
@@ -99,16 +145,57 @@ internal void write_square_wave_to_audio_buffer(uint8_t* _writeTo, uint32_t fram
 
 
 
-internal void draw_player(CG_OffscreenBuffer *_to, int32_t _circleRadius, uint32_t _color, int32_t _x, int32_t _y){
+internal void draw_player(CG_OffscreenBuffer *_to){
+  u32 playerX = PlayerEntity->pos.x;
+  u32 playerY = PlayerEntity->pos.y;
+  float rot = PlayerEntity->angles.z;
+  
+  u32 radius = 50;
+  u32 gunWidth = 25;
+  u32 gunLength = 30;
+  u32 gunBaseLength = 15;
+  u32 gunBaseWidth = 30;
+  u32 bottomMargin = -5;
+  
+  uint32_t circleColor = cg_create_color_from_channels(80,80,80);
+  u32 gunCol=  cg_create_color_from_channels(125,125,125);
+  u32 gunBaseCol=  cg_create_color_from_channels(50,50,50);
 
-  draw_circle(_to, _circleRadius, _color, _x, _y);
 
 
-  draw_rectangle(_to, _color, _x, _y, 50,50);
+
+  draw_rectangle(_to, gunCol, playerX - gunWidth/2, playerY + radius + bottomMargin, gunWidth,gunLength,rot,playerX, playerY);
+
+  draw_rectangle(_to, gunBaseCol, playerX - gunBaseWidth/2, playerY + radius + bottomMargin, gunBaseWidth,gunBaseLength,rot,playerX, playerY);
+  draw_circle(_to, radius, circleColor, playerX, playerY,0,0,0);
+		 
+}
+
+void SpawnAsteroid(){
+  u32 randomNum = rand() % 100;
+
+  u32 spawnLocation = (float)randomNum/100.0f * PlatformConfig.ScreenWidth;
+
+  CG_Entity* asteroid=  ARENA_PUSH_TYPE(ArenaEntities, CG_Entity);
+
 }
 internal void cg_update(CG_Memory* _memory, CG_OffscreenBuffer *_screenBuffer, CG_Input *_playerInput, float _deltaTime){
+  
+  AsteroidTimeSinceLastSpawn+=_deltaTime;
+  if(AsteroidTimeSinceLastSpawn >= AsteroidNextSpawnTime){
+      u32 randomNum = rand() % 100;
+      float t = (float)randomNum/100;
+      AsteroidNextSpawnTime = math_lerp(AsteroidSpawnIntervalMin, AsteroidSpawnIntervalMax, t);
+  }
 
-  draw_rectangle(_screenBuffer,cg_create_color_from_channels(0,0,0),0,0, _screenBuffer->Width, _screenBuffer->Height);
+  u32 skyCol =cg_create_color_from_channels(32, 34, 38);
+  u32 sunCol = cg_create_color_from_channels(214, 203, 84);
+  u32 cloudCol =cg_create_color_from_channels(100,100,100);
+  u32 groundColor = cg_create_color_from_channels(57, 82, 56);
+  u32 groundHeight = 140;
+  
+  draw_sky(_screenBuffer,skyCol, sunCol, cloudCol);
+  //  draw_ground(_screenBuffer, groundColor, groundHeight);
   TEMP_gameMemory = _memory;
 
   
@@ -116,24 +203,30 @@ internal void cg_update(CG_Memory* _memory, CG_OffscreenBuffer *_screenBuffer, C
   
   CG_KeyboardKeys k = _playerInput->Keyboard;
 
-  if(k.w.IsPressed){
-    tempOffsetY+=_deltaTime*speed;
-    playerPosY+=_deltaTime*playerSpeed;
-  }
-  if(k.s.IsPressed){
-    tempOffsetY-=_deltaTime*speed;
-    playerPosY-=_deltaTime*playerSpeed;
-  }
   if(k.a.IsPressed){
-    tempOffsetX-=_deltaTime*speed;
-    playerPosX-=_deltaTime*playerSpeed;
-
-
+    PlayerEntity->angles.z+=_deltaTime*playerSpeed;
   }
   if(k.d.IsPressed){
-    tempOffsetX+=_deltaTime*speed;
-    playerPosX+=_deltaTime*playerSpeed;
+      PlayerEntity->angles.z-=_deltaTime*playerSpeed;
   }
+  /* if(k.w.IsPressed){ */
+  /*   tempOffsetY+=_deltaTime*speed; */
+  /*   playerPosY+=_deltaTime*playerSpeed; */
+  /* } */
+  /* if(k.s.IsPressed){ */
+  /*   tempOffsetY-=_deltaTime*speed; */
+  /*   playerPosY-=_deltaTime*playerSpeed; */
+  /* } */
+  /* if(k.a.IsPressed){ */
+  /*   tempOffsetX-=_deltaTime*speed; */
+  /*   playerPosX-=_deltaTime*playerSpeed; */
+
+
+  /* } */
+  /* if(k.d.IsPressed){ */
+  /*   tempOffsetX+=_deltaTime*speed; */
+  /*   playerPosX+=_deltaTime*playerSpeed; */
+  /* } */
 
   //  printf("player: %f / %f\n", playerPosX, playerPosY);
   
@@ -156,10 +249,10 @@ internal void cg_update(CG_Memory* _memory, CG_OffscreenBuffer *_screenBuffer, C
  /*    } */
  /*    row+=rowStride; */
  /*  } */
-  uint32_t color = cg_create_color_from_channels(125,5,5);
 
 
-  draw_player(_screenBuffer, 25,color, _screenBuffer->Width/2+(int32_t)playerPosX,_screenBuffer->Height/2+(int32_t)playerPosY);
+
+  draw_player(_screenBuffer);
 
 
   //  printf("W state - Is Pressed: %d, Was Downed: %d, Was released: %d\n",w.IsPressed, w.WasDownedThisFrame, w.WasReleasedThisFrame);

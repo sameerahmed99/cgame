@@ -29,6 +29,10 @@ typedef struct CG_PlatformConfig{
   uint32_t AudioBitDepth;
   uint32_t AudioSampleRate;
   uint8_t AudioChannelsCount;
+
+  
+  u32 RequestedScreenWidth;
+  u32 RequestedScreenHeight;
   uint32_t ScreenWidth;
   uint32_t ScreenHeight;
 } CG_PlatformConfig;
