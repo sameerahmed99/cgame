@@ -2,23 +2,25 @@
 
 
 
-b32 phys_are_colliding(Collider2D _a, Collider2D _b){
 
-  //@DELETE THIS
-  return false;
+b32 phys2D_are_colliding(Collider2D _a, Collider2D _b){
+
   
   if(_a.shape == COLLIDER2D_SPHERE){
     b32 hit = false;
 
-    float dist1 = (math_vec3_sqr_dist(_a.center, _b.a));
-    float dist2 = (math_vec3_sqr_dist(_a.center, _b.b));
-    float dist3 = (math_vec3_sqr_dist(_a.center, _b.c));
-    float dist3 = (math_vec3_sqr_dist(_a.center, _b.d));
+
+
+
+
 
     if(_b.shape == COLLIDER2D_SPHERE){
+      float dist = (math_vec3_sqr_dist(_a.center, _b.center));
       float r=  _a.radius + _b.radius;
+
+
       r*=r;
-      return dist1 < r;
+      return dist < r;
     }
     else if(_b.shape == COLLIDER2D_RECTANGLE){
       Collider2D unrotatedRect = _b;

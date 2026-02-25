@@ -1,6 +1,6 @@
 #ifndef _CG_ENTITY
 #define _CG_ENTITY
-
+#include "physics.h"
 
 
 
@@ -18,7 +18,7 @@ typedef struct CG_Entity{
   Vec3 pos;
   Vec3 angles;
 
-  Vec3 velocity;
+
   Vec3 forward;
   
   Mat4x4 localMatrix;
@@ -29,16 +29,34 @@ typedef struct CG_Entity{
   struct CG_Entity* children;
   u64 childCount;
 
-  float mass;
-  b32 freeFalling;
 
+
+  b32 isSphere;
+  float sphereRadius;
+  u32 color;
+  
   b32 drawDebugSphere;
   u32 debugSphereRadius;
   u32 debugSphereColor;
+  b32 drawPhysicsDebugSphere;
+  u32 debugSphereColorPhys;
 
-  b32 hasCollision;
   
 
+  // physics
+  b32 hasPhysics;
+  b32 isStaticPhysBody;
+  b32 hasCollider;
+  b32 physInterp;
+  b32 useInterpPosForCollision;
+  Vec3 physPos;
+  Vec3 physPosPrev;
+  float mass;
+  Collider2D collider2D;
+
+  Vec3 velocity;
+
+  b32 destroyed;
 } CG_Entity;
 
 

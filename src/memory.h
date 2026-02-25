@@ -47,4 +47,6 @@ void arena_pop_till_pos(Arena* _arena, u64 _pos);
 void* arena_get_at(Arena* _arena, u64 _index, u64 _typeSize);
 
 void arena_clear(Arena* _arena);
+
+void arena_add_to_free_list(Arena* _arena, void*_thing);
 #endif

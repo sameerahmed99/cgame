@@ -33,6 +33,26 @@ return  _a + (_b-_a) * _t;
 float math_inverse_lerp(float _a, float _b, float _t){
   return (_t-_a)/(_b-_a);
 }
+
+Vec3 math_vec3_lerp(Vec3 _a, Vec3 _b, float _t){
+  Vec3 res;
+  res.x = math_lerp(_a.x, _b.x, _t);
+  res.y = math_lerp(_a.y, _b.y, _t);
+  res.z = math_lerp(_a.z, _b.z, _t);
+
+  return res;
+}
+
+Vec3 math_vec3_inverse_lerp(Vec3 _a, Vec3 _b, float _t){
+  Vec3 res;
+  res.x = math_inverse_lerp(_a.x, _b.x, _t);
+  res.y = math_inverse_lerp(_a.y, _b.y, _t);
+  res.z = math_inverse_lerp(_a.z, _b.z, _t);
+
+  return res;
+}
+
+
 float math_vec3_sqr_dist(Vec3 _a, Vec3 _b){
   float x = _b.x - _a.x;
   float y = _b.y - _a.y;
@@ -67,6 +87,17 @@ Vec3 math_vec3_scale(Vec3 _vec, float _scale){
 
   return _vec;
 }
+
+
+Vec3 math_vec3_add(Vec3 _a, Vec3 _b){
+  Vec3 res;
+  res.x = _a.x + _b.x;
+  res.y = _a.y + _b.y;
+  res.z = _a.z + _b.z;
+
+  return res;
+}
+
 Vec3 math_mul_vec3_mat4x4(Vec3 _vec, Mat4x4 _mat){
   Vec4 vec4;
   vec4.x = _vec.x;

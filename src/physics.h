@@ -9,13 +9,13 @@ enum Collider2DShape {
 };
 
 typedef struct Collider2D{
-  Collider2DShape shape;
+  enum Collider2DShape shape;
   float radius;
   Vec3 center;
   Vec3 a,b,c,d;
   Vec3 angles;
 } Collider2D;
 
-b32 phys_are_colliding(Collider2D _a, Collider2D _b);
+b32 phys2D_are_colliding(Collider2D _a, Collider2D _b);
 
 #endif

@@ -5,17 +5,20 @@
 #include "entity.c"
 #include <time.h>
 #include <stdlib.h>
-
+#include "physics.c"
 // Game @TODO
 // use some kind of screen resolution independent coordinates
 // for everything such as speed and position
 // only drawing should be concerned with converting positions to screen positions
+// test if free list for arena is working properly, maybe create a debug screen like ryan fleury did for arenas
 
+// create boundary upon hitting which projectiles and asteroids are destroyed
+
+// powerups: fall like asteroids, hitting them with projectile gives you the powerup
+// such as machine gun, or explosive canon
 
 // Visuals @TODO
 // Stary sky
-// Projectile drawing
-// asteroid drawing
 
 internal CG_PlatformConfig PlatformConfig;
 
@@ -43,6 +46,13 @@ float Gravity = -9.81;
 float PlayerFireInterval=.25;
 float PlayerTimeSinceFire =0;
 float PlayerProjectileSpeed = 750;
+
+float TimeSinceLastFixedUpdate = 0;
+float FixedTimeStep = 0.02;
+float AsteroidStartSpeed = 125;
+float ProjectileRadius = 5;
+float AsteroidRadius = 15;
+
 internal float playerPosX, playerPosY;
 
 
@@ -64,9 +74,18 @@ CG_PlatformConfig cg_get_platform_config(){
  return config;
 }
 
+void sync_collider(CG_Entity* _entity, b32 _useVisualPos){
+  if(_useVisualPos){
+    _entity->collider2D.center = _entity->pos;
+  }
+  else{
+    _entity->collider2D.center = _entity->physPos;
+    }
+}
 
 void create_player(){
   PlayerEntity = ARENA_PUSH_TYPE(ArenaEntities, CG_Entity);
+  PlayerEntity->destroyed = false;
   PlayerEntity->type = ENTITY_TYPE_PLAYER;  
   PlayerEntity->pos.x = PlatformConfig.ScreenWidth/2;
   PlayerEntity->pos.y = 0;
@@ -201,17 +220,37 @@ void spawn_asteroid(){
   u32 spawnLocation = (float)randomNum/100.0f * PlatformConfig.ScreenWidth;
 
   CG_Entity* asteroid=  ARENA_PUSH_TYPE(ArenaEntities, CG_Entity);
+  asteroid->destroyed = false;
   asteroid->type=ENTITY_TYPE_ASTEROID;
   asteroid->pos.x = spawnLocation;
   asteroid->pos.y = PlatformConfig.ScreenHeight;
   asteroid->pos.z = 0;
+
+  asteroid->isSphere= true;
+  asteroid->sphereRadius = AsteroidRadius;
+  
+  asteroid->hasPhysics=true;
+  asteroid->hasCollider=true;
+  asteroid->physInterp=true;
+  asteroid->physPos = asteroid->pos;
+  asteroid->physPosPrev = asteroid->pos;
   asteroid->mass = 10;
-  asteroid->freeFalling = true;
+  asteroid->color = cg_create_color_from_channels(100,100,100);
+
+  Vec3 dir = {0,-1,0};
+  asteroid->velocity = math_vec3_scale(dir,AsteroidStartSpeed);
+  
   asteroid->drawDebugSphere = true;
   asteroid->debugSphereColor = cg_create_color_from_channels(20,100,20);
+  
+  asteroid->drawPhysicsDebugSphere = true;
+  asteroid->debugSphereColorPhys = cg_create_color_from_channels(100,20,20);
   asteroid->debugSphereRadius = 10;
 
-  asteroid->hasCollision = true;
+  asteroid->collider2D.shape = COLLIDER2D_SPHERE;
+  asteroid->collider2D.radius = asteroid->sphereRadius;
+  asteroid->collider2D.center = asteroid->pos;
+  sync_collider(asteroid, true);
   printf("Spawned asteroid at: %u\n", spawnLocation);
 }
 
@@ -219,41 +258,135 @@ void update_entities(float _dt){
 
   for(int i=0;i<ArenaEntities->numItems;i++){
     CG_Entity* ent = (CG_Entity*)arena_get_at(ArenaEntities, i, sizeof(CG_Entity));
-
-
-    if(ent->freeFalling){
-      ent->pos.y += Gravity*ent->mass*_dt;
+    if(ent->destroyed) continue;
+    if(ent->isSphere){
+      draw_circle(ScreenBuffer, ent->sphereRadius, ent->color, ent->pos.x, ent->pos.y,0,0,0);
     }
 
-    if(ent->drawDebugSphere){
+    if(false &&ent->drawDebugSphere){
 
       draw_circle(ScreenBuffer, ent->debugSphereRadius, ent->debugSphereColor, ent->pos.x, ent->pos.y,0,0,0);
     }
-    if(ent->freeFalling){
-      ent->velocity.y+=Gravity*ent->mass*_dt;
+    if(false && ent->drawPhysicsDebugSphere){
+
+      draw_circle(ScreenBuffer, ent->debugSphereRadius, ent->debugSphereColorPhys, ent->physPos.x, ent->physPos.y,0,0,0);
     }
 
 
-    ent->pos.x+=ent->velocity.x*_dt;
-    ent->pos.y+=ent->velocity.y*_dt;
-    ent->pos.z+=ent->velocity.z*_dt;
+    if(ent->hasPhysics){
+      if(!ent->isStaticPhysBody){
+
+	if(ent->physInterp){
+	  float interp = TimeSinceLastFixedUpdate / FixedTimeStep;
+	  interp = Min(interp,1);
+
+
+
+
+	  ent->pos = math_vec3_lerp(ent->physPosPrev, ent->physPos,interp);
+
+	  //	  printf("interp: %f, float dt: %f, fdt: %f, lastPos: %f, cur pos: %f, new Pos: %f\n", interp, _dt, FixedTimeStep, ent->physPosPrev.y, ent->physPos.y, ent->pos.y);
+	}
+	else{
+	  ent->pos = ent->physPos;
+	}
+	
+      }
+
+
+    }
     
   }
 }
 
 
+
 void player_fire(Vec3 _pos, Vec3 _velocity){
   CG_Entity* projectile = ARENA_PUSH_TYPE(ArenaEntities, CG_Entity);
+  projectile->destroyed = false;
   projectile->type = ENTITY_TYPE_PROJECTILE;
   projectile->pos = _pos;
-
+  projectile->color = cg_create_color_from_channels(150,50,50);
+  
   projectile->drawDebugSphere = true;
   projectile->debugSphereRadius = 10;
   projectile->debugSphereColor = cg_create_color_from_channels(180,20,20);
-  projectile->hasCollision = true;
+  projectile->drawPhysicsDebugSphere = true;
+  projectile->debugSphereColorPhys = cg_create_color_from_channels(100,20,20);
+  
+  projectile->isSphere= true;
+  projectile->sphereRadius = ProjectileRadius;;
+
+
+  projectile->hasPhysics = true;
+  projectile->hasCollider = true;
+  projectile->physPos = _pos;
+  projectile->physPosPrev = _pos;
+  projectile->mass = 5;
+  projectile->physInterp = true;
   projectile->velocity = _velocity;
+  projectile->collider2D.shape = COLLIDER2D_SPHERE;
+  projectile->collider2D.radius = ProjectileRadius;
+  projectile->collider2D.center = projectile->pos;
+  sync_collider(projectile, true);
   printf("Fired projectile\n");
 }
+
+
+internal void cg_fixed_update(float _dt){
+
+  for(int i=0;i<ArenaEntities->numItems;i++){
+    CG_Entity* ent = (CG_Entity*)arena_get_at(ArenaEntities, i, sizeof(CG_Entity));
+    if(ent->destroyed) continue;
+      if(ent->type == ENTITY_TYPE_ASTEROID || ent->type == ENTITY_TYPE_PROJECTILE){
+	sync_collider(ent, true);
+      }
+      else{
+	sync_collider(ent, false);
+      }
+
+    if(ent->hasPhysics){
+
+      if(!ent->isStaticPhysBody){
+	ent->physPosPrev = ent->physPos;
+	ent->physPos.x+=ent->velocity.x*_dt;
+	ent->physPos.y+=ent->velocity.y*_dt;
+	ent->physPos.z+=ent->velocity.z*_dt;
+      }
+    }
+
+    if(ent->hasCollider){
+      for(int j=0;j<ArenaEntities->numItems;j++){
+	CG_Entity* colEnt = (CG_Entity*)arena_get_at(ArenaEntities, j, sizeof(CG_Entity));
+	if(colEnt->destroyed) continue;
+	if(j == i) continue;
+	if(!colEnt->hasPhysics || !colEnt->hasCollider){
+	  continue;
+	}
+	b32 colliding = phys2D_are_colliding(colEnt->collider2D, ent->collider2D);
+
+	if(colliding){
+
+	  if(colEnt->type == ENTITY_TYPE_PROJECTILE || colEnt->type == ENTITY_TYPE_ASTEROID){
+	    colEnt->destroyed = true;
+	    arena_add_to_free_list(ArenaEntities, (void*)colEnt);
+	  }
+
+	  if(ent->type == ENTITY_TYPE_PROJECTILE || ent->type == ENTITY_TYPE_ASTEROID){
+	    ent->destroyed = true;
+	    arena_add_to_free_list(ArenaEntities, (void*)ent);
+	  }
+
+	  if(ent->destroyed){
+	    break;
+	  }
+	  
+	}
+      }
+    }
+  }
+}
+
 
 internal void cg_update(CG_Memory* _memory, CG_OffscreenBuffer *_screenBuffer, CG_Input *_playerInput, float _deltaTime){
 
@@ -301,7 +434,11 @@ internal void cg_update(CG_Memory* _memory, CG_OffscreenBuffer *_screenBuffer, C
 
     if(PlayerTimeSinceFire>=PlayerFireInterval){
       PlayerTimeSinceFire = 0;
-      player_fire(PlayerEntity->pos,math_vec3_scale(PlayerEntity->forward,PlayerProjectileSpeed));
+
+      Vec3 spawnPos = math_vec3_add(PlayerEntity->pos, math_vec3_scale(PlayerEntity->forward, 75));
+
+
+      player_fire(spawnPos,math_vec3_scale(PlayerEntity->forward,PlayerProjectileSpeed));
     }
   }
 
@@ -319,7 +456,27 @@ internal void cg_update(CG_Memory* _memory, CG_OffscreenBuffer *_screenBuffer, C
 
 
 
+
+
+  TimeSinceLastFixedUpdate+=_deltaTime;
+  if(TimeSinceLastFixedUpdate>=FixedTimeStep){
+
+    u32 count = floor(TimeSinceLastFixedUpdate / FixedTimeStep);
+    for(int p=0;p<count;p++){
+      cg_fixed_update(FixedTimeStep);
+    }
+
+
+    // don't set to 0
+    // because we need to know much we're already through the last fixed update
+    // because TimeSinceLastFixedUpdate won't always be a factor of FixedTimeStep
+  
+    TimeSinceLastFixedUpdate = TimeSinceLastFixedUpdate - (float)count * FixedTimeStep;
+
+
+  }
   update_entities(_deltaTime);
+  
 }
 void write_sound_test(){
   CG_Memory *_memory = TEMP_gameMemory;
