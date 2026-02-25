@@ -35,6 +35,9 @@ typedef struct CG_PlatformConfig{
   u32 RequestedScreenHeight;
   uint32_t ScreenWidth;
   uint32_t ScreenHeight;
+
+  float BaseScreenWidth, BaseScreenHeight;
+  float BasePixelsPerWorldUnit;
 } CG_PlatformConfig;
 
 typedef struct CG_Memory{

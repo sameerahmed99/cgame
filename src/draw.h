@@ -6,7 +6,7 @@
 
 void draw_circle(CG_OffscreenBuffer *_to, int32_t _radius, uint32_t _color, int32_t _x, int32_t _y, float _rotation, u32 _rotationPivotX, u32 _rotationPivotY);
 
-void draw_rectangle(CG_OffscreenBuffer *_to,  uint32_t _color, int32_t _minX, int32_t _minY, int32_t _width, int32_t _height, float _rotation, u32 _rotationPivotX, u32 _rotationPivotY);
+void draw_rectangle(CG_OffscreenBuffer *_to,  uint32_t _color, int32_t _minX, int32_t _minY, int32_t _width, int32_t _height, float _rotation, float _rotationPivotX, float _rotationPivotY);
 
 void draw_sky(CG_OffscreenBuffer *_to, u32 _skyCol, u32 _sunCol, u32 _cloudCol);
 

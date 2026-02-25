@@ -1,9 +1,18 @@
 #include "draw.h"
+#include "camera.h"
+#include "math.h"
 
 
 
+void draw_rectangle_world(Camera *_cam, Vec3 _min,Vec3 _size, Vec3 _rotation, Vec3 _pivot, u32 _color){
+  Vec3 pos = cam_world_to_screen_pos(_cam,_min);
+  Vec3 pivot = cam_world_to_screen_pos(_cam,_pivot);
+  Vec3 size = cam_world_to_screen_vec(_cam, _size);
 
-void draw_rectangle(CG_OffscreenBuffer *_to,  uint32_t _color, int32_t _minX, int32_t _minY, int32_t _width, int32_t _height, float _rotation, u32 _rotationPivotX, u32 _rotationPivotY){
+  draw_rectangle(_cam->screenBuffer, _color, pos.x, pos.y, size.x, size.y, _rotation.z, pivot.x, pivot.y);
+}
+
+void draw_rectangle(CG_OffscreenBuffer *_to,  uint32_t _color, int32_t _minX, int32_t _minY, int32_t _width, int32_t _height, float _rotation, float _rotationPivotX, float _rotationPivotY){
 
 
   float sinRot = sinf(-Rad(_rotation));
@@ -15,12 +24,12 @@ void draw_rectangle(CG_OffscreenBuffer *_to,  uint32_t _color, int32_t _minX, in
     
     for(int32_t x = _minX;x<(_minX + _width);x++){
       // transformed points
-      u32 tx=x, ty=y;
+      i32 tx=x, ty=y;
       if(_rotation!=0){
 	float fx = tx, fy = ty;
-	math_get_rotated_point(&fx, &fy, sinRot, cosRot, (float)_rotationPivotX, (float)_rotationPivotY);
-	tx = (u32)fx;
-	ty = (u32)fy;
+	math_get_rotated_point(&fx, &fy, sinRot, cosRot, _rotationPivotX, _rotationPivotY);
+	tx = (i32)fx;
+	ty = (i32)fy;
       }
       
       if(ty < 0 || ty > _to->Height-1) continue;

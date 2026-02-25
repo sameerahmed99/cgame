@@ -1,11 +1,14 @@
+#include <time.h>
+#include <stdlib.h>
+
 #include "cgame.h"
 #include "draw.c"
 #include "math.c"
 #include "memory.c"
 #include "entity.c"
-#include <time.h>
-#include <stdlib.h>
+#include "camera.c"
 #include "physics.c"
+
 // Game @TODO
 // use some kind of screen resolution independent coordinates
 // for everything such as speed and position
@@ -68,7 +71,10 @@ CG_PlatformConfig cg_get_platform_config(){
    .ScreenWidth = 0,
    .ScreenHeight = 0,
    .RequestedScreenWidth = 1280,
-   .RequestedScreenHeight = 720
+   .RequestedScreenHeight = 720,
+   .BaseScreenWidth = 1280,
+   .BaseScreenHeight = 720,
+   .BasePixelsPerWorldUnit = 100
 };
 
  return config;

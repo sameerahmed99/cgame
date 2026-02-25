@@ -8,7 +8,9 @@ enum CG_EntityType {
   ENTITY_TYPE_PLAYER,
   ENTITY_TYPE_WORLD_LAYER,
   ENTITY_TYPE_ASTEROID,
-  ENTITY_TYPE_PROJECTILE
+  ENTITY_TYPE_PROJECTILE,
+  ENTITY_TYPE_CAMERA
+  
 };
 
 
@@ -57,6 +59,11 @@ typedef struct CG_Entity{
   Vec3 velocity;
 
   b32 destroyed;
+
+
+  // camera
+  Camera camData;
+  
 } CG_Entity;
 
 
