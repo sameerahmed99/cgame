@@ -6,14 +6,11 @@
 #include "math.c"
 #include "memory.c"
 #include "entity.c"
-#include "camera.c"
+
 #include "physics.c"
 
 // Game @TODO
-// rotations around pivots should be done at the entity level and the position should update accordingly, instead of in the draw functions
-// draw functions should just receive rotation, pos, size, col.
-// because other objects in games need to be aware of the rotations
-
+// setting euler angles should update direction vectors of the entity
 // create boundary upon hitting which projectiles and asteroids are destroyed
 
 // powerups: fall like asteroids, hitting them with projectile gives you the powerup
@@ -31,7 +28,7 @@ internal CG_Memory *TEMP_gameMemory;
 
 Arena* ArenaEntities;
 
-CG_Entity* MainCamera;
+
 CG_Entity* PlayerEntity;
 
 CG_Entity* AsteroidsList;
@@ -81,7 +78,7 @@ CG_PlatformConfig cg_get_platform_config(){
 
 void sync_collider(CG_Entity* _entity, b32 _useVisualPos){
   if(_useVisualPos){
-    _entity->collider2D.center = _entity->pos;
+    _entity->collider2D.center = _entity->worldPos;
   }
   else{
     _entity->collider2D.center = _entity->physPos;
@@ -89,38 +86,17 @@ void sync_collider(CG_Entity* _entity, b32 _useVisualPos){
 }
 
 void create_player(){
-  PlayerEntity = ARENA_PUSH_TYPE(ArenaEntities, CG_Entity);
-  PlayerEntity->destroyed = false;
-  PlayerEntity->type = ENTITY_TYPE_PLAYER;  
-  PlayerEntity->pos.x = 0;
-  PlayerEntity->pos.y = 0;
-  PlayerEntity->pos.z = 0;
+  PlayerEntity = entity_create(ArenaEntities, ENTITY_TYPE_PLAYER);
+  PlayerEntity->forward = Vec3Up;
 
-  Vec3 forward = {0,1,0};
-  PlayerEntity->forward = forward;
-
-
+  Vec3 pos = PlayerEntity->worldPos;
+  pos.y = -(float)PlatformConfig.ScreenHeight /2.0f;
+  pos.y /= PlatformConfig.ppu;
+  entity_set_world_pos(PlayerEntity,pos);
 }
 
 
-void create_main_cam()
-{
-  
-  MainCamera = ARENA_PUSH_TYPE(ArenaEntities, CG_Entity);
-  MainCamera->destroyed = false;
-  MainCamera->type = ENTITY_TYPE_CAMERA;  
-  MainCamera->pos.x = PlatformConfig.ScreenWidth/2;
-  MainCamera->pos.y = 0;
-  MainCamera->pos.z = 0;
 
-  Vec3 forward = {0,0,1};
-  MainCamera->forward = forward;
-  
-  Camera cam;
-
-  cam.screenBuffer = ScreenBuffer;
-
-}
 
 internal void cg_init(){
   srand(time(NULL));
@@ -224,9 +200,9 @@ internal void write_square_wave_to_audio_buffer(uint8_t* _writeTo, uint32_t fram
 
 
 internal void draw_player(CG_OffscreenBuffer *_to){
-  u32 playerX = PlayerEntity->pos.x;
-  u32 playerY = PlayerEntity->pos.y;
-  float rot = PlayerEntity->angles.z;
+  u32 playerX = PlayerEntity->worldPos.x;
+  u32 playerY = PlayerEntity->worldPos.y;
+  float rot = PlayerEntity->worldEulerAngles.z;
   
   u32 radius = 20;
   u32 gunWidth = 25;
@@ -251,22 +227,22 @@ internal void draw_player(CG_OffscreenBuffer *_to){
   Vec3 gunBaseSize = {10,4,1};
   Vec3 gunRot = {0,0,rot};
 
-  Vec3 gunFramePos = PlayerEntity->pos;
+  Vec3 gunFramePos = PlayerEntity->worldPos;
   gunFramePos.x-=gunBaseSize.x/2;
   gunFramePos.y+=radius-1;
 
-  Vec3 gunPos = PlayerEntity->pos;
+  Vec3 gunPos = PlayerEntity->worldPos;
   gunPos.x-=gunSize.x/2;
   gunPos.y+=radius-1;
 
 
 
   
-  draw_rectangle_world(ScreenBuffer, PlatformConfig.ppu, gunPos, gunSize, gunRot, PlayerEntity->pos, gunCol);
+  draw_rectangle_world(ScreenBuffer, PlatformConfig.ppu, gunPos, gunSize, gunRot, PlayerEntity->worldPos, gunCol);
 
-  draw_rectangle_world(ScreenBuffer, PlatformConfig.ppu, gunFramePos, gunBaseSize, gunRot, PlayerEntity->pos, gunBaseCol);
+  draw_rectangle_world(ScreenBuffer, PlatformConfig.ppu, gunFramePos, gunBaseSize, gunRot, PlayerEntity->worldPos, gunBaseCol);
   
-  draw_circle_world(ScreenBuffer, PlatformConfig.ppu, PlayerEntity->pos, radius, gunRot, PlayerEntity->pos, circleColor);
+  draw_circle_world(ScreenBuffer, PlatformConfig.ppu, PlayerEntity->worldPos, radius, gunRot, PlayerEntity->worldPos, circleColor);
 }
 
 
@@ -280,9 +256,9 @@ void spawn_asteroid(){
   CG_Entity* asteroid=  ARENA_PUSH_TYPE(ArenaEntities, CG_Entity);
   asteroid->destroyed = false;
   asteroid->type=ENTITY_TYPE_ASTEROID;
-  asteroid->pos.x = spawnLocation;
-  asteroid->pos.y = PlatformConfig.ScreenHeight;
-  asteroid->pos.z = 0;
+  asteroid->worldPos.x = spawnLocation;
+  asteroid->worldPos.y = PlatformConfig.ScreenHeight;
+  asteroid->worldPos.z = 0;
 
   asteroid->isSphere= true;
   asteroid->sphereRadius = AsteroidRadius;
@@ -290,8 +266,8 @@ void spawn_asteroid(){
   asteroid->hasPhysics=true;
   asteroid->hasCollider=true;
   asteroid->physInterp=true;
-  asteroid->physPos = asteroid->pos;
-  asteroid->physPosPrev = asteroid->pos;
+  asteroid->physPos = asteroid->worldPos;
+  asteroid->physPosPrev = asteroid->worldPos;
   asteroid->mass = 10;
   asteroid->color = cg_create_color_from_channels(100,100,100);
 
@@ -307,7 +283,7 @@ void spawn_asteroid(){
 
   asteroid->collider2D.shape = COLLIDER2D_SPHERE;
   asteroid->collider2D.radius = asteroid->sphereRadius;
-  asteroid->collider2D.center = asteroid->pos;
+  asteroid->collider2D.center = asteroid->worldPos;
   sync_collider(asteroid, true);
   printf("Spawned asteroid at: %u\n", spawnLocation);
 }
@@ -318,12 +294,12 @@ void update_entities(float _dt){
     CG_Entity* ent = (CG_Entity*)arena_get_at(ArenaEntities, i, sizeof(CG_Entity));
     if(ent->destroyed) continue;
     if(ent->isSphere){
-      draw_circle(ScreenBuffer, ent->sphereRadius, ent->color, ent->pos.x, ent->pos.y,0,0,0);
+      draw_circle(ScreenBuffer, ent->sphereRadius, ent->color, ent->worldPos.x, ent->worldPos.y,0,0,0);
     }
 
     if(false &&ent->drawDebugSphere){
 
-      draw_circle(ScreenBuffer, ent->debugSphereRadius, ent->debugSphereColor, ent->pos.x, ent->pos.y,0,0,0);
+      draw_circle(ScreenBuffer, ent->debugSphereRadius, ent->debugSphereColor, ent->worldPos.x, ent->worldPos.y,0,0,0);
     }
     if(false && ent->drawPhysicsDebugSphere){
 
@@ -341,12 +317,12 @@ void update_entities(float _dt){
 
 
 
-	  ent->pos = math_vec3_lerp(ent->physPosPrev, ent->physPos,interp);
+	  ent->worldPos = math_vec3_lerp(ent->physPosPrev, ent->physPos,interp);
 
-	  //	  printf("interp: %f, float dt: %f, fdt: %f, lastPos: %f, cur pos: %f, new Pos: %f\n", interp, _dt, FixedTimeStep, ent->physPosPrev.y, ent->physPos.y, ent->pos.y);
+	  //	  printf("interp: %f, float dt: %f, fdt: %f, lastPos: %f, cur pos: %f, new Pos: %f\n", interp, _dt, FixedTimeStep, ent->physPosPrev.y, ent->physPos.y, ent->worldPos.y);
 	}
 	else{
-	  ent->pos = ent->physPos;
+	  ent->worldPos = ent->physPos;
 	}
 	
       }
@@ -363,7 +339,7 @@ void player_fire(Vec3 _pos, Vec3 _velocity){
   CG_Entity* projectile = ARENA_PUSH_TYPE(ArenaEntities, CG_Entity);
   projectile->destroyed = false;
   projectile->type = ENTITY_TYPE_PROJECTILE;
-  projectile->pos = _pos;
+  projectile->worldPos = _pos;
   projectile->color = cg_create_color_from_channels(150,50,50);
   
   projectile->drawDebugSphere = true;
@@ -385,7 +361,7 @@ void player_fire(Vec3 _pos, Vec3 _velocity){
   projectile->velocity = _velocity;
   projectile->collider2D.shape = COLLIDER2D_SPHERE;
   projectile->collider2D.radius = ProjectileRadius;
-  projectile->collider2D.center = projectile->pos;
+  projectile->collider2D.center = projectile->worldPos;
   sync_collider(projectile, true);
   printf("Fired projectile\n");
 }
@@ -477,15 +453,15 @@ internal void cg_update(CG_Memory* _memory, CG_OffscreenBuffer *_screenBuffer, C
   CG_KeyboardKeys k = _playerInput->Keyboard;
 
   if(k.a.IsPressed){
-    PlayerEntity->angles.z-=_deltaTime*playerSpeed;
+    PlayerEntity->worldEulerAngles.z-=_deltaTime*playerSpeed;
   }
   if(k.d.IsPressed){
-      PlayerEntity->angles.z+=_deltaTime*playerSpeed;
+      PlayerEntity->worldEulerAngles.z+=_deltaTime*playerSpeed;
   }
   Vec3 playerRotAxis = {0,0,1};
   Vec3 forward = {0,1,0};
   Vec3 piv = {0,0,0};
-  PlayerEntity->forward = math_vec3_rotate(forward, piv, playerRotAxis, PlayerEntity->angles.z);
+  PlayerEntity->forward = math_vec3_rotate(forward, piv, playerRotAxis, PlayerEntity->worldEulerAngles.z);
 
 
   if(k.space.WasDownedThisFrame){
@@ -493,7 +469,7 @@ internal void cg_update(CG_Memory* _memory, CG_OffscreenBuffer *_screenBuffer, C
     if(PlayerTimeSinceFire>=PlayerFireInterval){
       PlayerTimeSinceFire = 0;
 
-      Vec3 spawnPos = math_vec3_add(PlayerEntity->pos, math_vec3_scale(PlayerEntity->forward, 75));
+      Vec3 spawnPos = math_vec3_add(PlayerEntity->worldPos, math_vec3_scale(PlayerEntity->forward, 75));
 
 
       player_fire(spawnPos,math_vec3_scale(PlayerEntity->forward,PlayerProjectileSpeed));

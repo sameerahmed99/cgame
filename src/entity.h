@@ -17,17 +17,24 @@ enum CG_EntityType {
 struct CG_Entity;
 typedef struct CG_Entity{
   enum CG_EntityType type;
-  Vec3 pos;
-  Vec3 angles;
+  Vec3 worldPos;
+  Vec3 localPos;
+  Vec3 worldEulerAngles;
+  Vec3 localEulerAngles;
+  Vec3 worldScale;
+  Vec3 localScale;
 
 
   Vec3 forward;
+  Vec3 up;
+  Vec3 right;
   
   Mat4x4 localMatrix;
   Mat4x4 worldMatrix;
   
-  float scale;
 
+
+  struct CG_Entity* parent;
   struct CG_Entity* children;
   u64 childCount;
 
@@ -55,20 +62,26 @@ typedef struct CG_Entity{
   Vec3 physPosPrev;
   float mass;
   Collider2D collider2D;
+  Vec3 localColliderOffset;
 
   Vec3 velocity;
 
   b32 destroyed;
 
 
-  // camera
-  Camera cam;
+  
+  
   
 } CG_Entity;
 
 
 
 
+
+void entity_move_to(CG_Entity* _entity, Vec3 _worldPos);
+void entity_set_world_euler_angles(CG_Entity* _entity, Vec3 _angles);
+
+void entity_set_vectors(CG_Entity* _entity, Vec3 _forward, Vec3 _right, Vec3 _up);
 
 
 #endif

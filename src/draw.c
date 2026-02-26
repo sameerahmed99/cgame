@@ -1,5 +1,5 @@
 #include "draw.h"
-#include "camera.h"
+
 #include "math.h"
 
 

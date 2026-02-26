@@ -3,7 +3,7 @@
 #include "cgame.h"
 #include <stdint.h>
 #include <math.h>
-#include "camera.h"
+
 
 // world functions
 void draw_rectangle_world(CG_OffscreenBuffer* _to, float _ppu, Vec3 _min,Vec3 _size, Vec3 _rotation, Vec3 _pivot, u32 _color);
