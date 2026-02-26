@@ -38,6 +38,8 @@ typedef struct CG_PlatformConfig{
 
   float BaseScreenWidth, BaseScreenHeight;
   float BasePixelsPerWorldUnit;
+
+  float ppu;
 } CG_PlatformConfig;
 
 typedef struct CG_Memory{

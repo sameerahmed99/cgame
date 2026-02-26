@@ -97,6 +97,14 @@ Vec3 math_vec3_add(Vec3 _a, Vec3 _b){
 
   return res;
 }
+Vec3 math_vec3_subtract(Vec3 _a, Vec3 _b){
+  Vec3 res;
+  res.x = _a.x - _b.x;
+  res.y = _a.y - _b.y;
+  res.z = _a.z - _b.z;
+
+  return res;
+}
 
 Vec3 math_mul_vec3_mat4x4(Vec3 _vec, Mat4x4 _mat){
   Vec4 vec4;

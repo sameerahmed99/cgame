@@ -10,10 +10,9 @@
 #include "physics.c"
 
 // Game @TODO
-// use some kind of screen resolution independent coordinates
-// for everything such as speed and position
-// only drawing should be concerned with converting positions to screen positions
-// test if free list for arena is working properly, maybe create a debug screen like ryan fleury did for arenas
+// rotations around pivots should be done at the entity level and the position should update accordingly, instead of in the draw functions
+// draw functions should just receive rotation, pos, size, col.
+// because other objects in games need to be aware of the rotations
 
 // create boundary upon hitting which projectiles and asteroids are destroyed
 
@@ -32,7 +31,7 @@ internal CG_Memory *TEMP_gameMemory;
 
 Arena* ArenaEntities;
 
-
+CG_Entity* MainCamera;
 CG_Entity* PlayerEntity;
 
 CG_Entity* AsteroidsList;
@@ -74,7 +73,7 @@ CG_PlatformConfig cg_get_platform_config(){
    .RequestedScreenHeight = 720,
    .BaseScreenWidth = 1280,
    .BaseScreenHeight = 720,
-   .BasePixelsPerWorldUnit = 100
+   .BasePixelsPerWorldUnit = 5
 };
 
  return config;
@@ -93,28 +92,61 @@ void create_player(){
   PlayerEntity = ARENA_PUSH_TYPE(ArenaEntities, CG_Entity);
   PlayerEntity->destroyed = false;
   PlayerEntity->type = ENTITY_TYPE_PLAYER;  
-  PlayerEntity->pos.x = PlatformConfig.ScreenWidth/2;
+  PlayerEntity->pos.x = 0;
   PlayerEntity->pos.y = 0;
   PlayerEntity->pos.z = 0;
 
   Vec3 forward = {0,1,0};
   PlayerEntity->forward = forward;
 
-  void* check=  arena_get_at(ArenaEntities, 0, sizeof(CG_Entity));
+
 }
 
+
+void create_main_cam()
+{
+  
+  MainCamera = ARENA_PUSH_TYPE(ArenaEntities, CG_Entity);
+  MainCamera->destroyed = false;
+  MainCamera->type = ENTITY_TYPE_CAMERA;  
+  MainCamera->pos.x = PlatformConfig.ScreenWidth/2;
+  MainCamera->pos.y = 0;
+  MainCamera->pos.z = 0;
+
+  Vec3 forward = {0,0,1};
+  MainCamera->forward = forward;
+  
+  Camera cam;
+
+  cam.screenBuffer = ScreenBuffer;
+
+}
 
 internal void cg_init(){
   srand(time(NULL));
   PlatformConfig = cg_get_platform_config();
   PlatformConfig.ScreenWidth = platform_get_client_screen_width();
   PlatformConfig.ScreenHeight = platform_get_client_screen_height();
+
+  b32 smallerSideIsHeight = PlatformConfig.ScreenHeight < PlatformConfig.ScreenWidth;
+  float ppu=PlatformConfig.BasePixelsPerWorldUnit;
+  if(smallerSideIsHeight){
+    ppu = ppu * ( (float)PlatformConfig.ScreenHeight / (float)PlatformConfig.BaseScreenHeight);
+
+  }
+   else{
+    ppu = ppu * ( (float)PlatformConfig.ScreenWidth / (float)PlatformConfig.BaseScreenWidth);
+  }
+
+  PlatformConfig.ppu = ppu;
+
   /* printf("PlatformConfig.ScreenWidtht: %u\n", PlatformConfig.ScreenWidth); */
   /* printf("PlatformConfig.ScreenHeight: %u\n", PlatformConfig.ScreenHeight); */
   
   ArenaEntities = arena_create(Gigabytes(4), Megabytes(4), true);
 
-
+  printf("platform ppu: %f\n", PlatformConfig.ppu);
+  
   create_player();
 }
 
@@ -196,7 +228,7 @@ internal void draw_player(CG_OffscreenBuffer *_to){
   u32 playerY = PlayerEntity->pos.y;
   float rot = PlayerEntity->angles.z;
   
-  u32 radius = 50;
+  u32 radius = 20;
   u32 gunWidth = 25;
   u32 gunLength = 30;
   u32 gunBaseLength = 15;
@@ -210,11 +242,31 @@ internal void draw_player(CG_OffscreenBuffer *_to){
 
 
 
-  draw_rectangle(_to, gunCol, playerX - gunWidth/2, playerY + radius + bottomMargin, gunWidth,gunLength,rot,playerX, playerY);
+  /* draw_rectangle(_to, gunCol, playerX - gunWidth/2, playerY + radius + bottomMargin, gunWidth,gunLength,rot,playerX, playerY); */
 
-  draw_rectangle(_to, gunBaseCol, playerX - gunBaseWidth/2, playerY + radius + bottomMargin, gunBaseWidth,gunBaseLength,rot,playerX, playerY);
-  draw_circle(_to, radius, circleColor, playerX, playerY,0,0,0);
-		 
+  /* draw_rectangle(_to, gunBaseCol, playerX - gunBaseWidth/2, playerY + radius + bottomMargin, gunBaseWidth,gunBaseLength,rot,playerX, playerY); */
+  /* draw_circle(_to, radius, circleColor, playerX, playerY,0,0,0); */
+
+  Vec3 gunSize = {6,7,1};
+  Vec3 gunBaseSize = {10,4,1};
+  Vec3 gunRot = {0,0,rot};
+
+  Vec3 gunFramePos = PlayerEntity->pos;
+  gunFramePos.x-=gunBaseSize.x/2;
+  gunFramePos.y+=radius-1;
+
+  Vec3 gunPos = PlayerEntity->pos;
+  gunPos.x-=gunSize.x/2;
+  gunPos.y+=radius-1;
+
+
+
+  
+  draw_rectangle_world(ScreenBuffer, PlatformConfig.ppu, gunPos, gunSize, gunRot, PlayerEntity->pos, gunCol);
+
+  draw_rectangle_world(ScreenBuffer, PlatformConfig.ppu, gunFramePos, gunBaseSize, gunRot, PlayerEntity->pos, gunBaseCol);
+  
+  draw_circle_world(ScreenBuffer, PlatformConfig.ppu, PlayerEntity->pos, radius, gunRot, PlayerEntity->pos, circleColor);
 }
 
 

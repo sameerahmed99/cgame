@@ -62,7 +62,7 @@ typedef struct CG_Entity{
 
 
   // camera
-  Camera camData;
+  Camera cam;
   
 } CG_Entity;
 

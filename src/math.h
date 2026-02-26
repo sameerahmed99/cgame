@@ -37,6 +37,7 @@ Vec3 math_vec3_inverse_lerp(Vec3 _a, Vec3 _b, float _t);
 float math_vec3_sqr_dist(Vec3 _a, Vec3 _b);
 float math_vec3_dist(Vec3 _a, Vec3 _b);
 Vec3 math_vec3_add(Vec3 _a, Vec3 _b);
+Vec3 math_vec3_subtract(Vec3 _a, Vec3 _b);
 
 
 Vec3 math_vec3_scale(Vec3 _vec, float _scale);

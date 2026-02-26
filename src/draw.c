@@ -4,12 +4,35 @@
 
 
 
-void draw_rectangle_world(Camera *_cam, Vec3 _min,Vec3 _size, Vec3 _rotation, Vec3 _pivot, u32 _color){
-  Vec3 pos = cam_world_to_screen_pos(_cam,_min);
-  Vec3 pivot = cam_world_to_screen_pos(_cam,_pivot);
-  Vec3 size = cam_world_to_screen_vec(_cam, _size);
+void draw_rectangle_world(CG_OffscreenBuffer* _to, float _ppu,Vec3 _min,Vec3 _size, Vec3 _rotation, Vec3 _pivot, u32 _color){
+  Vec3 pos = math_vec3_scale(_min,_ppu);
+  pos.x+=_to->Width/2;
+  pos.y+=_to->Height/2;
+  
+  Vec3 pivot = math_vec3_scale(_pivot,_ppu);
+  pivot.x+=_to->Width/2;
+  pivot.y+=_to->Height/2;
+  
+  Vec3 size = math_vec3_scale(_size, _ppu);
+  //  printf("Screen posx : %f\n", pos.x + size.x/2);
+  draw_rectangle(_to, _color, pos.x, pos.y, size.x, size.y, _rotation.z, pivot.x, pivot.y);
+}
 
-  draw_rectangle(_cam->screenBuffer, _color, pos.x, pos.y, size.x, size.y, _rotation.z, pivot.x, pivot.y);
+void draw_circle_world(CG_OffscreenBuffer* _to, float _ppu, Vec3 _pos,float _radius, Vec3 _rotation, Vec3 _pivot, u32 _color){
+
+
+    
+  Vec3 pos = math_vec3_scale(_pos, _ppu);
+  pos.x+=_to->Width/2;
+  pos.y+=_to->Height/2;
+  
+  Vec3 pivot = math_vec3_scale(_pivot, _ppu);
+  float radius = _ppu * _radius;
+
+
+  //  printf("Screen posx : %f\n", pos.x);
+
+  draw_circle(_to, radius, _color, pos.x, pos.y, _rotation.z, _pivot.x, _pivot.y);
 }
 
 void draw_rectangle(CG_OffscreenBuffer *_to,  uint32_t _color, int32_t _minX, int32_t _minY, int32_t _width, int32_t _height, float _rotation, float _rotationPivotX, float _rotationPivotY){
@@ -45,7 +68,7 @@ void draw_rectangle(CG_OffscreenBuffer *_to,  uint32_t _color, int32_t _minX, in
 
 }
 
-void draw_circle(CG_OffscreenBuffer *_to, int32_t _radius, uint32_t _color, int32_t _x, int32_t _y, float _rotation, u32 _rotationPivotX, u32 _rotationPivotY){
+void draw_circle(CG_OffscreenBuffer *_to, int32_t _radius, uint32_t _color, int32_t _x, int32_t _y, float _rotation, i32 _rotationPivotX, i32 _rotationPivotY){
 
   for(int32_t y = (_y-_radius);y<(_y+_radius);y++){
     
