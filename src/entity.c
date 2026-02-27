@@ -8,7 +8,7 @@ CG_Entity *entity_create(Arena *arena, enum CG_EntityType _type){
   ent->type = _type;
 
   ent->childCount = 0;
-  ent->children = NULL;
+
   ent->parent = NULL;
 
   ent->isSphere = false;
@@ -22,6 +22,9 @@ CG_Entity *entity_create(Arena *arena, enum CG_EntityType _type){
   ent->worldPos = Vec3Zero;
   ent->localPos = Vec3Zero;
 
+  ent->localEulerAngles = Vec3Zero;
+  ent->worldEulerAngles = Vec3Zero;
+
   ent->worldScale = Vec3One;
   ent->localScale = Vec3One;
 
@@ -31,30 +34,49 @@ CG_Entity *entity_create(Arena *arena, enum CG_EntityType _type){
 
   return ent;
 }
+void entity_set_parent(CG_Entity* _entity, CG_Entity* _parent){
+  _parent->children[_parent->childCount] = _entity;
+  _parent->childCount++;
 
+  _entity->parent = _parent;
+
+
+  entity_sync_local_pos_with_world_pos(_entity);
+}
+
+
+
+void entity_sync_local_pos_with_world_pos(CG_Entity* _entity){
+  if(_entity->parent!=NULL){
+    Vec3 localPos = Vec3Zero;
+    Vec3 dif = math_vec3_subtract(_entity->worldPos, _entity->parent->worldPos);
+    localPos.x = math_vec3_dot(dif, _entity->parent->right);
+    localPos.y = math_vec3_dot(dif, _entity->parent->up);
+    localPos.z = math_vec3_dot(dif, _entity->parent->forward);
+
+    _entity->localPos = localPos;
+  }
+  else{
+    _entity->localPos = _entity->worldPos;
+  }
+}
 void entity_set_world_pos(CG_Entity* _entity, Vec3 _worldPos){
 
+  //  printf("Got world pos: %f, %f, %f\n", _worldPos.x, _worldPos.y, _worldPos.z);
   Vec3 worldOffset = math_vec3_subtract(_worldPos, _entity->worldPos);
   
   _entity->worldPos = _worldPos;
 
-  if(_entity->parent!=NULL){
-    Vec3 localPos = Vec3Zero;
-    Vec3 dif = math_vec3_subtract(_entity->worldPos, _entity->parent->worldPos);
-    localPos.x = math_vec3_dot(dif, _entity->right);
-    localPos.y = math_vec3_dot(dif, _entity->up);
-    localPos.z = math_vec3_dot(dif, _entity->forward);
+  entity_sync_local_pos_with_world_pos(_entity);
 
-    _entity->localPos = localPos;
-  }
-  if(_entity->parent == NULL){
-    _entity->localPos = _worldPos;
-  }
+
   for(int i=0;i<_entity->childCount;i++){
 
-    CG_Entity* child = &_entity->children[i];
+    CG_Entity* child = _entity->children[i];
     entity_set_world_pos(child, math_vec3_add(child->worldPos, worldOffset));
    }
+
+  //  printf("Final pos: %f, %f, %f, final local pos: %f, %f, %f\n", _entity->worldPos.x, _entity->worldPos.y, _entity->worldPos.z, _entity->localPos.x, _entity->localPos.y, _entity->localPos.z);
 }
 
 void entity_set_local_pos(CG_Entity* _entity, Vec3 _localPos){
@@ -73,25 +95,53 @@ void entity_set_local_pos(CG_Entity* _entity, Vec3 _localPos){
   _entity->worldPos = worldPos;
   Vec3 worldOffset = math_vec3_subtract(worldPos, originalWorldPos);
   for(int i=0;i<_entity->childCount;i++){
-    CG_Entity* en = &_entity->children[i];
+    CG_Entity* en = _entity->children[i];
     entity_set_world_pos(en, math_vec3_add(en->worldPos, worldOffset));
   }
 }
 
-void entity_set_world_euler_angles(CG_Entity* _entity, Vec3 _angles){
 
+
+
+
+void entity_set_world_euler_angles(CG_Entity* _entity, Vec3 _angles){
+  
   Vec3 original = _entity->worldEulerAngles;
   _entity->worldEulerAngles = _angles;
 
+  Vec3 forward = math_vec3_apply_euler_angles(Vec3Forward, _entity->worldEulerAngles);
+  Vec3 right = math_vec3_apply_euler_angles(Vec3Right, _entity->worldEulerAngles);
+  Vec3 up = math_vec3_apply_euler_angles(Vec3Up, _entity->worldEulerAngles);
+
+  _entity->forward = forward;
+  _entity->right = right;
+  _entity->up = up;
+  
   if(_entity->parent!=NULL){
     _entity->localEulerAngles = math_vec3_subtract(_angles, _entity->parent->worldEulerAngles);
   }
 
-  Vec3 offset = math_vec3_subtract(original, _angles);
+  Vec3 offset = math_vec3_subtract(_angles, original);
   for(int i=0;i<_entity->childCount;i++){
-    CG_Entity* en= &_entity->children[i];
-    entity_set_world_euler_angles(en, math_vec3_add(en->localEulerAngles,offset));
+    CG_Entity* en= _entity->children[i];
+
+    //        entity_set_world_euler_angles(en, _entity->worldEulerAngles);
+      entity_set_world_euler_angles(en, math_vec3_add(en->worldEulerAngles,offset));
+
+
+    // y-x-z rotation order
+
+    // don't use matrices to calculate position of the child
+    // might create inaccurate if we keep doing this repeatedly
+    Vec3 newWorldPos = math_vec3_rotate(en->worldPos, _entity->worldPos, Vec3Up, offset.y);
+    newWorldPos = math_vec3_rotate(newWorldPos, _entity->worldPos , Vec3Right,offset.x);
+    newWorldPos = math_vec3_rotate(newWorldPos,_entity->worldPos, Vec3Forward, offset.z);
+
+    //printf("Original xyz: %f,%f,%f - New xyz: %f, %f, %f\n", en->worldPos.x, en->worldPos.y, en->worldPos.z, newWorldPos.x, newWorldPos.y, newWorldPos.z);   
+       entity_set_world_pos(en, newWorldPos);
   }
+
+
 
 }
 void entity_set_local_euler_angles(CG_Entity* _entity, Vec3 _angles){
@@ -107,10 +157,10 @@ void entity_set_local_euler_angles(CG_Entity* _entity, Vec3 _angles){
 
   _entity->worldEulerAngles = worldAngles;
 
-  Vec3 offset = original = worldAngles;
+  Vec3 offset = math_vec3_subtract(original, worldAngles);
   
   for(int i=0;i<_entity->childCount;i++){
-    CG_Entity* child = &_entity->children[i];
+    CG_Entity* child = _entity->children[i];
 
     entity_set_world_euler_angles(child, math_vec3_add(child->worldEulerAngles,offset));
   }

@@ -120,27 +120,17 @@ Vec3 math_mul_vec3_mat4x4(Vec3 _vec, Mat4x4 _mat){
 
   Vec3 res;
 
-  res.x = vec4.x * _mat.m00 + vec4.y * _mat.m10 + vec4.z * _mat.m20 + vec4.w * _mat.m30;
-  res.y = vec4.x * _mat.m01 + vec4.y * _mat.m11 + vec4.z * _mat.m21 + vec4.w * _mat.m31;
-  res.z = vec4.x * _mat.m02 + vec4.y * _mat.m12 + vec4.z * _mat.m22 + vec4.w * _mat.m32;
-  float w = vec4.x * _mat.m03 + vec4.y * _mat.m13 + vec4.z * _mat.m23 + vec4.w * _mat.m33;
+  res.x = _mat.m00 * vec4.x + _mat.m01 * vec4.y + _mat.m02 * vec4.z + _mat.m03*vec4.w;
+  res.y = _mat.m10 * vec4.x + _mat.m11 * vec4.y + _mat.m12 * vec4.z + _mat.m13*vec4.w;
+  res.z = _mat.m20 * vec4.x + _mat.m21 * vec4.y + _mat.m22 * vec4.z + _mat.m23*vec4.w;
+  float w = _mat.m30 * vec4.x + _mat.m31 * vec4.y + _mat.m32 * vec4.z + _mat.m33 * vec4.w;
 
   
-
-  // it won't be equal to 0 when multiplying with perspective matrices
-  // for directions, it will be 0 becuase we pass _w as 0. This zeros the translation column of the 4x4 matrix, we don't want dir vector to move
-  // for affine transformations like translation, rotation (no perspective stuff)
-  // this will be equal to 1, becasue we pass _w as 1 so we perserve the translation column of the 4x4 matrix
-
-  // EDIT
-  // doesn't matter, rotation matrices don't have any translation in the 4th column anyways
-
-  
-  /* if(w!=0){ */
-  /*   res.x/=w; */
-  /*   res.y/=w; */
-  /*   res.z/=w; */
-  /* }  */
+  if(w!=0){
+    res.x/=w;
+    res.y/=w;
+    res.z/=w;
+  }
   return res;
 }
 
@@ -168,9 +158,13 @@ Mat4x4 math_mat4x4_create_identity(){
   mat.m31 = 0;
   mat.m32 = 0;
   mat.m33 = 1;
+
+  return mat;
 }
 
 Mat4x4 math_mat4x4_create_rotation(float _degrees, Vec3 _axis){
+
+  _degrees*=ANGLE_CONVENTION;
   Mat4x4 mat = math_mat4x4_create_identity();
   float rad = Rad(_degrees);
 
@@ -205,10 +199,25 @@ Mat4x4 math_mat4x4_create_translation(Vec3 _translation){
   mat.m13 = _translation.y;
   mat.m23 = _translation.z;
 
+
   return mat;
 }
 
 
+Vec3 math_vec3_apply_euler_angles(Vec3 _current, Vec3 _eulerAngles){
+
+  Mat4x4 roty = math_mat4x4_create_rotation(_eulerAngles.y, Vec3Up);
+  Mat4x4 rotx = math_mat4x4_create_rotation(_eulerAngles.x, Vec3Right);
+  Mat4x4 rotz = math_mat4x4_create_rotation(_eulerAngles.z, Vec3Forward);
+
+  Vec3 res = _current;
+
+  res = math_mul_vec3_mat4x4(res, roty);
+  res = math_mul_vec3_mat4x4(res, rotx);
+  res = math_mul_vec3_mat4x4(res, rotz);
+
+  return res;
+}
 
 
 Mat4x4 math_mat4x4_mul(Mat4x4 _a, Mat4x4 _b){
@@ -240,4 +249,6 @@ Mat4x4 math_mat4x4_mul(Mat4x4 _a, Mat4x4 _b){
   mat.m31 = _a.m30 * _b.m01 + _a.m31 * _b.m11 + _a.m32 * _b.m21 + _a.m33 * _b.m31;
   mat.m32 = _a.m30 * _b.m02 + _a.m31 * _b.m12 + _a.m32 * _b.m22 + _a.m33 * _b.m32;
   mat.m33 = _a.m30 * _b.m03 + _a.m31 * _b.m13 + _a.m32 * _b.m23 + _a.m33 * _b.m33;
+
+  return mat;
 }

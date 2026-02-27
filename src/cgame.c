@@ -30,7 +30,7 @@ Arena* ArenaEntities;
 
 
 CG_Entity* PlayerEntity;
-
+CG_Entity* TestPlayerChild;
 CG_Entity* AsteroidsList;
 u64 NumAsteroids;
 
@@ -93,6 +93,14 @@ void create_player(){
   pos.y = -(float)PlatformConfig.ScreenHeight /2.0f;
   pos.y /= PlatformConfig.ppu;
   entity_set_world_pos(PlayerEntity,pos);
+
+
+
+  TestPlayerChild = entity_create(ArenaEntities, ENTITY_TYPE_TEST);
+  entity_set_parent(TestPlayerChild, PlayerEntity);
+
+  
+  entity_set_world_pos(TestPlayerChild, math_vec3_add(pos, math_vec3_scale(PlayerEntity->forward, 10)) );
 }
 
 
@@ -293,6 +301,21 @@ void update_entities(float _dt){
   for(int i=0;i<ArenaEntities->numItems;i++){
     CG_Entity* ent = (CG_Entity*)arena_get_at(ArenaEntities, i, sizeof(CG_Entity));
     if(ent->destroyed) continue;
+
+    if(ent->type == ENTITY_TYPE_TEST){
+
+      Vec3 size = math_vec3_scale(Vec3One,5);
+      Vec3 pos = ent->worldPos;
+      pos.x-=size.x/2;
+      u32 col = cg_create_color_from_channels(100,125,125);
+      draw_rectangle_world(ScreenBuffer,PlatformConfig.ppu,pos , size, ent->worldEulerAngles, ent->worldPos, col);
+
+      col = cg_create_color_from_channels(50,50,50);
+      size.y/=2;
+      pos.y +=5;
+      draw_rectangle_world(ScreenBuffer,PlatformConfig.ppu,pos , size, ent->worldEulerAngles, ent->worldPos, col);
+      
+    }
     if(ent->isSphere){
       draw_circle(ScreenBuffer, ent->sphereRadius, ent->color, ent->worldPos.x, ent->worldPos.y,0,0,0);
     }
@@ -453,15 +476,20 @@ internal void cg_update(CG_Memory* _memory, CG_OffscreenBuffer *_screenBuffer, C
   CG_KeyboardKeys k = _playerInput->Keyboard;
 
   if(k.a.IsPressed){
-    PlayerEntity->worldEulerAngles.z-=_deltaTime*playerSpeed;
+    Vec3 angles = PlayerEntity->worldEulerAngles;
+    angles.z-=_deltaTime*playerSpeed;
+    entity_set_world_euler_angles(PlayerEntity, angles);
+
   }
   if(k.d.IsPressed){
-      PlayerEntity->worldEulerAngles.z+=_deltaTime*playerSpeed;
+    Vec3 angles = PlayerEntity->worldEulerAngles;
+    angles.z+=_deltaTime*playerSpeed;
+    entity_set_world_euler_angles(PlayerEntity, angles);
   }
-  Vec3 playerRotAxis = {0,0,1};
-  Vec3 forward = {0,1,0};
-  Vec3 piv = {0,0,0};
-  PlayerEntity->forward = math_vec3_rotate(forward, piv, playerRotAxis, PlayerEntity->worldEulerAngles.z);
+  /* Vec3 playerRotAxis = {0,0,1}; */
+  /* Vec3 forward = {0,1,0}; */
+  /* Vec3 piv = {0,0,0}; */
+  /* PlayerEntity->forward = math_vec3_rotate(forward, piv, playerRotAxis, PlayerEntity->worldEulerAngles.z); */
 
 
   if(k.space.WasDownedThisFrame){

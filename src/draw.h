@@ -4,7 +4,8 @@
 #include <stdint.h>
 #include <math.h>
 
-
+//@TODO remove pivot stuff here
+// objects should just pass their final positions and rotations
 // world functions
 void draw_rectangle_world(CG_OffscreenBuffer* _to, float _ppu, Vec3 _min,Vec3 _size, Vec3 _rotation, Vec3 _pivot, u32 _color);
 

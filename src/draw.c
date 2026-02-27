@@ -38,8 +38,8 @@ void draw_circle_world(CG_OffscreenBuffer* _to, float _ppu, Vec3 _pos,float _rad
 void draw_rectangle(CG_OffscreenBuffer *_to,  uint32_t _color, int32_t _minX, int32_t _minY, int32_t _width, int32_t _height, float _rotation, float _rotationPivotX, float _rotationPivotY){
 
 
-  float sinRot = sinf(-Rad(_rotation));
-  float cosRot = cosf(-Rad(_rotation));
+  float sinRot = sinf(Rad(_rotation) * ANGLE_CONVENTION);
+  float cosRot = cosf(Rad(_rotation) * ANGLE_CONVENTION);
   
   for(int32_t y = _minY;y<(_minY + _height);y++){
 

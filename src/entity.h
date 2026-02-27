@@ -2,6 +2,7 @@
 #define _CG_ENTITY
 #include "physics.h"
 
+#define MAX_ENTITY_CHILDREN 32
 
 
 enum CG_EntityType {
@@ -9,7 +10,7 @@ enum CG_EntityType {
   ENTITY_TYPE_WORLD_LAYER,
   ENTITY_TYPE_ASTEROID,
   ENTITY_TYPE_PROJECTILE,
-  ENTITY_TYPE_CAMERA
+  ENTITY_TYPE_TEST
   
 };
 
@@ -35,7 +36,7 @@ typedef struct CG_Entity{
 
 
   struct CG_Entity* parent;
-  struct CG_Entity* children;
+  struct CG_Entity *children[MAX_ENTITY_CHILDREN];
   u64 childCount;
 
 
@@ -79,9 +80,11 @@ typedef struct CG_Entity{
 
 
 void entity_move_to(CG_Entity* _entity, Vec3 _worldPos);
+void entity_sync_local_pos_with_world_pos(CG_Entity* _entity);
 void entity_set_world_euler_angles(CG_Entity* _entity, Vec3 _angles);
 
 void entity_set_vectors(CG_Entity* _entity, Vec3 _forward, Vec3 _right, Vec3 _up);
 
+void entity_set_parent(CG_Entity* _entity, CG_Entity* _parent);
 
 #endif
