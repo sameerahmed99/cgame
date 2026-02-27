@@ -42,7 +42,7 @@ void* arena_push(Arena* _arena, u64 _size, b32 _doNotZero){
 	memset(node,0, _size);
       }
 
-      _arena->numItems++;
+      //      _arena->numItems++;
       return node;
     }
   }

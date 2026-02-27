@@ -94,17 +94,7 @@ void draw_circle(CG_OffscreenBuffer *_to, int32_t _radius, uint32_t _color, int3
 }
 
 
-void draw_sky(CG_OffscreenBuffer *_to, u32 _skyCol, u32 _sunCol, u32 _cloudCol)
-{
-  u32 sunX = 75;
-  u32 sunY = _to->Height - 75;
-  draw_rectangle(_to,_skyCol,0,0,_to->Width, _to->Height,0,0,0);
 
-  // no sun for now
-  //  draw_circle(_to, 60, _sunCol, sunX, sunY);
-
-  
-}
 
 void draw_ground(CG_OffscreenBuffer *_to, u32 _groundCol, u32 _height){
 

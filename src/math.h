@@ -3,12 +3,16 @@
 #include <math.h>
 #include "types.h"
 
-#define Min(a,b) ( a > b ? b : a)
-#define Max(a,b) ( a > b ? a : b)
+#define Min(a,b) ( (a) > (b) ? (b) : (a))
+#define Max(a,b) ( (a) > (b) ? (a) : (b))
+#define Clamp01(a) ( Max(0, Min(1, (a)) ) )
+#define Clamp(val, min, max) ( Min( (max), Max( (min), (val) ))    )
 #define PI 3.14159265358979323846
 #define Rad(deg) (deg)*(PI/180.0)
 #define Deg(rad) (rad)*(180.0/PI)
 #define ANGLE_CONVENTION -1
+
+#define FormatXYZ(Val) Val.x, Val.y, Val.z
 
 
 #define EULER_ANGLE_YXZ 1
@@ -43,6 +47,7 @@ float math_lerp(float _a, float _b, float _t);
 void math_get_rotated_point(float *x, float *y, float _sinRot, float _cosRot,float _pivotX, float _pivotY);
 
 u64 math_get_aligned_pos_pow2(u64 _pos, u64 _alignTo);
+
 
 
 

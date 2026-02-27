@@ -12,7 +12,9 @@ typedef struct Collider2D{
   enum Collider2DShape shape;
   float radius;
   Vec3 center;
-  Vec3 a,b,c,d;
+  Vec3 a,b,c;
+  float width;
+  float height;
   Vec3 angles;
 } Collider2D;
 

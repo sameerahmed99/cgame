@@ -10,6 +10,7 @@ enum CG_EntityType {
   ENTITY_TYPE_WORLD_LAYER,
   ENTITY_TYPE_ASTEROID,
   ENTITY_TYPE_PROJECTILE,
+  ENTITY_TYPE_GAME_BORDER,
   ENTITY_TYPE_TEST
   
 };
@@ -18,12 +19,14 @@ enum CG_EntityType {
 struct CG_Entity;
 typedef struct CG_Entity{
   enum CG_EntityType type;
+  char debugString[64];
   Vec3 worldPos;
   Vec3 localPos;
   Vec3 worldEulerAngles;
   Vec3 localEulerAngles;
   Vec3 worldScale;
   Vec3 localScale;
+
 
 
   Vec3 forward;
@@ -41,13 +44,8 @@ typedef struct CG_Entity{
 
 
 
-  b32 isSphere;
-  float sphereRadius;
-  u32 color;
+
   
-  b32 drawDebugSphere;
-  u32 debugSphereRadius;
-  u32 debugSphereColor;
   b32 drawPhysicsDebugSphere;
   u32 debugSphereColorPhys;
 
@@ -86,5 +84,10 @@ void entity_set_world_euler_angles(CG_Entity* _entity, Vec3 _angles);
 void entity_set_vectors(CG_Entity* _entity, Vec3 _forward, Vec3 _right, Vec3 _up);
 
 void entity_set_parent(CG_Entity* _entity, CG_Entity* _parent);
+CG_Entity *entity_create(Arena *arena, enum CG_EntityType _type);
 
+
+void entity_set_collider2D_rectangle(CG_Entity* _entity, Vec3 _bottomLeftLocal, float _width, float _height);
+
+Vec3 entity_local_to_world_pos(CG_Entity* _entity, Vec3 _localPos);
 #endif

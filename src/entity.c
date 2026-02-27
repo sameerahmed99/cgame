@@ -11,8 +11,7 @@ CG_Entity *entity_create(Arena *arena, enum CG_EntityType _type){
 
   ent->parent = NULL;
 
-  ent->isSphere = false;
-  ent->sphereRadius =0;
+
 
 
   ent->forward = Vec3Forward;
@@ -148,14 +147,13 @@ void entity_set_local_euler_angles(CG_Entity* _entity, Vec3 _angles){
 
 
   Vec3 original = _entity->worldEulerAngles;
-  _entity->localEulerAngles=_angles;
   Vec3 worldAngles = _angles;
 
   if(_entity->parent!=NULL){
     worldAngles = math_vec3_add(_entity->parent->worldEulerAngles,_angles);
   }
 
-  _entity->worldEulerAngles = worldAngles;
+  entity_set_world_euler_angles(_entity, worldAngles);
 
   Vec3 offset = math_vec3_subtract(original, worldAngles);
   
@@ -167,3 +165,19 @@ void entity_set_local_euler_angles(CG_Entity* _entity, Vec3 _angles){
 }
 
 
+void entity_set_collider2D_rectangle(CG_Entity* _entity, Vec3 _bottomLeftLocal, float _width, float _height){
+  _entity->collider2D.shape = COLLIDER2D_RECTANGLE;
+
+  _entity->collider2D.a = entity_local_to_world_pos(_entity,_bottomLeftLocal);
+  _entity->collider2D.width = _width;
+  _entity->collider2D.height = _height;
+}
+
+Vec3 entity_local_to_world_pos(CG_Entity* _entity, Vec3 _localPos){
+  Vec3 worldPos = _entity->worldPos;
+  worldPos = math_vec3_add(worldPos, math_vec3_scale(_entity->right, _localPos.x)); 
+  worldPos = math_vec3_add(worldPos, math_vec3_scale(_entity->up, _localPos.y));
+  worldPos = math_vec3_add(worldPos, math_vec3_scale(_entity->forward, _localPos.z));
+
+  return worldPos;
+}

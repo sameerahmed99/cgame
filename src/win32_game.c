@@ -35,8 +35,8 @@
 #define fourccDPDS "dpds"
 
 
-#include "cgame.h"
-#include "cgame.c"
+
+#include "game.h"
 
 
 
