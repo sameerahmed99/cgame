@@ -61,6 +61,10 @@ float math_vec3_sqr_dist(Vec3 _a, Vec3 _b){
   return x*x + y*y + z*z;
 }
 
+float math_vec3_magnitude(Vec3 _a){
+  return sqrtf(math_vec3_sqr_dist(Vec3Zero, _a));
+}
+
 
 Vec3 math_vec3_rotate(Vec3 _vec,Vec3 _pivot,Vec3 _axis, float _degrees){
   Mat4x4 rot = math_mat4x4_create_rotation(_degrees, _axis);
@@ -106,6 +110,16 @@ Vec3 math_vec3_subtract(Vec3 _a, Vec3 _b){
   return res;
 }
 
+Vec3 math_vec3_normalize(Vec3 _a){
+  float mag = math_vec3_magnitude(_a);
+  float maginv = 1/mag;
+
+  _a.x*=maginv;
+  _a.y*=maginv;
+  _a.z*=maginv;
+
+  return _a;
+}
 float math_vec3_dot(Vec3 _a, Vec3 _b){
   float res = _a.x * _b.x + _a.y*_b.y + _a.z*_b.z;
   return res;

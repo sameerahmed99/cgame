@@ -87,7 +87,9 @@ void entity_set_parent(CG_Entity* _entity, CG_Entity* _parent);
 CG_Entity *entity_create(Arena *arena, enum CG_EntityType _type);
 
 
-void entity_set_collider2D_rectangle(CG_Entity* _entity, Vec3 _bottomLeftLocal, float _width, float _height);
+void entity_set_collider2D_rectangle(CG_Entity* _entity, Vec3 _bottomLeftLocal, Vec3 _localEulerAngles,float _width, float _height);
 
 Vec3 entity_local_to_world_pos(CG_Entity* _entity, Vec3 _localPos);
+
+Vec3 entity_local_to_world_euler_angles(CG_Entity* _entity, Vec3 _localEulerAngles);
 #endif

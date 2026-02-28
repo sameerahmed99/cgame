@@ -1,6 +1,7 @@
 #ifndef _GAME_INCLUDED
 #define _GAME_INCLUDED
-#include "cgame1.c"
+//#include "cgame1.c"
+#include "collision_test.c"
 
 // @TODO
 

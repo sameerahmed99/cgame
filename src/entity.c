@@ -165,14 +165,17 @@ void entity_set_local_euler_angles(CG_Entity* _entity, Vec3 _angles){
 }
 
 
-void entity_set_collider2D_rectangle(CG_Entity* _entity, Vec3 _bottomLeftLocal, float _width, float _height){
+void entity_set_collider2D_rectangle(CG_Entity* _entity, Vec3 _bottomLeftLocal, Vec3 _localEulerAngles,float _width, float _height){
   _entity->collider2D.shape = COLLIDER2D_RECTANGLE;
 
-  _entity->collider2D.a = entity_local_to_world_pos(_entity,_bottomLeftLocal);
-  _entity->collider2D.width = _width;
-  _entity->collider2D.height = _height;
+  _entity->collider2D = phys2D_create_rect_collider(entity_local_to_world_pos(_entity, _bottomLeftLocal), _width, _height, _entity->worldPos, entity_local_to_world_euler_angles(_entity,_localEulerAngles));
 }
 
+
+
+Vec3 entity_local_to_world_euler_angles(CG_Entity* _entity, Vec3 _localEulerAngles){
+  return math_vec3_add(_entity->worldEulerAngles, _localEulerAngles);
+}
 Vec3 entity_local_to_world_pos(CG_Entity* _entity, Vec3 _localPos){
   Vec3 worldPos = _entity->worldPos;
   worldPos = math_vec3_add(worldPos, math_vec3_scale(_entity->right, _localPos.x)); 
