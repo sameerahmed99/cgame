@@ -1,23 +1,38 @@
 #ifndef _CG_3D_GRAPHICS
 #define _CG_3D_GRAPIHCS
 #include "math.h"
-#include "cgame.h"
+#include "types.h"
+
 typedef struct CG_Vertex {
   Vec3 pos;
-  u32 color;
-} CG_Vertex;
+  Vec3 normal;
+  Vec2 texCoord;
+  CG_Color color;
+  } CG_Vertex;
+
 
 
 typedef struct CG_Mesh {
-  size_t numTriangles;
   size_t numVertices;
+  size_t numIndices;
   CG_Vertex* vertices;
   u32* indices;
 } CG_Mesh;
 
 
+
+typedef struct CG_Model {
+  CG_Mesh* meshes;
+  size_t numMeshes;
+
+} CG_Model;
+
+
+
 CG_Mesh graphics_get_cube_mesh();
 
+CG_Mesh graphics_get_triangle_mesh();
 
 
+void draw_debug_vertices(CG_Vertex* verts, size_t _num, Mat4x4 _mat, float _radius);
 #endif

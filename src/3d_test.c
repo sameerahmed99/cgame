@@ -8,21 +8,14 @@
 #include "entity.c"
 #include "physics.c"
 #include "3dgraphics.c"
-// Game @TODO
-// create boundary upon hitting which projectiles and asteroids are destroyed
-
-// powerups: fall like asteroids, hitting them with projectile gives you the powerup
-// such as machine gun, or explosive canon
-
-// Visuals @TODO
-// Stary sky
-
+#include "model_loader.h"
+#include "model_loader.c"
 internal CG_PlatformConfig PlatformConfig;
 
 
 internal CG_Memory *TEMP_gameMemory;
 
-
+CG_Model* TestCubeModel;
 
 Arena* ArenaEntities;
 
@@ -36,6 +29,9 @@ internal float playerPosX, playerPosY;
 
 
 CG_OffscreenBuffer *ScreenBuffer;
+
+
+
 
 CG_PlatformConfig cg_get_platform_config(){
   
@@ -85,6 +81,9 @@ void create_player(){
 
 
 internal void cg_init(){
+
+  size_t meshTotalSize;
+  TestCubeModel=  model_loader_load_gltf("../assets/models/cube1x1.glb");
   srand(time(NULL));
   PlatformConfig = cg_get_platform_config();
   PlatformConfig.ScreenWidth = platform_get_client_screen_width();
@@ -106,6 +105,7 @@ internal void cg_init(){
   /* printf("PlatformConfig.ScreenHeight: %u\n", PlatformConfig.ScreenHeight); */
   
   ArenaEntities = arena_create(Gigabytes(4), Megabytes(4), true);
+
 
   printf("platform ppu: %f\n", PlatformConfig.ppu);
   
@@ -298,6 +298,12 @@ void update_entities(float _dt){
 
     }
     draw_entity(ent);
+
+    CG_Mesh tri = graphics_get_triangle_mesh();
+    Mat4x4 mat = math_mat4x4_create_identity();
+    //    draw_debug_vertices(tri.vertices,3,mat , 5);
+
+    draw_debug_vertices(TestCubeModel->meshes[0].vertices,TestCubeModel->meshes[0].numVertices,mat,5);
   }
 }
 
@@ -378,7 +384,6 @@ internal void cg_update(CG_Memory* _memory, CG_OffscreenBuffer *_screenBuffer, C
 
 
   //  printf("Dif den: %f\n", CurrentDifficultyDenominator);
-  
 
   ScreenBuffer = _screenBuffer;
 
@@ -458,3 +463,6 @@ void write_sound_test(){
 }
 
 
+CG_OffscreenBuffer *cg_get_current_off_screen_buffer(){
+  return ScreenBuffer;
+}

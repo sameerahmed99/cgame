@@ -70,7 +70,7 @@ typedef struct CG_GameState{
 
 
 CG_PlatformConfig cg_get_platform_config();
-
+CG_OffscreenBuffer *cg_get_current_off_screen_buffer();
 
 internal void cg_init();
 internal void cg_update(CG_Memory* _memory, CG_OffscreenBuffer* _screenBuffer, CG_Input *_platformInput, float _deltaTime);

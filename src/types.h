@@ -16,4 +16,9 @@ typedef uint64_t u64;
 typedef i32 b32;
 
 
+
+typedef struct CG_Color{
+  u8 r,g,b,a;
+} CG_Color;
+
 #endif 

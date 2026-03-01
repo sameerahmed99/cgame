@@ -8,14 +8,6 @@
 #include "entity.c"
 #include "physics.c"
 
-// Game @TODO
-// create boundary upon hitting which projectiles and asteroids are destroyed
-
-// powerups: fall like asteroids, hitting them with projectile gives you the powerup
-// such as machine gun, or explosive canon
-
-// Visuals @TODO
-// Stary sky
 
 internal CG_PlatformConfig PlatformConfig;
 

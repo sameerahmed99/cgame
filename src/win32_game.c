@@ -848,10 +848,11 @@ gameMemory.AudioBufferCurrentWritePositionFrames =
 
 void platform_play_wave_file(char *path) { win32_play_wave_file(path); }
 
-void *platform_read_whole_file(char *path) {
+void *platform_read_whole_file(char *path, size_t* _contentSize) {
   printf(path);
   HANDLE hnd = CreateFileA(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
   void *content = NULL;
+  *_contentSize = 0;
   if (hnd == INVALID_HANDLE_VALUE) {
     return NULL;
   }
@@ -862,11 +863,11 @@ void *platform_read_whole_file(char *path) {
     // ReadFile can read a maximum of sizeof(DWORD) bytes
     // so fileSize.QuadPart should be less than that
     Assert(fileSize.QuadPart <= 0xFFFFFFFF);
-    DWORD bytesRead;
+    DWORD bytesRead=0;
     if (ReadFile(hnd, content, fileSize.QuadPart, &bytesRead, NULL) && (bytesRead == fileSize.QuadPart)) {
 
     } else {
-      platform_free_file_memory(content);
+      platform_free_file_memory(content, bytesRead);
       content = NULL;
     }
 
@@ -874,12 +875,14 @@ void *platform_read_whole_file(char *path) {
   }
 
   CloseHandle(hnd);
+
+  *_contentSize = fileSize.QuadPart;
   return content;
 }
 
-void platform_free_file_memory(void *memory) {
+void platform_free_file_memory(void *memory, size_t _amount) {
   if (memory != NULL) {
-    VirtualFree(memory, 0, MEM_RELEASE);
+    VirtualFree(memory, _amount, MEM_RELEASE);
   }
 }
 
