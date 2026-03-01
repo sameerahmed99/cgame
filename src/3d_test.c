@@ -7,7 +7,7 @@
 #include "memory.c"
 #include "entity.c"
 #include "physics.c"
-
+#include "3dgraphics.c"
 // Game @TODO
 // create boundary upon hitting which projectiles and asteroids are destroyed
 
@@ -34,11 +34,8 @@ internal float PlayerBaseRadius = 10;
 CG_Entity* PlayerEntity;
 internal float playerPosX, playerPosY;
 
-internal float PlayerColliderWidth = 25, PlayerColliderHeight=25;
 
 CG_OffscreenBuffer *ScreenBuffer;
-
-u32 ColYAxis, ColXAxis, ColZAxis;
 
 CG_PlatformConfig cg_get_platform_config(){
   
@@ -72,33 +69,22 @@ void sync_collider(CG_Entity* _entity, b32 _useVisualPos){
 
 void create_player(){
   PlayerEntity = entity_create(ArenaEntities, ENTITY_TYPE_PLAYER);
-   
+ 
 
   Vec3 pos = PlayerEntity->worldPos;
   pos.y = -(float)PlatformConfig.ScreenHeight /2.0f;
   pos.y /= PlatformConfig.ppu;
-  pos.y+=25;
   entity_set_world_pos(PlayerEntity,pos);
 
 
-  Vec3 angles = {0,0,0};
+  Vec3 angles = {90,0,0};
   entity_set_world_euler_angles(PlayerEntity,  angles);
-
-  Vec3 colBottomLeftLocal = Vec3Zero;
-  colBottomLeftLocal.x = -PlayerColliderWidth/2;
-  //  colBottomLeftLocal.z = -PlayerColliderHeight/2;
-  colBottomLeftLocal.y = -PlayerColliderHeight/2;
-  entity_set_collider2D_rectangle(PlayerEntity, colBottomLeftLocal, Vec3Zero, PlayerColliderWidth, PlayerColliderHeight);
 }
 
 
 
 
 internal void cg_init(){
-
-  ColXAxis = cg_create_color_from_channels(200,20,20);
-  ColYAxis = cg_create_color_from_channels(20,200,20);
-  ColZAxis = cg_create_color_from_channels(100,100,150);
   srand(time(NULL));
   PlatformConfig = cg_get_platform_config();
   PlatformConfig.ScreenWidth = platform_get_client_screen_width();
@@ -202,29 +188,54 @@ internal void write_square_wave_to_audio_buffer(uint8_t* _writeTo, uint32_t fram
 
 
 internal void draw_player(CG_OffscreenBuffer *_to){
+  u32 playerX = PlayerEntity->worldPos.x;
+  u32 playerY = PlayerEntity->worldPos.y;
+  float rot = PlayerEntity->worldEulerAngles.z;
+  
+  u32 radius = PlayerBaseRadius;
+  u32 gunWidth = 25;
+  u32 gunLength = 30;
+  u32 gunBaseLength = 15;
+  u32 gunBaseWidth = 30;
+  u32 bottomMargin = -5;
+  
+  uint32_t circleColor = cg_create_color_from_channels(80,80,80);
+  u32 gunCol=  cg_create_color_from_channels(125,125,125);
+  u32 gunBaseCol=  cg_create_color_from_channels(50,50,50);
 
-  Vec3 size =Vec3Zero;
-  size.x = PlayerColliderWidth;
-  size.y = PlayerColliderHeight;
-  Vec3 pos = entity_local_to_world_pos(PlayerEntity, PlayerEntity->localColliderOffset);
-  draw_rectangle_world(ScreenBuffer,PlatformConfig.ppu,pos , size, PlayerEntity->worldEulerAngles, pos, cg_create_color_from_channels(50,50,50));
 
-      Vec3 playerDebugSize = math_vec3_scale(Vec3One, 5);
-      Vec3 playerDebugPos = PlayerEntity->worldPos;
-      playerDebugPos.x-=playerDebugSize.x/2;
-      playerDebugPos.y-=playerDebugSize.y/2;
-      
-      draw_rectangle_world(ScreenBuffer,PlatformConfig.ppu,pos , playerDebugSize, PlayerEntity->worldEulerAngles, PlayerEntity->worldPos, cg_create_color_from_channels(250,50,50));
 
-      
-      printf("Pos: %f, %f, %f\n", FormatXYZ(pos));
+
+  /* draw_rectangle(_to, gunCol, playerX - gunWidth/2, playerY + radius + bottomMargin, gunWidth,gunLength,rot,playerX, playerY); */
+
+  /* draw_rectangle(_to, gunBaseCol, playerX - gunBaseWidth/2, playerY + radius + bottomMargin, gunBaseWidth,gunBaseLength,rot,playerX, playerY); */
+  /* draw_circle(_to, radius, circleColor, playerX, playerY,0,0,0); */
+
+  Vec3 gunSize = {6,7,1};
+  Vec3 gunBaseSize = {10,4,1};
+  Vec3 gunRot = {0,0,rot};
+
+  Vec3 gunFramePos = PlayerEntity->worldPos;
+  gunFramePos.x-=gunBaseSize.x/2;
+  gunFramePos.y+=radius-1;
+
+  Vec3 gunPos = PlayerEntity->worldPos;
+  gunPos.x-=gunSize.x/2;
+  gunPos.y+=radius-1;
+
+
+
+  
+  draw_rectangle_world(ScreenBuffer, PlatformConfig.ppu, gunPos, gunSize, gunRot, PlayerEntity->worldPos, gunCol);
+
+  draw_rectangle_world(ScreenBuffer, PlatformConfig.ppu, gunFramePos, gunBaseSize, gunRot, PlayerEntity->worldPos, gunBaseCol);
+  
+  draw_circle_world(ScreenBuffer, PlatformConfig.ppu, PlayerEntity->worldPos, radius, gunRot, PlayerEntity->worldPos, circleColor);
 }
 
 
 
   void draw_entity(CG_Entity* ent){
-
-  
     if(ent->type == ENTITY_TYPE_PLAYER){
       draw_player(ScreenBuffer); 
     }
@@ -237,11 +248,6 @@ internal void draw_player(CG_OffscreenBuffer *_to){
 
 
     }
-
-    Vec3 gizmoLineSize = Vec3One;
-    gizmoLineSize.y = 25;
-
-        draw_rectangle_world(ScreenBuffer,PlatformConfig.ppu,ent->worldPos , gizmoLineSize, ent->worldEulerAngles, ent->worldPos, ColZAxis);
     
   }
 void update_entities(float _dt){
@@ -262,8 +268,6 @@ void update_entities(float _dt){
       //      printf("Pos: %f, %f, %f\n", FormatXYZ(ent->collider2D.a));
       draw_rectangle_world(ScreenBuffer,PlatformConfig.ppu,ent->collider2D.p1 , size, ent->worldEulerAngles, ent->worldPos, cg_create_color_from_channels(50,50,50));
     }
-
-
 
     if(false && ent->drawPhysicsDebugSphere){
 

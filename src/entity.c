@@ -169,6 +169,8 @@ void entity_set_collider2D_rectangle(CG_Entity* _entity, Vec3 _bottomLeftLocal, 
   _entity->collider2D.shape = COLLIDER2D_RECTANGLE;
 
   _entity->collider2D = phys2D_create_rect_collider(entity_local_to_world_pos(_entity, _bottomLeftLocal), _width, _height, _entity->worldPos, entity_local_to_world_euler_angles(_entity,_localEulerAngles));
+
+  _entity->localColliderOffset = _bottomLeftLocal;
 }
 
 
