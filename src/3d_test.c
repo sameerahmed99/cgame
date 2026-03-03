@@ -25,6 +25,7 @@ float TimeSinceLastFixedUpdate = 0;
 float FixedTimeStep = 0.02;
 internal float PlayerBaseRadius = 10;
 CG_Entity* PlayerEntity;
+CG_Entity* CubeEntity;
 internal float playerPosX, playerPosY;
 
 
@@ -47,7 +48,7 @@ CG_PlatformConfig cg_get_platform_config(){
    .BaseScreenWidth = 1280,
    .BaseScreenHeight = 720,
    .BasePixelsPerWorldUnit = 5
-};
+   };
 
  return config;
 }
@@ -75,7 +76,9 @@ void create_player(){
 
   Vec3 angles = {90,0,0};
   entity_set_world_euler_angles(PlayerEntity,  angles);
-}
+
+    CubeEntity = entity_create(ArenaEntities, ENTITY_TYPE_STATIC);
+  }
 
 
 
@@ -131,7 +134,7 @@ internal float tempOffsetX, tempOffsetY;
 
 
 float speed = .25;
-float playerSpeed = 150;
+float playerSpeed = 5;
 
 internal float SquareWaveFrequency = 100;
 
@@ -187,67 +190,12 @@ internal void write_square_wave_to_audio_buffer(uint8_t* _writeTo, uint32_t fram
 
 
 
-internal void draw_player(CG_OffscreenBuffer *_to){
-  u32 playerX = PlayerEntity->worldPos.x;
-  u32 playerY = PlayerEntity->worldPos.y;
-  float rot = PlayerEntity->worldEulerAngles.z;
-  
-  u32 radius = PlayerBaseRadius;
-  u32 gunWidth = 25;
-  u32 gunLength = 30;
-  u32 gunBaseLength = 15;
-  u32 gunBaseWidth = 30;
-  u32 bottomMargin = -5;
-  
-  uint32_t circleColor = cg_create_color_from_channels(80,80,80);
-  u32 gunCol=  cg_create_color_from_channels(125,125,125);
-  u32 gunBaseCol=  cg_create_color_from_channels(50,50,50);
 
-
-
-
-  /* draw_rectangle(_to, gunCol, playerX - gunWidth/2, playerY + radius + bottomMargin, gunWidth,gunLength,rot,playerX, playerY); */
-
-  /* draw_rectangle(_to, gunBaseCol, playerX - gunBaseWidth/2, playerY + radius + bottomMargin, gunBaseWidth,gunBaseLength,rot,playerX, playerY); */
-  /* draw_circle(_to, radius, circleColor, playerX, playerY,0,0,0); */
-
-  Vec3 gunSize = {6,7,1};
-  Vec3 gunBaseSize = {10,4,1};
-  Vec3 gunRot = {0,0,rot};
-
-  Vec3 gunFramePos = PlayerEntity->worldPos;
-  gunFramePos.x-=gunBaseSize.x/2;
-  gunFramePos.y+=radius-1;
-
-  Vec3 gunPos = PlayerEntity->worldPos;
-  gunPos.x-=gunSize.x/2;
-  gunPos.y+=radius-1;
-
-
-
-  
-  draw_rectangle_world(ScreenBuffer, PlatformConfig.ppu, gunPos, gunSize, gunRot, PlayerEntity->worldPos, gunCol);
-
-  draw_rectangle_world(ScreenBuffer, PlatformConfig.ppu, gunFramePos, gunBaseSize, gunRot, PlayerEntity->worldPos, gunBaseCol);
-  
-  draw_circle_world(ScreenBuffer, PlatformConfig.ppu, PlayerEntity->worldPos, radius, gunRot, PlayerEntity->worldPos, circleColor);
-}
 
 
 
   void draw_entity(CG_Entity* ent){
-    if(ent->type == ENTITY_TYPE_PLAYER){
-      draw_player(ScreenBuffer); 
-    }
-    else if(ent->type == ENTITY_TYPE_ASTEROID){
 
-    }
-
-    else if(ent->type == ENTITY_TYPE_PROJECTILE){
-
-
-
-    }
     
   }
 void update_entities(float _dt){
@@ -257,7 +205,7 @@ void update_entities(float _dt){
     if(ent->destroyed) continue;
 
 
-    
+
 
 
     if(ent->type ==  ENTITY_TYPE_GAME_BORDER){
@@ -276,6 +224,7 @@ void update_entities(float _dt){
 
 
     if(ent->hasPhysics){
+
       if(!ent->isStaticPhysBody){
 
 	if(ent->physInterp){
@@ -299,12 +248,25 @@ void update_entities(float _dt){
     }
     draw_entity(ent);
 
+
+  }
+
+  
+    float aspect = (float)PlatformConfig.ScreenWidth / (float)PlatformConfig.ScreenHeight;
+
+
     CG_Mesh tri = graphics_get_triangle_mesh();
-    Mat4x4 mat = math_mat4x4_create_identity();
+    Mat4x4 model = CubeEntity->worldMatrix;
+
+    Vec3 pos = {0,0,10};
+    
+
+    Mat4x4 camInverse = math_mat4x4_create_identity();
+    Mat4x4 projection = math_mat4x4_create_perspective_projection(70, false, aspect, .05f, 25.0f);
     //    draw_debug_vertices(tri.vertices,3,mat , 5);
 
-    draw_debug_vertices(TestCubeModel->meshes[0].vertices,TestCubeModel->meshes[0].numVertices,mat,5);
-  }
+    
+        draw_debug_vertices(TestCubeModel->meshes[0].vertices,TestCubeModel->meshes[0].numVertices,5, model, camInverse, projection);
 }
 
 
@@ -406,16 +368,38 @@ internal void cg_update(CG_Memory* _memory, CG_OffscreenBuffer *_screenBuffer, C
   CG_KeyboardKeys k = _playerInput->Keyboard;
 
   if(k.a.IsPressed){
-    Vec3 angles = PlayerEntity->worldEulerAngles;
-    angles.z-=_deltaTime*playerSpeed;
-    entity_set_world_euler_angles(PlayerEntity, angles);
 
+    Vec3 pos = CubeEntity->worldPos;
+    pos.x-=_deltaTime*playerSpeed;
+    entity_set_world_pos(CubeEntity, pos); 
   }
   if(k.d.IsPressed){
-    Vec3 angles = PlayerEntity->worldEulerAngles;
-    angles.z+=_deltaTime*playerSpeed;
-    entity_set_world_euler_angles(PlayerEntity, angles);
+
+    Vec3 pos = CubeEntity->worldPos;
+    pos.x+=_deltaTime*playerSpeed;
+    entity_set_world_pos(CubeEntity, pos); 
   }
+  if(k.w.IsPressed){
+
+    Vec3 pos = CubeEntity->worldPos;
+    pos.z+=_deltaTime*playerSpeed;
+    entity_set_world_pos(CubeEntity, pos); 
+  }
+  if(k.s.IsPressed){
+
+    Vec3 pos = CubeEntity->worldPos;
+    pos.z-=_deltaTime*playerSpeed;
+    entity_set_world_pos(CubeEntity, pos); 
+  }
+  if(k.space.IsPressed){
+    Vec3 euler = CubeEntity->worldEulerAngles;
+    euler.y+=_deltaTime*playerSpeed*5;
+
+    printf("Euler: %f, %f, %f\n", FormatXYZ(euler));
+
+    entity_set_world_euler_angles(CubeEntity, euler);
+  }
+
   /* Vec3 playerRotAxis = {0,0,1}; */
   /* Vec3 forward = {0,1,0}; */
   /* Vec3 piv = {0,0,0}; */

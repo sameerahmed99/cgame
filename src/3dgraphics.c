@@ -59,15 +59,20 @@ Vec3 graphics_transform_ndc_to_screen(Vec3 pos){
 
 
 
-void draw_debug_vertices(CG_Vertex* verts, size_t _num, float _radius, Mat4x4 _model, Mat4x4 _view, Mat4x4 _projection){
+void draw_debug_vertices(CG_Vertex* verts, size_t _num, float _radius, Mat4x4 _model, Mat4x4 _inversedCameraMatrix, Mat4x4 _projection){
 
 
-  printf("Debugging vertices\n");
+
   CG_OffscreenBuffer *screenBuffer = cg_get_current_off_screen_buffer();
   for(int i=0;i<_num;i++){
-    Vec3 posa = math_mul_vec3_mat4x4(verts[i].pos, _mat);
+    Vec3 worldPos = math_mul_vec3_mat4x4(verts[i].pos, _model);
+    Vec3 eyeSpace = math_mul_vec3_mat4x4(worldPos, _inversedCameraMatrix);
+    Vec4 eyeSpaceHomo = {eyeSpace.x, eyeSpace.y, eyeSpace.z, 1};
+    Vec4 clipSpace = math_mul_vec4_mat4x4(eyeSpaceHomo, _projection);
 
-    posa = graphics_transform_ndc_to_screen(posa);
+    Vec3 ndc = {clipSpace.x/clipSpace.w, clipSpace.y/clipSpace.w, clipSpace.z/clipSpace.w};
+
+    Vec3 posa = graphics_transform_ndc_to_screen(ndc);
 
     u32 col = 0x00AA00;
 
@@ -75,7 +80,7 @@ void draw_debug_vertices(CG_Vertex* verts, size_t _num, float _radius, Mat4x4 _m
     draw_circle(screenBuffer, _radius,col,(i32)posa.x, (i32)posa.y,0,0,0);
 
 
-    printf("Pos %d: %f, %f, %f\n",i, FormatXYZ(posa));
+    //    printf("Pos %d: %f, %f, %f\n",i, FormatXYZ(posa));
 
   }
 

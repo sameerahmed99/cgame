@@ -148,6 +148,23 @@ Vec3 math_mul_vec3_mat4x4(Vec3 _vec, Mat4x4 _mat){
   return res;
 }
 
+Vec4 math_mul_vec4_mat4x4(Vec4 _vec, Mat4x4 _mat){
+  Vec4 vec4;
+  vec4.x = _vec.x;
+  vec4.y = _vec.y;
+  vec4.z = _vec.z;
+  vec4.w = _vec.w;
+
+  Vec4 res;
+
+  res.x = _mat.m00 * vec4.x + _mat.m01 * vec4.y + _mat.m02 * vec4.z + _mat.m03*vec4.w;
+  res.y = _mat.m10 * vec4.x + _mat.m11 * vec4.y + _mat.m12 * vec4.z + _mat.m13*vec4.w;
+  res.z = _mat.m20 * vec4.x + _mat.m21 * vec4.y + _mat.m22 * vec4.z + _mat.m23*vec4.w;
+  res.w = _mat.m30 * vec4.x + _mat.m31 * vec4.y + _mat.m32 * vec4.z + _mat.m33 * vec4.w;
+
+  return res;
+}
+
 
 
 
@@ -176,6 +193,22 @@ Mat4x4 math_mat4x4_create_identity(){
   return mat;
 }
 
+
+Mat4x4 math_mat4x4_create_multi_axis_rotation(Vec3 _degrees){
+
+  Mat4x4 aroundX = math_mat4x4_create_rotation(_degrees.x, Vec3Right);
+  Mat4x4 aroundY = math_mat4x4_create_rotation(_degrees.y, Vec3Up);
+  Mat4x4 aroundZ = math_mat4x4_create_rotation(_degrees.z, Vec3Forward);
+
+
+  // yxz order
+  Mat4x4 final = aroundY;
+  final = math_mat4x4_mul(final, aroundX);
+  final = math_mat4x4_mul(final, aroundZ);
+
+  return final;
+
+}
 Mat4x4 math_mat4x4_create_rotation(float _degrees, Vec3 _axis){
 
   _degrees*=ANGLE_CONVENTION;
@@ -264,5 +297,34 @@ Mat4x4 math_mat4x4_mul(Mat4x4 _a, Mat4x4 _b){
   mat.m32 = _a.m30 * _b.m02 + _a.m31 * _b.m12 + _a.m32 * _b.m22 + _a.m33 * _b.m32;
   mat.m33 = _a.m30 * _b.m03 + _a.m31 * _b.m13 + _a.m32 * _b.m23 + _a.m33 * _b.m33;
 
+  return mat;
+}
+
+
+// ref: https://www.songho.ca/opengl/gl_projectionmatrix.html
+Mat4x4 math_mat4x4_create_perspective_projection(float _fovDegrees, b32 _vertical, float _widthPerHeight, float _nearPlaneDistance, float _farPlaneDistance){
+
+
+  float top, right;
+  if(_vertical){
+    top = tanf(_fovDegrees/2.0f) * _nearPlaneDistance;
+    right = top*_widthPerHeight;
+  }
+  else{
+  right = tanf(_fovDegrees/2.0f) * _nearPlaneDistance;
+  top =  right * 1/_widthPerHeight;
+  }
+
+  float height = top*2;
+  float width = right*2;
+
+  
+  Mat4x4 mat = math_mat4x4_create_identity();
+
+  mat.m00 = (2 * _nearPlaneDistance)/width;
+  mat.m11 = (2 * _nearPlaneDistance) / height;
+  mat.m22 = (_farPlaneDistance + _nearPlaneDistance) / (_farPlaneDistance - _nearPlaneDistance);
+  mat.m23 = (-2*_farPlaneDistance * _nearPlaneDistance) / (_farPlaneDistance - _nearPlaneDistance);
+  mat.m32 = 1;
   return mat;
 }

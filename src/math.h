@@ -68,8 +68,13 @@ float math_vec3_dot(Vec3 _a, Vec3 _b);
 
 Vec3 math_vec3_scale(Vec3 _vec, float _scale);
 
+Vec4 math_mul_vec4_mat4x4(Vec4 _vec, Mat4x4 _mat);
+
 Mat4x4 math_mat4x4_create_identity();
 Mat4x4 math_mat4x4_create_rotation(float _degrees, Vec3 _axis);
+Mat4x4 math_mat4x4_create_multi_axis_rotation(Vec3 _degrees);
 Mat4x4 math_mat4x4_create_translation(Vec3 _translation);
 Mat4x4 math_mat4x4_mul(Mat4x4 _a, Mat4x4 _b);
+
+Mat4x4 math_mat4x4_create_perspective_projection(float _fovDegrees, b32 _vertical, float _widthPerHeight, float _nearPlaneDistance, float _farPlaneDistance);
 #endif

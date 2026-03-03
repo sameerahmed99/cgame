@@ -41,6 +41,7 @@ void entity_set_parent(CG_Entity* _entity, CG_Entity* _parent){
 
 
   entity_sync_local_pos_with_world_pos(_entity);
+  entity_update_matrices(_entity);
 }
 
 
@@ -59,6 +60,27 @@ void entity_sync_local_pos_with_world_pos(CG_Entity* _entity){
     _entity->localPos = _entity->worldPos;
   }
 }
+
+void entity_update_matrices(CG_Entity* _entity){
+  Mat4x4 translation = math_mat4x4_create_translation(_entity->worldPos);
+  Mat4x4 rotation = math_mat4x4_create_multi_axis_rotation(_entity->worldEulerAngles);
+  Mat4x4 scale = math_mat4x4_create_identity();
+
+  Mat4x4 finalWorld = math_mat4x4_mul(translation, rotation);
+  finalWorld = math_mat4x4_mul(finalWorld, scale);
+
+  Mat4x4 translationLocal = math_mat4x4_create_translation(_entity->localPos);
+  Mat4x4 rotationLocal = math_mat4x4_create_multi_axis_rotation(_entity->localEulerAngles);
+  Mat4x4 scaleLocal = math_mat4x4_create_identity();
+
+
+  Mat4x4 finalLocal = math_mat4x4_mul(translationLocal, rotationLocal);
+  finalLocal = math_mat4x4_mul(finalLocal, scale);
+  _entity->worldMatrix = finalWorld;
+
+
+  _entity->localMatrix = finalLocal;
+}
 void entity_set_world_pos(CG_Entity* _entity, Vec3 _worldPos){
 
   //  printf("Got world pos: %f, %f, %f\n", _worldPos.x, _worldPos.y, _worldPos.z);
@@ -67,8 +89,10 @@ void entity_set_world_pos(CG_Entity* _entity, Vec3 _worldPos){
   _entity->worldPos = _worldPos;
 
   entity_sync_local_pos_with_world_pos(_entity);
+  entity_update_matrices(_entity);
 
-
+  
+  
   for(int i=0;i<_entity->childCount;i++){
 
     CG_Entity* child = _entity->children[i];
@@ -92,6 +116,7 @@ void entity_set_local_pos(CG_Entity* _entity, Vec3 _localPos){
 
   _entity->localPos = localPos;
   _entity->worldPos = worldPos;
+  entity_update_matrices(_entity);
   Vec3 worldOffset = math_vec3_subtract(worldPos, originalWorldPos);
   for(int i=0;i<_entity->childCount;i++){
     CG_Entity* en = _entity->children[i];
@@ -119,7 +144,7 @@ void entity_set_world_euler_angles(CG_Entity* _entity, Vec3 _angles){
   if(_entity->parent!=NULL){
     _entity->localEulerAngles = math_vec3_subtract(_angles, _entity->parent->worldEulerAngles);
   }
-
+  entity_update_matrices(_entity);
   Vec3 offset = math_vec3_subtract(_angles, original);
   for(int i=0;i<_entity->childCount;i++){
     CG_Entity* en= _entity->children[i];
@@ -154,7 +179,7 @@ void entity_set_local_euler_angles(CG_Entity* _entity, Vec3 _angles){
   }
 
   entity_set_world_euler_angles(_entity, worldAngles);
-
+  entity_update_matrices(_entity);
   Vec3 offset = math_vec3_subtract(original, worldAngles);
   
   for(int i=0;i<_entity->childCount;i++){

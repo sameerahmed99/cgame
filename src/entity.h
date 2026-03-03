@@ -11,7 +11,8 @@ enum CG_EntityType {
   ENTITY_TYPE_ASTEROID,
   ENTITY_TYPE_PROJECTILE,
   ENTITY_TYPE_GAME_BORDER,
-  ENTITY_TYPE_TEST
+  ENTITY_TYPE_TEST,
+  ENTITY_TYPE_STATIC
   
 };
 
@@ -92,4 +93,6 @@ void entity_set_collider2D_rectangle(CG_Entity* _entity, Vec3 _bottomLeftLocal, 
 Vec3 entity_local_to_world_pos(CG_Entity* _entity, Vec3 _localPos);
 
 Vec3 entity_local_to_world_euler_angles(CG_Entity* _entity, Vec3 _localEulerAngles);
+
+void entity_update_matrices(CG_Entity* _entity);
 #endif

@@ -34,5 +34,5 @@ CG_Mesh graphics_get_cube_mesh();
 CG_Mesh graphics_get_triangle_mesh();
 
 
-void draw_debug_vertices(CG_Vertex* verts, size_t _num, Mat4x4 _mat, float _radius);
+void draw_debug_vertices(CG_Vertex* verts, size_t _num, float _radius, Mat4x4 _model, Mat4x4 _view, Mat4x4 _projection);
 #endif
