@@ -7,7 +7,7 @@ typedef struct CG_Vertex {
   Vec3 pos;
   Vec3 normal;
   Vec2 texCoord;
-  CG_Color color;
+  u32 color;
   } CG_Vertex;
 
 
@@ -34,5 +34,7 @@ CG_Mesh graphics_get_cube_mesh();
 CG_Mesh graphics_get_triangle_mesh();
 
 
-void draw_debug_vertices(CG_Vertex* verts, size_t _num, float _radius, Mat4x4 _model, Mat4x4 _view, Mat4x4 _projection);
+void draw3d_debug_vertices(CG_Vertex* verts, size_t _num, float _radius, Mat4x4 _model, Mat4x4 _inversedCameraMatrix, Mat4x4 _projection);
+
+void draw3d_triangle_rasterize_test(Vec3 a, Vec3 b, Vec3 c, u32 _color);
 #endif

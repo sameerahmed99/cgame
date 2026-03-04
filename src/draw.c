@@ -62,7 +62,7 @@ void draw_rectangle(CG_OffscreenBuffer *_to,  uint32_t _color, int32_t _minX, in
       
       int32_t pixelCoordinate = ty* ( _to->Width) + tx;
       uint32_t* pixels = (uint32_t*)(_to->Memory);
-      pixels[pixelCoordinate] =_color;
+      pixels[pixelCoordinate] =platform_convert_color(_color);
     }
   }
 
@@ -83,7 +83,7 @@ void draw_circle(CG_OffscreenBuffer *_to, int32_t _radius, uint32_t _color, int3
     
       int32_t pixelCoordinate = y* ( _to->Width) + x;
       uint32_t* pixels = (uint32_t*)(_to->Memory);
-      pixels[pixelCoordinate] =_color;
+      pixels[pixelCoordinate] =platform_convert_color(_color);
 
     
     }

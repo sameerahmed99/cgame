@@ -74,7 +74,7 @@ CG_OffscreenBuffer *cg_get_current_off_screen_buffer();
 
 internal void cg_init();
 internal void cg_update(CG_Memory* _memory, CG_OffscreenBuffer* _screenBuffer, CG_Input *_platformInput, float _deltaTime);
-internal uint32_t cg_create_color_from_channels(uint8_t r, uint8_t g, uint8_t b);
+internal uint32_t cg_create_color_from_channels(uint8_t r, uint8_t g, uint8_t b, u8 a);
 
 void write_sound_test();
 

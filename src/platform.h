@@ -43,5 +43,5 @@ void *platform_memory_reserve(u64 _size);
 b32 platform_memory_commit(void* _mem, u64 _size);
 b32 platform_memory_decommit(void* _mem, u64 _size);
 b32 platform_memory_free(void* _mem, u64 _size);
-
+u32 platform_convert_color(u32 _rgba);
 #endif //CG_PLATFORM_

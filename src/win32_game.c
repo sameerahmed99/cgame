@@ -918,3 +918,14 @@ return  WindowWidth;
 u32 platform_get_client_screen_height(){
   return WindowHeight;
 }
+u32 platform_convert_color(u32 _rgba){
+  // win32 is little endian
+  // R channel should be the least significant bit (right most 8 bits) and so on
+  u32 a = (_rgba) & 0xFF;
+  u32 b =  (_rgba >>8) & 0xFF;
+  u32 g =  (_rgba >>16) & 0xFF;
+  u32 r =  (_rgba >>24) & 0xFF;
+  uint32_t col = 0;
+  col = (a << 24) | (r<<16) | (g << 8) | b;
+  return col;
+}

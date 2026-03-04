@@ -122,9 +122,26 @@ internal void cg_init(){
 
 
 
-internal uint32_t cg_create_color_from_channels(uint8_t r, uint8_t g, uint8_t b){
+internal uint32_t cg_create_color_from_channels(uint8_t r, uint8_t g, uint8_t b, uint8_t a){
+
+  // rgba
+  // from left to right
+  // but win32 is little endian
+  // so always use platform_convert_color before displaying pixel
   uint32_t col = 0;
-  col = (r<<16) | (g << 8) | b;
+
+  u32 r32 = r;
+  r32 = r32 << 24;
+  
+  u32 g32 = g;
+  g32 = g32 << 16;
+  
+  u32 b32 = b;
+  b32 = b32 << 8;
+  
+  u32 a32 = a;
+  
+  col = r32 | g32 | b32 | a32;
   return col;
 }
 
@@ -214,7 +231,7 @@ void update_entities(float _dt){
       size.y = ent->collider2D.height;
 
       //      printf("Pos: %f, %f, %f\n", FormatXYZ(ent->collider2D.a));
-      draw_rectangle_world(ScreenBuffer,PlatformConfig.ppu,ent->collider2D.p1 , size, ent->worldEulerAngles, ent->worldPos, cg_create_color_from_channels(50,50,50));
+      draw_rectangle_world(ScreenBuffer,PlatformConfig.ppu,ent->collider2D.p1 , size, ent->worldEulerAngles, ent->worldPos, cg_create_color_from_channels(50,50,50,0));
     }
 
     if(false && ent->drawPhysicsDebugSphere){
@@ -265,8 +282,10 @@ void update_entities(float _dt){
     Mat4x4 projection = math_mat4x4_create_perspective_projection(70, false, aspect, .05f, 25.0f);
     //    draw_debug_vertices(tri.vertices,3,mat , 5);
 
-    
-        draw_debug_vertices(TestCubeModel->meshes[0].vertices,TestCubeModel->meshes[0].numVertices,5, model, camInverse, projection);
+
+    //        draw3d_debug_vertices(TestCubeModel->meshes[0].vertices,TestCubeModel->meshes[0].numVertices,5, model, camInverse, projection);
+
+	draw3d_mesh(TestCubeModel->meshes,model, camInverse, projection);
 }
 
 
@@ -352,10 +371,10 @@ internal void cg_update(CG_Memory* _memory, CG_OffscreenBuffer *_screenBuffer, C
 
 
 
-  u32 skyCol =cg_create_color_from_channels(32, 34, 38);
-  u32 sunCol = cg_create_color_from_channels(214, 203, 84);
-  u32 cloudCol =cg_create_color_from_channels(100,100,100);
-  u32 groundColor = cg_create_color_from_channels(57, 82, 56);
+  u32 skyCol =cg_create_color_from_channels(32, 34, 38,0);
+  u32 sunCol = cg_create_color_from_channels(214, 203, 84,0);
+  u32 cloudCol =cg_create_color_from_channels(100,100,100,0);
+  u32 groundColor = cg_create_color_from_channels(57, 82, 56,0);
   u32 groundHeight = 140;
   
   draw_sky(_screenBuffer,skyCol, sunCol, cloudCol);
