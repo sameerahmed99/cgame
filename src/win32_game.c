@@ -313,7 +313,7 @@ void win32_init_wasapi(uint32_t sampleRate, uint32_t bitDepth, float _bufferDura
 
     if (hr != S_OK) {
     printf("Sumtin wong CoCreateInstance enumerator\n");
-    Assert(hr==S_OK);  
+    ASSERT_NO_EVAL(hr==S_OK);  
   }
 
   hr = enumerator->lpVtbl->GetDefaultAudioEndpoint(enumerator, eRender, eMultimedia, &device);
@@ -342,7 +342,7 @@ void win32_init_wasapi(uint32_t sampleRate, uint32_t bitDepth, float _bufferDura
 
   if (hr != S_OK) {
     printf("Sumtin wong audioClient.Initialize\n");
-    Assert(hr==S_OK);  
+    ASSERT_NO_EVAL(hr==S_OK);  
   }
 
   IAudioRenderClient *renderClient = NULL;
@@ -723,7 +723,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
   // main game memory allocation
   CG_Memory gameMemory = {0};
 
-#ifdef CGAME_DEVELOPMENT
+#ifdef CG_DEVELOPMENT
   LPVOID baseAddress = (LPVOID)Terabytes((uint64_t)2);
 
 #else
@@ -746,7 +746,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 
 
   // @TODO allow game to be played without audio
-  Assert(gameMemory.AudioBuffer);
+  ASSERT_NO_EVAL(gameMemory.AudioBuffer);
 
   gameMemory.AudioBufferTotalFrames = WasapiNumTotalBufferFrames;
   gameMemory.AudioBufferTotalBytes = WasapiNumTotalBufferBytes;
@@ -757,8 +757,15 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
   Win32PlatformConfig.ScreenHeight = platform_get_client_screen_height();
   win32_update_window_rect(hwnd);
     win32_resize_dib_section(&GlobalOffscreenBuffer, Win32PlatformConfig.ScreenWidth, Win32PlatformConfig.ScreenHeight);
-  
-  cg_init();
+
+
+    CG_OffscreenBuffer buffer;
+    buffer.Memory = GlobalOffscreenBuffer.Memory;
+    buffer.Height = GlobalOffscreenBuffer.Height;
+    buffer.Width = GlobalOffscreenBuffer.Width;
+    buffer.BytesPerPixel = GlobalOffscreenBuffer.BytesPerPixel;
+
+  cg_init(&buffer);
 
   
   MSG msg = {0};
@@ -796,12 +803,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 
     DeviceContext = GetDC(hwnd);
 
-    CG_OffscreenBuffer buffer;
-    buffer.Memory = GlobalOffscreenBuffer.Memory;
-    buffer.Height = GlobalOffscreenBuffer.Height;
-    buffer.Width = GlobalOffscreenBuffer.Width;
-    buffer.BytesPerPixel = GlobalOffscreenBuffer.BytesPerPixel;
-    cg_update(&gameMemory, &buffer, &GlobalInput, GlobalDeltaTime);
+
+    cg_update(&gameMemory, &GlobalInput, GlobalDeltaTime);
     
     uint32_t wasapiNumFramesPadding;
     WasapiAudioClient->lpVtbl->GetCurrentPadding(WasapiAudioClient, &wasapiNumFramesPadding);
@@ -862,7 +865,7 @@ void *platform_read_whole_file(char *path, size_t* _contentSize) {
     content = VirtualAlloc(NULL, fileSize.QuadPart, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
     // ReadFile can read a maximum of sizeof(DWORD) bytes
     // so fileSize.QuadPart should be less than that
-    Assert(fileSize.QuadPart <= 0xFFFFFFFF);
+    ASSERT_NO_EVAL(fileSize.QuadPart <= 0xFFFFFFFF);
     DWORD bytesRead=0;
     if (ReadFile(hnd, content, fileSize.QuadPart, &bytesRead, NULL) && (bytesRead == fileSize.QuadPart)) {
 
@@ -928,4 +931,31 @@ u32 platform_convert_color(u32 _rgba){
   uint32_t col = 0;
   col = (a << 24) | (r<<16) | (g << 8) | b;
   return col;
+}
+
+LARGE_INTEGER PlatformMeasurementLast;
+void platform_begin_measurement()
+{
+  QueryPerformanceCounter(&PlatformMeasurementLast);
+};
+
+float platform_stop_measurement_ms(b32 _autoPrintMeasurement, const char* _identifierString)
+{
+  LARGE_INTEGER perfTimeStamp;
+  QueryPerformanceCounter(&perfTimeStamp);
+  LARGE_INTEGER currentStamp = perfTimeStamp;
+
+  int64_t dif = currentStamp.QuadPart - PlatformMeasurementLast.QuadPart;
+
+  
+  
+  int64_t ElapsedMicroSeconds = (dif * 1000 * 1000) / PerformanceQueryFrequency.QuadPart;
+  
+
+
+  float ElapsedMilliSeconds  = ElapsedMicroSeconds / 1000.0f;
+  if(_autoPrintMeasurement){
+    printf("[Measured: %s] Elapsed milliseconds: %f\n", _identifierString, ElapsedMilliSeconds);
+  };
+  return ElapsedMilliSeconds;
 }

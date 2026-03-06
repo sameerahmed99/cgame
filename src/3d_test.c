@@ -15,23 +15,24 @@ internal CG_PlatformConfig PlatformConfig;
 
 internal CG_Memory *TEMP_gameMemory;
 
-CG_Model* TestCubeModel;
+internal CG_Model* TestCubeModel;
 
-Arena* ArenaEntities;
+internal Arena* ArenaEntities;
 
 
-float Gravity = -9.81;
-float TimeSinceLastFixedUpdate = 0;
-float FixedTimeStep = 0.02;
+internal float Gravity = -9.81;
+internal float TimeSinceLastFixedUpdate = 0;
+internal float FixedTimeStep = 0.02;
 internal float PlayerBaseRadius = 10;
-CG_Entity* PlayerEntity;
-CG_Entity* CubeEntity;
+internal CG_Entity* PlayerEntity;
+internal CG_Entity* CubeEntity;
 internal float playerPosX, playerPosY;
 
 
-CG_OffscreenBuffer *ScreenBuffer;
+internal CG_OffscreenBuffer *ScreenBuffer;
+internal CG_Buffer *DepthBuffer;
 
-
+internal CG_DebugSettings DebugSettings;
 
 
 CG_PlatformConfig cg_get_platform_config(){
@@ -43,8 +44,8 @@ CG_PlatformConfig cg_get_platform_config(){
    .AudioChannelsCount = 2,
    .ScreenWidth = 0,
    .ScreenHeight = 0,
-   .RequestedScreenWidth = 800,
-   .RequestedScreenHeight = 600,
+   .RequestedScreenWidth = 1200,
+   .RequestedScreenHeight = 900,
    .BaseScreenWidth = 1280,
    .BaseScreenHeight = 720,
    .BasePixelsPerWorldUnit = 5
@@ -83,15 +84,26 @@ void create_player(){
 
 
 
-internal void cg_init(){
+internal void cg_init(CG_OffscreenBuffer *offscreenBuffer){
 
+
+  
+  ScreenBuffer = offscreenBuffer;
   size_t meshTotalSize;
-  TestCubeModel=  model_loader_load_gltf("../assets/models/cube1x1.glb");
+  TestCubeModel=  model_loader_load_gltf("../assets/models/suzanne.glb");
   srand(time(NULL));
   PlatformConfig = cg_get_platform_config();
   PlatformConfig.ScreenWidth = platform_get_client_screen_width();
   PlatformConfig.ScreenHeight = platform_get_client_screen_height();
 
+
+  DebugSettings.RenderDepthTexture = false;
+
+  DepthBuffer = malloc(sizeof(CG_Buffer));
+  DepthBuffer->Width = ScreenBuffer->Width;
+  DepthBuffer->Height = ScreenBuffer->Height;
+  DepthBuffer->Data = malloc(sizeof(float) * DepthBuffer->Width*DepthBuffer->Height);
+  
   b32 smallerSideIsHeight = PlatformConfig.ScreenHeight < PlatformConfig.ScreenWidth;
   float ppu=PlatformConfig.BasePixelsPerWorldUnit;
   if(smallerSideIsHeight){
@@ -279,13 +291,15 @@ void update_entities(float _dt){
     
 
     Mat4x4 camInverse = math_mat4x4_create_identity();
-    Mat4x4 projection = math_mat4x4_create_perspective_projection(70, false, aspect, .05f, 25.0f);
+    Mat4x4 projection = math_mat4x4_create_perspective_projection(70, false, aspect, .05f, 50.0f);
     //    draw_debug_vertices(tri.vertices,3,mat , 5);
 
 
     //        draw3d_debug_vertices(TestCubeModel->meshes[0].vertices,TestCubeModel->meshes[0].numVertices,5, model, camInverse, projection);
 
-	draw3d_mesh(TestCubeModel->meshes,model, camInverse, projection);
+
+    draw3d_mesh(TestCubeModel->meshes,model, camInverse, projection);
+
 }
 
 
@@ -361,12 +375,17 @@ void draw_sky(CG_OffscreenBuffer *_to, u32 _skyCol, u32 _sunCol, u32 _cloudCol)
 
   
 }
-internal void cg_update(CG_Memory* _memory, CG_OffscreenBuffer *_screenBuffer, CG_Input *_playerInput, float _deltaTime){
+internal void cg_update(CG_Memory* _memory, CG_Input *_playerInput, float _deltaTime){
 
 
   //  printf("Dif den: %f\n", CurrentDifficultyDenominator);
 
-  ScreenBuffer = _screenBuffer;
+
+  float* dbuffer =(float*)(DepthBuffer->Data);
+  for(int i=0;i<DepthBuffer->Width*DepthBuffer->Height;i++){
+dbuffer[i] = 99999999999;
+  }
+
 
 
 
@@ -377,7 +396,7 @@ internal void cg_update(CG_Memory* _memory, CG_OffscreenBuffer *_screenBuffer, C
   u32 groundColor = cg_create_color_from_channels(57, 82, 56,0);
   u32 groundHeight = 140;
   
-  draw_sky(_screenBuffer,skyCol, sunCol, cloudCol);
+  draw_sky(ScreenBuffer,skyCol, sunCol, cloudCol);
   //  draw_ground(_screenBuffer, groundColor, groundHeight);
   TEMP_gameMemory = _memory;
 
@@ -386,6 +405,9 @@ internal void cg_update(CG_Memory* _memory, CG_OffscreenBuffer *_screenBuffer, C
   
   CG_KeyboardKeys k = _playerInput->Keyboard;
 
+  if(k.w.WasDownedThisFrame){
+    DebugSettings.RenderDepthTexture = !DebugSettings.RenderDepthTexture;
+  }
   if(k.a.IsPressed){
 
     Vec3 pos = CubeEntity->worldPos;
@@ -414,7 +436,7 @@ internal void cg_update(CG_Memory* _memory, CG_OffscreenBuffer *_screenBuffer, C
     Vec3 euler = CubeEntity->worldEulerAngles;
     euler.y+=_deltaTime*playerSpeed*5;
 
-    printf("Euler: %f, %f, %f\n", FormatXYZ(euler));
+
 
     entity_set_world_euler_angles(CubeEntity, euler);
   }
@@ -468,4 +490,12 @@ void write_sound_test(){
 
 CG_OffscreenBuffer *cg_get_current_off_screen_buffer(){
   return ScreenBuffer;
+}
+
+CG_Buffer *cg_get_current_depth_buffer(){
+  return DepthBuffer;
+}
+
+CG_DebugSettings cg_get_debug_settings(){
+  return DebugSettings;
 }

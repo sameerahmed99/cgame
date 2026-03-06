@@ -1,6 +1,7 @@
 #include "memory.h"
 #include "platform.h"
 
+
 Arena* arena_create(u64 _reserveSize, u64 _commitSize, b32 _isSingletype){
   u64 pageSize = platform_memory_get_page_size();
   u64 resSize = math_get_aligned_pos_pow2(_reserveSize, pageSize);
@@ -9,7 +10,8 @@ Arena* arena_create(u64 _reserveSize, u64 _commitSize, b32 _isSingletype){
   Arena *arena = platform_memory_reserve(resSize);
   
 
-  Assert(platform_memory_commit(arena, comSize));
+  b32 suc = platform_memory_commit(arena, comSize);
+  ASSERT_NO_EVAL(suc);
   arena->singleType = _isSingletype;
   arena->reserved = resSize;
   arena->commitChunkSize = comSize;
@@ -48,7 +50,7 @@ void* arena_push(Arena* _arena, u64 _size, b32 _doNotZero){
   }
   u64 aligned=  math_get_aligned_pos_pow2(_arena->pos, ARENA_ALIGN_SIZE);
   u64 newPos = aligned + _size;
-  Assert(aligned < _arena->reserved);
+  ASSERT_NO_EVAL(aligned < _arena->reserved);
   
 
 
@@ -63,7 +65,8 @@ void* arena_push(Arena* _arena, u64 _size, b32 _doNotZero){
     u8* mem = (u8*)_arena + _arena->commitPos;
     u64 commitSize = commitPos - _arena->commitPos;
 
-    Assert(platform_memory_commit(mem, commitSize));
+    b32 suc = platform_memory_commit(mem, commitSize);
+    ASSERT_NO_EVAL(suc);
 
 
 

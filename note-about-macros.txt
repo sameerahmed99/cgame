@@ -1,0 +1,9 @@
+1. Avoid macros as much as possible, they should only be used if there's truly no other way
+
+2. Macros should all be uppercase to make it clear they aren't functions
+
+3. Stubs should be used with extreme caution to avoid issues like Assert(CommitGameMemory()) which will result in no memory being committed if Assert is a stub
+
+
+
+

@@ -74,6 +74,7 @@ void graphics_transform_point_to_all_spaces(Vec3 _point,Mat4x4 _model, Mat4x4 _i
 
 void draw3d_mesh(CG_Mesh* _mesh,Mat4x4 _model, Mat4x4 _inversedCameraMatrix, Mat4x4 _projection){
 
+  PLATFORM_BEGIN_FUNCTION_MEASUREMENT();
   CG_OffscreenBuffer *screenBuffer = cg_get_current_off_screen_buffer();
   for(int i=0;i<_mesh->numIndices;i+=3){
     Vec3 worldPos;
@@ -97,15 +98,19 @@ void draw3d_mesh(CG_Mesh* _mesh,Mat4x4 _model, Mat4x4 _inversedCameraMatrix, Mat
     /* printf("v2, %f, %f, %f\n", FormatXYZ(v2)); */
     /* printf("v3, %f, %f, %f\n", FormatXYZ(v3)); */
 
+    float zA, zB, zC;
     graphics_transform_point_to_all_spaces(v1, _model, _inversedCameraMatrix, _projection, &worldPos, &eyeSpace, &clipSpace, &ndc, &v1s);
+    zA = clipSpace.z;
     graphics_transform_point_to_all_spaces(v2, _model, _inversedCameraMatrix, _projection, &worldPos, &eyeSpace, &clipSpace, &ndc, &v2s);
-
+    zB = clipSpace.z;
     graphics_transform_point_to_all_spaces(v3, _model, _inversedCameraMatrix, _projection, &worldPos, &eyeSpace, &clipSpace, &ndc, &v3s);
-	
-  draw3d_triangle_rasterize_test(v1s,v2s,v3s, 0xFFFFFFFF);
+    zC = clipSpace.z;
+
+    CG_Color col = {255,255,255};
+    draw3d_triangle_rasterize_test(v1s,v2s,v3s,zA, zB, zC, col);
 
 
-  u32 col = 0x00AA00;
+
 
   
 
@@ -119,7 +124,8 @@ void draw3d_mesh(CG_Mesh* _mesh,Mat4x4 _model, Mat4x4 _inversedCameraMatrix, Mat
   /* Vec3  tb = {ta.x + 25, ta.y}; */
   /* Vec3  tc = {ta.x + 25, ta.y-25}; */
   /* draw3d_triangle_rasterize_test( ta,tb,tc, 0xFFFFFFFF); */
-  
+
+  PLATFORM_STOP_FUNCTION_MEASUREMENT();
 }
 
 
@@ -203,9 +209,10 @@ float triangle_edge_function(Vec2 a, Vec2 b, Vec2 p){
 
 
 // https://www.scratchapixel.com/lessons/3d-basic-rendering/rasterization-practical-implementation/rasterization-stage.html
-void draw3d_triangle_rasterize_test(Vec3 a, Vec3 b, Vec3 c, u32 _color){
+void draw3d_triangle_rasterize_test(Vec3 a, Vec3 b, Vec3 c,float _zA, float _zB, float _zC, CG_Color _color){
 
   CG_OffscreenBuffer *screenBuffer = cg_get_current_off_screen_buffer();
+  CG_Buffer *depthBuffer = cg_get_current_depth_buffer();
   
   float minX = Min(a.x, b.x);
   minX = Min(minX, c.x);
@@ -225,40 +232,80 @@ void draw3d_triangle_rasterize_test(Vec3 a, Vec3 b, Vec3 c, u32 _color){
   Vec2 triC = {c.x, c.y};
   float totalArea = triangle_edge_function(triA, triB, triC);
 
+  maxX = Clamp(maxX,0, screenBuffer->Width-1);
+  minX = Clamp(minX,0, screenBuffer->Width-1);
+
+  maxY = Clamp(maxY,0, screenBuffer->Height-1);
+  minY = Clamp(minY,0, screenBuffer->Height-1);
+
+
+  float* depthBufferData = (float*)depthBuffer->Data;
+
+
+  // winding order is counter clockwise, it's facing away from cam
+  // so cull it
+  if(totalArea<0) return;
+  b32 renderDepth = cg_get_debug_settings().RenderDepthTexture;
+  Vec2 a_ = {a.x, a.y};
+  Vec2 b_ = {b.x, b.y};
+  Vec2 c_ =  {c.x, c.y};
+  
   for(int y = minY; y < maxY; y++){
 
-    if(y > screenBuffer->Height-1 || y < 0) continue;
+    u32 rowCoordinate = y*screenBuffer->Width;
+    u32* row = (u32*)(screenBuffer->Memory) + rowCoordinate;
+    float* depthRow = depthBufferData + rowCoordinate;
+
     for(int x = minX; x < maxX; x++){
-      if(x > screenBuffer->Width-1 || x < 0) continue;
       Vec2 p = {(float)x, (float)y};
-      Vec2 a_ = {a.x, a.y};
-      Vec2 b_ = {b.x, b.y};
-      Vec2 c_ =  {c.x, c.y};
-      float  e1 = triangle_edge_function(a_,b_,p);
-      float e2 = triangle_edge_function(b_, c_, p);
-      float e3 = triangle_edge_function(c_, a_, p);
 
+      float  e1 = triangle_edge_function(b_,c_,p);
+      float e2 = triangle_edge_function(c_, a_, p);
+      float e3 = triangle_edge_function(a_, b_, p);
+
+
+      
       if(e1>=0 && e2>=0 && e3>=0){
-
+           
 	
       float w1 = e1/totalArea;
       float w2 = e2/totalArea;
       float w3 = e3/totalArea;
 
 
-	
-      u32 color = cg_create_color_from_channels(255 * w1, 255 *w2, 255*w3,0);
 
 
-      color = platform_convert_color(color);
+      // this create from channels thing is slow
+      //      u32 color = cg_create_color_from_channels(255 * w1, 255 *w2, 255*w3,0);
+      //color = platform_convert_color(color); 
 	
-      int32_t pixelCoordinate = y* (screenBuffer->Width) + x;
-      uint32_t* pixels = (uint32_t*)(screenBuffer->Memory);
-      pixels[pixelCoordinate] =color;
-              
+
+      float storedDepth=depthRow[x];
+      //float inverseDepth = (1.0f/_zA) * w1 + (1.0f/_zB)*w2 + (1.0f/_zC)*w3;
+      //float depth = 1/inverseDepth;
+      float depth = a.z*w1 + b.z*w2 + c.z*w3;
+
+      if(depth < storedDepth){
+	depthRow[x] = depth;
+	u8* p = (u8*) (row + x);
+	p[0] = w1*_color.a;
+	p[1] = w2*_color.b;
+	p[2] = w3*_color.g;
+	p[3] = _color.r;
+	if(renderDepth){
+	  p[0] =Min(255,depth*255*depth*2*depth);
+	  p[1] =Min(255,depth*255*depth*2*depth);
+	  p[2] =Min(255,depth*255*depth*2*depth);
+	  p[3] =Min(255,depth*255*depth*2*depth);
+	}
+	
+      }
+
+
+      
       }
     }
   }
-  
+
 
 }

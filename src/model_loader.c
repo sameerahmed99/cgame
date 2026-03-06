@@ -99,7 +99,9 @@ static CG_Mesh *mesh_from_node(cgltf_node _node)
 
     int vertStartingIndex = 0;
     int indicesStartingIndex = 0;
-
+    
+    //@FIX this only works if there is one primitive
+    //otherwise we get a segfault when freeing the mesh, haven't checked why
     for (int i = 0; i < _node.mesh->primitives_count; i += 3)
     {
         cgltf_accessor *indicesAccessor = _node.mesh->primitives[i].indices;
