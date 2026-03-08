@@ -649,10 +649,21 @@ LRESULT Win32CallbackFunc(HWND _window, UINT _msgId, WPARAM param3, LPARAM param
     case 'D': {
       win32_set_key_state(&GlobalInput.Keyboard.d, wasDownedThisFrame, isDown, wasReleasedThisFrame);
     } break;
+    case 'Q': {
+      win32_set_key_state(&GlobalInput.Keyboard.q, wasDownedThisFrame, isDown, wasReleasedThisFrame);
+    } break;
+    case 'E': {
+      win32_set_key_state(&GlobalInput.Keyboard.e, wasDownedThisFrame, isDown, wasReleasedThisFrame);
+    } break;
     case VK_SPACE:{
       win32_set_key_state(&GlobalInput.Keyboard.space, wasDownedThisFrame, isDown, wasReleasedThisFrame);
     } break;
-
+    case VK_MENU:{
+      win32_set_key_state(&GlobalInput.Keyboard.alt, wasDownedThisFrame, isDown, wasReleasedThisFrame);
+    } break;
+    case VK_LSHIFT:{
+      win32_set_key_state(&GlobalInput.Keyboard.shift, wasDownedThisFrame, isDown, wasReleasedThisFrame);
+    } break;
     case VK_F4: {
       bool alting = (param4 & (1 << 29)) != 0;
       if (alting) {
@@ -795,6 +806,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     win32_reset_key_state(&GlobalInput.Keyboard.s, true);
     win32_reset_key_state(&GlobalInput.Keyboard.d, true);
     win32_reset_key_state(&GlobalInput.Keyboard.space, true);
+    win32_reset_key_state(&GlobalInput.Keyboard.q, true);
+    win32_reset_key_state(&GlobalInput.Keyboard.e, true);
+    win32_reset_key_state(&GlobalInput.Keyboard.shift, true);
+    win32_reset_key_state(&GlobalInput.Keyboard.alt, true);
 
     while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
       TranslateMessage(&msg);

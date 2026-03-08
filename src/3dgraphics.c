@@ -234,7 +234,7 @@ u32 clip_against_plane(CG_Triangle _tri, i32 _plane, CG_Triangle *clippedA, CG_T
       if(aInside && bInside) {
 	start = _tri.a;
 	second = _tri.b;
-	clip1= clip_against_left_plane(_tri.c, _tri.c, &t1);
+	clip1= clip_against_left_plane(_tri.b, _tri.c, &t1);
 	clip2= clip_against_left_plane(_tri.c, _tri.a, &t1);
       }
       else if(bInside && cInside){
@@ -340,7 +340,7 @@ internal u32 clip_triangle(Vec4 _a, Vec4 _b, Vec4 _c, CG_Triangle *_outTriangles
 
 	
       numInList--;
-    }
+    } 
 
     numInList = numNewList;
     for(int i=0;i<numInList;i++){
@@ -425,8 +425,9 @@ void draw3d_mesh(CG_Mesh* _mesh,Mat4x4 _model, Mat4x4 _inversedCameraMatrix, Mat
     eyePos3 = math_mul_vec3_mat4x4(worldPos3, _inversedCameraMatrix);
     eyePos3Vec4 = math_vec4_create(eyePos3.x, eyePos3.y, eyePos3.z, 1);
     clipPos3 = math_mul_vec4_mat4x4(eyePos3Vec4, _projection);
+
     
-    CG_Color col = {255,255,255};
+
       // 16 is random, idk how many max triangles can be produced
   // this should be a safe number
     CG_Triangle newTriangles[TEMP_MAX_TRIS];
@@ -455,7 +456,7 @@ void draw3d_mesh(CG_Mesh* _mesh,Mat4x4 _model, Mat4x4 _inversedCameraMatrix, Mat
       ss2 = ndc_to_screen(ss2);
       ss3 = ndc_to_screen(ss3);
 
-      CG_Color col = {255,255,255};
+      CG_Color col = {i*255+ct*5, i*125+ct*21, i*525+ct*123,0};
       draw3d_triangle_rasterize_test(ss1,ss2,ss3,1,1,1, col);
 
     }
@@ -654,17 +655,24 @@ void draw3d_triangle_rasterize_test(Vec3 a, Vec3 b, Vec3 c,float _zA, float _zB,
       if(depth < storedDepth){
 	depthRow[x] = depth;
 	u8* p = (u8*) (row + x);
-	p[0] = w1*_color.a;
-	p[1] = w2*_color.b;
-	p[2] = w3*_color.g;
-	p[3] = _color.r;
+
+	p[0] = w1*_color.b;
+	p[1] = w2*_color.g;
+	p[2] = w3*_color.r;
+	p[3] = _color.a;
+
 	if(renderDepth){
 	  p[0] =Min(255,depth*255*depth*2*depth);
 	  p[1] =Min(255,depth*255*depth*2*depth);
 	  p[2] =Min(255,depth*255*depth*2*depth);
 	  p[3] =Min(255,depth*255*depth*2*depth);
 	}
+
 	
+	p[0] = _color.b;
+	p[1] = _color.g;
+	p[2] = _color.r;
+	p[3] = _color.a;
       }
 
 

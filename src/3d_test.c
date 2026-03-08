@@ -91,7 +91,7 @@ internal void cg_init(CG_OffscreenBuffer *offscreenBuffer){
   
   ScreenBuffer = offscreenBuffer;
   size_t meshTotalSize;
-  TestCubeModel=  model_loader_load_gltf("../assets/models/suzanne.glb");
+  TestCubeModel=  model_loader_load_gltf("../assets/models/cube-dense.glb");
   srand(time(NULL));
   PlatformConfig = cg_get_platform_config();
   PlatformConfig.ScreenWidth = platform_get_client_screen_width();
@@ -165,6 +165,9 @@ internal float tempOffsetX, tempOffsetY;
 
 float speed = .25;
 float playerSpeed = 3;
+float playerWalkSpeed = .1;
+float playerSprintSpeed = 10;
+float playerRotationSpeed = 10;
 
 internal float SquareWaveFrequency = 100;
 
@@ -406,42 +409,50 @@ dbuffer[i] = 99999999999;
   
   CG_KeyboardKeys k = _playerInput->Keyboard;
 
+  float pspeed = playerSpeed;
+  if(k.shift.IsPressed){
+    pspeed = playerSprintSpeed;
+  }
+  else if(k.alt.IsPressed){
+    pspeed = playerWalkSpeed;
+  }
   if(k.w.WasDownedThisFrame){
     DebugSettings.RenderDepthTexture = !DebugSettings.RenderDepthTexture;
   }
   if(k.a.IsPressed){
 
     Vec3 pos = CubeEntity->worldPos;
-    pos.x-=_deltaTime*playerSpeed;
+    pos.x-=_deltaTime*pspeed;
     entity_set_world_pos(CubeEntity, pos); 
   }
   if(k.d.IsPressed){
 
     Vec3 pos = CubeEntity->worldPos;
-    pos.x+=_deltaTime*playerSpeed;
+    pos.x+=_deltaTime*pspeed;
     entity_set_world_pos(CubeEntity, pos); 
   }
   if(k.w.IsPressed){
 
     Vec3 pos = CubeEntity->worldPos;
-    pos.z+=_deltaTime*playerSpeed;
+    pos.z+=_deltaTime*pspeed;
     entity_set_world_pos(CubeEntity, pos); 
   }
   if(k.s.IsPressed){
 
     Vec3 pos = CubeEntity->worldPos;
-    pos.z-=_deltaTime*playerSpeed;
+    pos.z-=_deltaTime*pspeed;
     entity_set_world_pos(CubeEntity, pos); 
   }
-  if(k.space.IsPressed){
+  if(k.q.IsPressed){
     Vec3 euler = CubeEntity->worldEulerAngles;
-    euler.y+=_deltaTime*playerSpeed*5;
-
-
-
+    euler.y+=_deltaTime*playerRotationSpeed*5;
     entity_set_world_euler_angles(CubeEntity, euler);
   }
-
+  if(k.e.IsPressed){
+    Vec3 euler = CubeEntity->worldEulerAngles;
+    euler.y-=_deltaTime*playerRotationSpeed*5;
+    entity_set_world_euler_angles(CubeEntity, euler);
+  }
   /* Vec3 playerRotAxis = {0,0,1}; */
   /* Vec3 forward = {0,1,0}; */
   /* Vec3 piv = {0,0,0}; */

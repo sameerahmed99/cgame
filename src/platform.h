@@ -18,6 +18,11 @@ typedef struct CG_KeyboardKeys {
   CG_InputKey s;
   CG_InputKey d;
 
+  CG_InputKey q;
+  CG_InputKey e;
+  CG_InputKey shift;
+  CG_InputKey alt;
+
   CG_InputKey space;
 } CG_KeyboardKeys;
 
