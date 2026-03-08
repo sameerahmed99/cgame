@@ -11,7 +11,6 @@ typedef struct CG_Vertex {
   } CG_Vertex;
 
 
-
 typedef struct CG_Mesh {
   size_t numVertices;
   size_t numIndices;
@@ -24,7 +23,8 @@ typedef struct CG_Mesh {
 typedef struct CG_Model {
   CG_Mesh* meshes;
   size_t numMeshes;
-
+  
+  // materials for each mesh
 } CG_Model;
 
 
@@ -37,4 +37,8 @@ CG_Mesh graphics_get_triangle_mesh();
 void draw3d_debug_vertices(CG_Vertex* verts, size_t _num, float _radius, Mat4x4 _model, Mat4x4 _inversedCameraMatrix, Mat4x4 _projection);
 
 void draw3d_triangle_rasterize_test(Vec3 a, Vec3 b, Vec3 c,float _zA, float _zB, float _zC, CG_Color _color);
+
+
+// use winding order to auto calc normals
+void mesh_recalculate_normals(CG_Mesh *_mesh);
 #endif

@@ -42,8 +42,43 @@ Vec3 math_vec3_lerp(Vec3 _a, Vec3 _b, float _t){
 
   return res;
 }
+Vec3 math_vec3_create(float x, float y,float z){
+  Vec3 vec;
+  vec.x = x;
+  vec.y = y;
+  vec.z=z;
+  return vec;
+}
 
 Vec3 math_vec3_inverse_lerp(Vec3 _a, Vec3 _b, float _t){
+  Vec3 res;
+  res.x = math_inverse_lerp(_a.x, _b.x, _t);
+  res.y = math_inverse_lerp(_a.y, _b.y, _t);
+  res.z = math_inverse_lerp(_a.z, _b.z, _t);
+
+  return res;
+}
+
+
+Vec4 math_vec4_create(float x, float y, float z, float w){
+  Vec4 vec;
+  vec.x = x;
+  vec.y = y;
+  vec.z=z;
+  vec.w = w;
+  return vec;
+}
+
+Vec3 math_vec4_lerp(Vec3 _a, Vec3 _b, float _t){
+  Vec3 res;
+  res.x = math_lerp(_a.x, _b.x, _t);
+  res.y = math_lerp(_a.y, _b.y, _t);
+  res.z = math_lerp(_a.z, _b.z, _t);
+
+  return res;
+}
+
+Vec3 math_vec4_inverse_lerp(Vec3 _a, Vec3 _b, float _t){
   Vec3 res;
   res.x = math_inverse_lerp(_a.x, _b.x, _t);
   res.y = math_inverse_lerp(_a.y, _b.y, _t);
@@ -328,3 +363,47 @@ Mat4x4 math_mat4x4_create_perspective_projection(float _fovDegrees, b32 _vertica
   mat.m32 = 1;
   return mat;
 }
+
+b32 math_2Dline_intersection(Vec2 _subjectPointA, Vec2 _subjectPointB, Vec2 _edge2A, Vec2 _edge2B, Vec2 *_out){
+
+  Vec2 _edge1A = _subjectPointA;
+  Vec2 _edge1B = _subjectPointB;
+  Vec2 o = {0,0};
+  *_out = o;
+  
+  // find y=mx+c values
+  float gradientA = (_edge1B.y - _edge1A.y) / (_edge1B.x - _edge1A.x);
+  float cA = _edge1A.y - gradientA *_edge1A.x;
+  
+  float gradientB = (_edge2B.y - _edge2A.y) / (_edge2B.x - _edge2A.x);
+  float cB = _edge2A.y - gradientB *_edge2A.x;
+
+  if(gradientA == gradientB) {
+
+    // lines have same gradient + y intercept
+    // i.e, they are on top of each other and interacting throughout
+    if(cA == cB) {
+      *_out = _edge1A;
+      return true;
+    }
+
+    return false;
+  }
+
+  float x =(cB - cA) / (gradientA - gradientB);
+  float y = (gradientA * (cB-cA) / (gradientA - gradientB)) + cA;
+
+  Vec2 leftPoint = _edge1A.x < _edge1B.x ? _edge1A : _edge1A;
+  Vec2 rightPoint = _edge1A.x > _edge1B.x ? _edge1A : _edge1A;
+
+  if(x < leftPoint.x) return false;
+
+  if(x > rightPoint.x) return false;
+
+  _out->x = x;
+  _out->y = y;
+  return true;
+  
+}
+
+//b32 math_line_seg_to_plane_intersection(

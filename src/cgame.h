@@ -89,6 +89,10 @@ typedef struct CG_DebugSettings{
 CG_PlatformConfig cg_get_platform_config();
 CG_OffscreenBuffer *cg_get_current_off_screen_buffer();
 CG_Buffer *cg_get_current_depth_buffer();
+
+float cg_get_current_near_plane_distance();
+float cg_get_current_far_plane_distance();
+
 CG_DebugSettings cg_get_debug_settings();
 
 internal void cg_init(CG_OffscreenBuffer *buffer);

@@ -92,17 +92,19 @@ static CG_Mesh *mesh_from_node(cgltf_node _node)
     CG_Vertex *vertices = malloc(sizeof(CG_Vertex) * vertCount);
     m->vertices = vertices;
 
-    u32 *triangles = malloc(sizeof(u32) * trisCount);
+    u32 *indices = malloc(sizeof(u32) * trisCount);
 
     m->vertices = vertices;
-    m->indices = triangles;
+    m->indices = indices;
 
     int vertStartingIndex = 0;
     int indicesStartingIndex = 0;
     
     //@FIX this only works if there is one primitive
     //otherwise we get a segfault when freeing the mesh, haven't checked why
-    for (int i = 0; i < _node.mesh->primitives_count; i += 3)
+    // might be becuase we were doing i+=3, not sure why but test if it works with multiple primitives now before trying to fix
+    
+    for (int i = 0; i < _node.mesh->primitives_count; i++)
     {
         cgltf_accessor *indicesAccessor = _node.mesh->primitives[i].indices;
 
@@ -117,9 +119,9 @@ static CG_Mesh *mesh_from_node(cgltf_node _node)
             t[1] = cgltf_accessor_read_index(indicesAccessor, index + 1);
             t[2] = cgltf_accessor_read_index(indicesAccessor, index + 2);
 
-            triangles[index] = t[0];
-            triangles[index + 1] = t[1];
-            triangles[index + 2] = t[2];
+            indices[index] = t[0];
+            indices[index + 1] = t[1];
+            indices[index + 2] = t[2];
         }
 
         for (int j = 0; j < _node.mesh->primitives[i].attributes_count; j++)

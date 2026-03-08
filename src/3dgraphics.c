@@ -3,6 +3,7 @@
 #include "draw.h"
 
 
+const u32 TEMP_MAX_TRIS = 16;
 
 internal CG_Vertex TriangleVertices[3] = {
   {.pos = {-0.5f,-0.5f,0.0f}, .color = 0, .normal = {0,0,1}},
@@ -36,7 +37,7 @@ CG_Mesh graphics_get_triangle_mesh(){
 
 
 
-Vec3 graphics_transform_ndc_to_screen(Vec3 pos){
+Vec3 ndc_to_screen(Vec3 pos){
   CG_OffscreenBuffer *screenBuffer = cg_get_current_off_screen_buffer();
  
   pos.x+=1;
@@ -51,7 +52,12 @@ Vec3 graphics_transform_ndc_to_screen(Vec3 pos){
   return pos;
 }
 
-void graphics_transform_point_to_all_spaces(Vec3 _point,Mat4x4 _model, Mat4x4 _inversedCameraMatrix, Mat4x4 _projection,  Vec3 *_outWorldPos, Vec3 *_outCamSpacePos, Vec4 *_outClipPos, Vec3 *_outNdc, Vec3 *_outScreenPos){
+Vec3 clip_to_ndc(Vec4 clipSpace){
+  Vec3 ndc = {clipSpace.x/clipSpace.w, clipSpace.y/clipSpace.w, clipSpace.z/clipSpace.w};
+
+  return ndc;
+}
+void point_to_all_spaces(Vec3 _point,Mat4x4 _model, Mat4x4 _inversedCameraMatrix, Mat4x4 _projection,  Vec3 *_outWorldPos, Vec3 *_outCamSpacePos, Vec4 *_outClipPos, Vec3 *_outNdc, Vec3 *_outScreenPos){
     Vec3 worldPos = math_mul_vec3_mat4x4(_point, _model);
     Vec3 eyeSpace = math_mul_vec3_mat4x4(worldPos, _inversedCameraMatrix);
     Vec4 eyeSpaceHomo = {eyeSpace.x, eyeSpace.y, eyeSpace.z, 1};
@@ -59,7 +65,7 @@ void graphics_transform_point_to_all_spaces(Vec3 _point,Mat4x4 _model, Mat4x4 _i
 
     Vec3 ndc = {clipSpace.x/clipSpace.w, clipSpace.y/clipSpace.w, clipSpace.z/clipSpace.w};
 
-    Vec3 posa = graphics_transform_ndc_to_screen(ndc);
+    Vec3 posa = ndc_to_screen(ndc);
 
 
     *_outWorldPos = worldPos;
@@ -72,12 +78,294 @@ void graphics_transform_point_to_all_spaces(Vec3 _point,Mat4x4 _model, Mat4x4 _i
 }
 
 
+enum ClipPlane {
+  CLIP_PLANE_START,
+  CLIP_PLANE_SCREEN_LEFT,
+  CLIP_PLANE_SCREEN_RIGHT,
+  CLIP_PLANE_SCREEN_TOP,
+  CLIP_PLANE_SCREEN_BOTTOM,
+  CLIP_PLANE_NEAR_PLANE,
+  CLIP_PLANE_FAR_PLANE,
+  CLIP_PLANE_END
+};
+
+
+
+typedef struct CG_Triangle {
+  Vec4 a,b,c;
+} CG_Triangle;
+
+
+
+
+
+Vec4 clip_against_left_plane(Vec4 _a, Vec4 _b, float *_outInterp){
+  // P(t) = A + t*(B-a);
+  // P(x) = P(-w)
+  // P(x) + P(w) = 0
+  // when x is left side of screen, -w, adding w results in 0, i.e intersection
+
+
+
+  // @NOTE margin should be 0 when not testing, it seems bugged anyways
+  float margin = 0;
+  float t = -(_a.x + _a.w - margin)/(_b.x-_a.x+_b.w-_a.w);
+  float x = _a.x + t * (_b.x - _a.x);
+  float y = _a.y + t * (_b.y - _a.y);
+  float z = _a.z + t * (_b.z - _a.z);
+  float w = _a.w + t * (_b.w - _a.w);
+  *_outInterp = t;
+
+  Vec4 ret ={x,y,z,w};
+  return ret;
+}
+
+Vec4 clip_against_right_plane(Vec4 _a, Vec4 _b, float *_outInterp){
+  float t = (_a.x - _a.w) /  ( (_a.x - _a.w) - (_b.x  - _b.w  ));
+  float x = _a.x + t * (_b.x - _a.x);
+  float y = _a.y + t * (_b.y - _a.y);
+  float z = _a.z + t * (_b.z - _a.z);
+  float w = _a.w + t * (_b.w - _a.w);
+  *_outInterp = t;
+
+    Vec4 ret ={x,y,z,w};
+  return ret;
+}
+
+Vec4 clip_against_top_plane(Vec4 _a, Vec4 _b, float *_outInterp){
+  float t = (_a.y - _a.w) /  ( (_a.y - _a.w) - (_b.y  - _b.w  ));
+  float x = _a.x + t * (_b.x - _a.x);
+  float y = _a.y + t * (_b.y - _a.y);
+  float z = _a.z + t * (_b.z - _a.z);
+  float w = _a.w + t * (_b.w - _a.w);
+  *_outInterp = t;
+
+    Vec4 ret ={x,y,z,w};
+  return ret;
+}
+
+Vec4 clip_against_bottom_plane(Vec4 _a, Vec4 _b, float *_outInterp){
+  float t = -(_a.y + _a.w) / ( (_b.y - _a.y) + (_b.w  - _a.w)  );
+  float x = _a.x + t * (_b.x - _a.x);
+  float y = _a.y + t * (_b.y - _a.y);
+  float z = _a.z + t * (_b.z - _a.z);
+  float w = _a.w + t * (_b.w - _a.w);
+  *_outInterp = t;
+
+    Vec4 ret ={x,y,z,w};
+  return ret;
+}
+
+
+
+u32 clip_against_plane(CG_Triangle _tri, i32 _plane, CG_Triangle *clippedA, CG_Triangle *clippedB){
+  switch(_plane){
+
+  case CLIP_PLANE_SCREEN_LEFT : {
+
+    u32 numInside =0;
+    u32 numOutside = 0;
+    b32 aInside = false, bInside = false, cInside = false;
+    if(_tri.a.x >= -_tri.a.w){
+      aInside = true;
+      numInside++;
+    }
+    else{
+      numOutside++;
+	}
+    if(_tri.b.x >= -_tri.b.w){
+      bInside = true;
+      numInside++;
+    }
+    else{
+      numOutside++;
+	}
+    if(_tri.c.x >= -_tri.c.w){
+      cInside = true;
+      numInside++;
+    }
+    else{
+      numOutside++;
+	}
+
+    if(numInside == 0) return 0;
+    
+    if(numInside ==3) {
+      *clippedA = _tri;
+      return 1;
+    }
+    
+    if(numInside == 1) {
+
+
+      
+      float t1,t2;
+      Vec4 clip1, clip2;
+      Vec4 start;
+      if(aInside) {
+	start = _tri.a;
+	clip1= clip_against_left_plane(_tri.a, _tri.b, &t1);
+	clip2= clip_against_left_plane(_tri.c, _tri.a, &t1);
+      }
+      else if(bInside){
+	start = _tri.b;
+	clip1= clip_against_left_plane(_tri.b, _tri.c, &t1);
+	clip2= clip_against_left_plane(_tri.a, _tri.b, &t1);
+      }
+      else {
+	start = _tri.c;
+  	clip1= clip_against_left_plane(_tri.c, _tri.a, &t1);
+	clip2= clip_against_left_plane(_tri.b, _tri.c, &t1);
+      }
+
+      CG_Triangle out;
+      out.a = start;
+      out.b = clip1;
+      out.c = clip2;
+      *clippedA = out;
+      return 1;
+    }
+    else if(numInside == 2) {
+
+
+      float t1,t2;
+      Vec4 clip1, clip2;
+      Vec4 start, second;
+      if(aInside && bInside) {
+	start = _tri.a;
+	second = _tri.b;
+	clip1= clip_against_left_plane(_tri.c, _tri.c, &t1);
+	clip2= clip_against_left_plane(_tri.c, _tri.a, &t1);
+      }
+      else if(bInside && cInside){
+	start = _tri.b;
+	second = _tri.c;
+	clip1= clip_against_left_plane(_tri.c, _tri.a, &t1);
+	clip2= clip_against_left_plane(_tri.a, _tri.b, &t1);
+      }
+      else {
+	start = _tri.c;
+	second = _tri.a;
+  	clip1= clip_against_left_plane(_tri.a, _tri.b, &t1);
+	clip2= clip_against_left_plane(_tri.b, _tri.c, &t1);
+      }
+
+      CG_Triangle out;
+      out.a = start;
+      out.b = second;
+      out.c = clip1;
+      *clippedA = out;
+
+      CG_Triangle out2;
+      out2.a = clip1;
+      out2.b = clip2;
+      out2.c = start;
+      *clippedB = out2;
+      return 2;
+    } 
+	
+    
+  } break;
+
+
+  default : {
+
+    *clippedA = _tri;
+    return 1;
+  } break;
+  }
+
+  *clippedA = _tri;
+  return 1;
+}
+
+
+internal u32 clip_triangle(Vec4 _a, Vec4 _b, Vec4 _c, CG_Triangle *_outTriangles){
+
+
+
+  /* { */
+
+  /*   CG_Triangle tri = {_a, _b, _c}; */
+  /*   _outTriangles[0] = tri; */
+  /*   return 1; */
+  /*   CG_Triangle clippedA, clippedB; */
+  /*   u32 num =clip_against_plane(tri, CLIP_PLANE_SCREEN_LEFT, &clippedA, &clippedB); */
+  /*   if(num == 1){ */
+  /*     _outTriangles[0] = clippedA; */
+  /*   } */
+  /*   else if(num == 2){ */
+  /*     _outTriangles[0] = clippedA; */
+  /*     _outTriangles[1] = clippedB; */
+  /*   } */
+
+  /*   return num; */
+  /* } */
+
+
+  u32 numInList = 1;
+  _outTriangles[0].a = _a;
+  _outTriangles[0].b = _b;
+  _outTriangles[0].c = _c;
+
+
+  CG_Triangle newList[TEMP_MAX_TRIS];
+  u32 numNewList;
+  for(int p=CLIP_PLANE_START+1;p<CLIP_PLANE_END-1;p++){
+
+
+
+    numNewList = 0;
+
+
+    while(numInList>0){
+      CG_Triangle tri = _outTriangles[numInList-1];
+      CG_Triangle clippedA, clippedB;
+      u32 num =clip_against_plane(tri, p, &clippedA, &clippedB);
+      if(num==1){
+	newList[numNewList] = clippedA;
+	numNewList++;
+	
+      }else if(num==2){
+	newList[numNewList] = clippedA;
+	numNewList++;
+	
+	newList[numNewList] = clippedB;
+	numNewList++;
+      }
+
+	
+      numInList--;
+    }
+
+    numInList = numNewList;
+    for(int i=0;i<numInList;i++){
+      _outTriangles[i] = newList[i];
+    }
+
+  }
+
+  return numNewList;
+}
+
+
+
+
+
 void draw3d_mesh(CG_Mesh* _mesh,Mat4x4 _model, Mat4x4 _inversedCameraMatrix, Mat4x4 _projection){
 
   PLATFORM_BEGIN_FUNCTION_MEASUREMENT();
   CG_OffscreenBuffer *screenBuffer = cg_get_current_off_screen_buffer();
   for(int i=0;i<_mesh->numIndices;i+=3){
     Vec3 worldPos;
+
+
+
+
+
+
+
+
     Vec3 eyeSpace;
     Vec4 clipSpace;
 
@@ -99,15 +387,89 @@ void draw3d_mesh(CG_Mesh* _mesh,Mat4x4 _model, Mat4x4 _inversedCameraMatrix, Mat
     /* printf("v3, %f, %f, %f\n", FormatXYZ(v3)); */
 
     float zA, zB, zC;
-    graphics_transform_point_to_all_spaces(v1, _model, _inversedCameraMatrix, _projection, &worldPos, &eyeSpace, &clipSpace, &ndc, &v1s);
+
+    Vec3 worldPos1;
+    Vec3 eyePos1;
+    Vec4 eyePos1Vec4;
+    Vec4 clipPos1;
+    Vec3 ndc1;
+
+    Vec3 worldPos2;
+    Vec3 eyePos2;
+    Vec4 eyePos2Vec4;
+    Vec4 clipPos2;
+    Vec3 ndc2;
+
+    Vec3 worldPos3;
+    Vec3 eyePos3;
+    Vec4 eyePos3Vec4;
+    Vec4 clipPos3;
+    Vec3 ndc3;
+
+    worldPos1 = math_mul_vec3_mat4x4(v1, _model);
+    eyePos1 = math_mul_vec3_mat4x4(worldPos1, _inversedCameraMatrix);
+    eyePos1Vec4 = math_vec4_create(eyePos1.x, eyePos1.y, eyePos1.z, 1);
+    clipPos1 = math_mul_vec4_mat4x4(eyePos1Vec4, _projection);
+
+    worldPos2 = math_mul_vec3_mat4x4(v2, _model);
+    eyePos2 = math_mul_vec3_mat4x4(worldPos2, _inversedCameraMatrix);
+    eyePos2Vec4 = math_vec4_create(eyePos2.x, eyePos2.y, eyePos2.z, 1);
+    clipPos2 = math_mul_vec4_mat4x4(eyePos2Vec4, _projection);
+
+    worldPos3 = math_mul_vec3_mat4x4(v3, _model);
+    eyePos3 = math_mul_vec3_mat4x4(worldPos3, _inversedCameraMatrix);
+    eyePos3Vec4 = math_vec4_create(eyePos3.x, eyePos3.y, eyePos3.z, 1);
+    clipPos3 = math_mul_vec4_mat4x4(eyePos3Vec4, _projection);
+    
+    CG_Color col = {255,255,255};
+      // 16 is random, idk how many max triangles can be produced
+  // this should be a safe number
+    CG_Triangle newTriangles[TEMP_MAX_TRIS];
+    u32 clippedTriangles = clip_triangle(clipPos1, clipPos2, clipPos3, newTriangles);
+
+    /* Vec3 ss1 = clip_to_ndc(newTriangles[0].a); */
+    /* ss1 = ndc_to_screen(ss1); */
+     
+    /* Vec3 ss2 = clip_to_ndc(newTriangles[0].b); */
+    /* ss2 = ndc_to_screen(ss2); */
+ 
+
+    /* Vec3 ss3 = clip_to_ndc(newTriangles[0].c); */
+    /* ss3 = ndc_to_screen(ss3); */
+ 
+    /* draw3d_triangle_rasterize_test(ss1,ss2,ss3, zA,zB, zC, col); */
+
+
+
+
+    for(int ct=0;ct<clippedTriangles;ct++){
+      Vec3 ss1 = clip_to_ndc(newTriangles[ct].a);
+      Vec3 ss2 = clip_to_ndc(newTriangles[ct].b);
+      Vec3 ss3 = clip_to_ndc(newTriangles[ct].c);
+
+      ss1 = ndc_to_screen(ss1);
+      ss2 = ndc_to_screen(ss2);
+      ss3 = ndc_to_screen(ss3);
+
+      CG_Color col = {255,255,255};
+      draw3d_triangle_rasterize_test(ss1,ss2,ss3,1,1,1, col);
+
+    }
+
+
+    point_to_all_spaces(v1, _model, _inversedCameraMatrix, _projection, &worldPos, &eyeSpace, &clipSpace, &ndc, &v1s);
+
     zA = clipSpace.z;
-    graphics_transform_point_to_all_spaces(v2, _model, _inversedCameraMatrix, _projection, &worldPos, &eyeSpace, &clipSpace, &ndc, &v2s);
+    point_to_all_spaces(v2, _model, _inversedCameraMatrix, _projection, &worldPos, &eyeSpace, &clipSpace, &ndc, &v2s);
     zB = clipSpace.z;
-    graphics_transform_point_to_all_spaces(v3, _model, _inversedCameraMatrix, _projection, &worldPos, &eyeSpace, &clipSpace, &ndc, &v3s);
+    point_to_all_spaces(v3, _model, _inversedCameraMatrix, _projection, &worldPos, &eyeSpace, &clipSpace, &ndc, &v3s);
     zC = clipSpace.z;
 
-    CG_Color col = {255,255,255};
-    draw3d_triangle_rasterize_test(v1s,v2s,v3s,zA, zB, zC, col);
+    /* CG_Color col = {255,255,255}; */
+    // draw3d_triangle_rasterize_test(v1s,v2s,v3s,zA, zB, zC, col);
+
+
+
 
 
 
@@ -149,7 +511,7 @@ void draw3d_debug_vertices(CG_Vertex* verts, size_t _num, float _radius, Mat4x4 
 
     Vec3 posa;
 
-    graphics_transform_point_to_all_spaces(verts[i].pos, _model, _inversedCameraMatrix, _projection, &worldPos, &eyeSpace, &clipSpace, &ndc, &posa);
+    point_to_all_spaces(verts[i].pos, _model, _inversedCameraMatrix, _projection, &worldPos, &eyeSpace, &clipSpace, &ndc, &posa);
 
     u32 col = 0x00AA00;
 
@@ -177,9 +539,9 @@ void draw3d_world_line(Vec3 _a, Vec3 _b, u32 _color, Mat4x4 _inversedCam, Mat4x4
     Vec3 posa, posb;
 
     Mat4x4 model = math_mat4x4_create_identity();
-    graphics_transform_point_to_all_spaces(_a, model, _inversedCam, _projection, &worldPos, &eyeSpace, &clipSpace, &ndc, &posa);
+    point_to_all_spaces(_a, model, _inversedCam, _projection, &worldPos, &eyeSpace, &clipSpace, &ndc, &posa);
 
-    graphics_transform_point_to_all_spaces(_b, model, _inversedCam, _projection, &worldPos, &eyeSpace, &clipSpace, &ndc, &posb);
+    point_to_all_spaces(_b, model, _inversedCam, _projection, &worldPos, &eyeSpace, &clipSpace, &ndc, &posb);
 
     // Bresenham line algorithm
 
@@ -307,5 +669,9 @@ void draw3d_triangle_rasterize_test(Vec3 a, Vec3 b, Vec3 c,float _zA, float _zB,
     }
   }
 
+
+}
+// use winding order to auto calc normals
+void mesh_recalculate_normals(CG_Mesh *_mesh){
 
 }

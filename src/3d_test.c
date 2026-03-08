@@ -33,7 +33,8 @@ internal CG_OffscreenBuffer *ScreenBuffer;
 internal CG_Buffer *DepthBuffer;
 
 internal CG_DebugSettings DebugSettings;
-
+internal float NearPlaneDistance = 0.3;
+internal float FarPlaneDistance = 25;
 
 CG_PlatformConfig cg_get_platform_config(){
   
@@ -90,7 +91,7 @@ internal void cg_init(CG_OffscreenBuffer *offscreenBuffer){
   
   ScreenBuffer = offscreenBuffer;
   size_t meshTotalSize;
-  TestCubeModel=  model_loader_load_gltf("../assets/models/suzanne.glb");
+  TestCubeModel=  model_loader_load_gltf("../assets/models/cube1x1.glb");
   srand(time(NULL));
   PlatformConfig = cg_get_platform_config();
   PlatformConfig.ScreenWidth = platform_get_client_screen_width();
@@ -163,7 +164,7 @@ internal float tempOffsetX, tempOffsetY;
 
 
 float speed = .25;
-float playerSpeed = 5;
+float playerSpeed = 3;
 
 internal float SquareWaveFrequency = 100;
 
@@ -291,7 +292,7 @@ void update_entities(float _dt){
     
 
     Mat4x4 camInverse = math_mat4x4_create_identity();
-    Mat4x4 projection = math_mat4x4_create_perspective_projection(70, false, aspect, .05f, 50.0f);
+    Mat4x4 projection = math_mat4x4_create_perspective_projection(70, false, aspect, NearPlaneDistance, FarPlaneDistance);
     //    draw_debug_vertices(tri.vertices,3,mat , 5);
 
 
@@ -499,3 +500,9 @@ CG_Buffer *cg_get_current_depth_buffer(){
 CG_DebugSettings cg_get_debug_settings(){
   return DebugSettings;
 }
+float cg_get_current_near_plane_distance(){
+  return NearPlaneDistance;
+}
+float cg_get_current_far_plane_distance(){
+  return FarPlaneDistance;
+};
