@@ -91,7 +91,7 @@ internal void cg_init(CG_OffscreenBuffer *offscreenBuffer){
   
   ScreenBuffer = offscreenBuffer;
   size_t meshTotalSize;
-  TestCubeModel=  model_loader_load_gltf("../assets/models/cube1x1.glb");
+  TestCubeModel=  model_loader_load_gltf("../assets/models/suzanne.glb");
   srand(time(NULL));
   PlatformConfig = cg_get_platform_config();
   PlatformConfig.ScreenWidth = platform_get_client_screen_width();

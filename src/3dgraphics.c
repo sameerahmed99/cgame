@@ -4,7 +4,7 @@
 
 
 const u32 TEMP_MAX_TRIS = 16;
-
+const float CLIPPING_MARGIN = .2;
 internal CG_Vertex TriangleVertices[3] = {
   {.pos = {-0.5f,-0.5f,0.0f}, .color = 0, .normal = {0,0,1}},
   {.pos = {0.0f,0.5f,0.0f}, .color = 0, .normal = {0,0,1}},
@@ -108,8 +108,8 @@ Vec4 clip_against_left_plane(Vec4 _a, Vec4 _b, float *_outInterp){
 
 
   // @NOTE margin should be 0 when not testing, it seems bugged anyways
-  float margin = 0;
-  float t = -(_a.x + _a.w - margin)/(_b.x-_a.x+_b.w-_a.w);
+  float margin = CLIPPING_MARGIN;
+  float t = -(_a.x + _a.w - margin*_a.w)/(_b.x-_a.x+_b.w-_a.w - _b.w*margin + _a.w*margin);
   float x = _a.x + t * (_b.x - _a.x);
   float y = _a.y + t * (_b.y - _a.y);
   float z = _a.z + t * (_b.z - _a.z);
@@ -166,21 +166,21 @@ u32 clip_against_plane(CG_Triangle _tri, i32 _plane, CG_Triangle *clippedA, CG_T
     u32 numInside =0;
     u32 numOutside = 0;
     b32 aInside = false, bInside = false, cInside = false;
-    if(_tri.a.x >= -_tri.a.w){
+    if(_tri.a.x >= -_tri.a.w + CLIPPING_MARGIN*_tri.a.w){
       aInside = true;
       numInside++;
     }
     else{
       numOutside++;
 	}
-    if(_tri.b.x >= -_tri.b.w){
+    if(_tri.b.x >= -_tri.b.w + CLIPPING_MARGIN*_tri.b.w){
       bInside = true;
       numInside++;
     }
     else{
       numOutside++;
 	}
-    if(_tri.c.x >= -_tri.c.w){
+    if(_tri.c.x >= -_tri.c.w + CLIPPING_MARGIN*_tri.c.w){
       cInside = true;
       numInside++;
     }
@@ -322,16 +322,20 @@ internal u32 clip_triangle(Vec4 _a, Vec4 _b, Vec4 _c, CG_Triangle *_outTriangles
       CG_Triangle tri = _outTriangles[numInList-1];
       CG_Triangle clippedA, clippedB;
       u32 num =clip_against_plane(tri, p, &clippedA, &clippedB);
-      if(num==1){
+
+      switch(num){
+      case 1: {
 	newList[numNewList] = clippedA;
 	numNewList++;
-	
-      }else if(num==2){
+      }break;
+      case 2: {
 	newList[numNewList] = clippedA;
 	numNewList++;
 	
 	newList[numNewList] = clippedB;
 	numNewList++;
+
+      } break;
       }
 
 	
@@ -359,6 +363,7 @@ void draw3d_mesh(CG_Mesh* _mesh,Mat4x4 _model, Mat4x4 _inversedCameraMatrix, Mat
   for(int i=0;i<_mesh->numIndices;i+=3){
     Vec3 worldPos;
 
+  
 
 
 
@@ -441,7 +446,6 @@ void draw3d_mesh(CG_Mesh* _mesh,Mat4x4 _model, Mat4x4 _inversedCameraMatrix, Mat
 
 
 
-
     for(int ct=0;ct<clippedTriangles;ct++){
       Vec3 ss1 = clip_to_ndc(newTriangles[ct].a);
       Vec3 ss2 = clip_to_ndc(newTriangles[ct].b);
@@ -457,13 +461,13 @@ void draw3d_mesh(CG_Mesh* _mesh,Mat4x4 _model, Mat4x4 _inversedCameraMatrix, Mat
     }
 
 
-    point_to_all_spaces(v1, _model, _inversedCameraMatrix, _projection, &worldPos, &eyeSpace, &clipSpace, &ndc, &v1s);
+    /* point_to_all_spaces(v1, _model, _inversedCameraMatrix, _projection, &worldPos, &eyeSpace, &clipSpace, &ndc, &v1s); */
 
-    zA = clipSpace.z;
-    point_to_all_spaces(v2, _model, _inversedCameraMatrix, _projection, &worldPos, &eyeSpace, &clipSpace, &ndc, &v2s);
-    zB = clipSpace.z;
-    point_to_all_spaces(v3, _model, _inversedCameraMatrix, _projection, &worldPos, &eyeSpace, &clipSpace, &ndc, &v3s);
-    zC = clipSpace.z;
+    /* zA = clipSpace.z; */
+    /* point_to_all_spaces(v2, _model, _inversedCameraMatrix, _projection, &worldPos, &eyeSpace, &clipSpace, &ndc, &v2s); */
+    /* zB = clipSpace.z; */
+    /* point_to_all_spaces(v3, _model, _inversedCameraMatrix, _projection, &worldPos, &eyeSpace, &clipSpace, &ndc, &v3s); */
+    /* zC = clipSpace.z; */
 
     /* CG_Color col = {255,255,255}; */
     // draw3d_triangle_rasterize_test(v1s,v2s,v3s,zA, zB, zC, col);
@@ -481,13 +485,13 @@ void draw3d_mesh(CG_Mesh* _mesh,Mat4x4 _model, Mat4x4 _inversedCameraMatrix, Mat
     //    printf("Pos %d: %f, %f, %f\n",i, FormatXYZ(posa));
 
   }
-
+  PLATFORM_STOP_FUNCTION_MEASUREMENT();
   /* Vec3 ta = {screenBuffer->Width/2, screenBuffer->Height/2}; */
   /* Vec3  tb = {ta.x + 25, ta.y}; */
   /* Vec3  tc = {ta.x + 25, ta.y-25}; */
   /* draw3d_triangle_rasterize_test( ta,tb,tc, 0xFFFFFFFF); */
 
-  PLATFORM_STOP_FUNCTION_MEASUREMENT();
+
 }
 
 

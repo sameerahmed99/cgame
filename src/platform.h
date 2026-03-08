@@ -69,7 +69,7 @@ u32 platform_convert_color(u32 _rgba);
 
 
 void platform_begin_measurement();
-float platform_stop_measurement_ms(b32 _autoPrintMeasurement, const char* _idString);
+double platform_stop_measurement_ms(b32 _autoPrintMeasurement, const char* _idString);
 
 
 #endif //CG_PLATFORM_

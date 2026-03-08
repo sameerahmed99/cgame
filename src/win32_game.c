@@ -939,7 +939,7 @@ void platform_begin_measurement()
   QueryPerformanceCounter(&PlatformMeasurementLast);
 };
 
-float platform_stop_measurement_ms(b32 _autoPrintMeasurement, const char* _identifierString)
+double platform_stop_measurement_ms(b32 _autoPrintMeasurement, const char* _identifierString)
 {
   LARGE_INTEGER perfTimeStamp;
   QueryPerformanceCounter(&perfTimeStamp);
@@ -953,9 +953,9 @@ float platform_stop_measurement_ms(b32 _autoPrintMeasurement, const char* _ident
   
 
 
-  float ElapsedMilliSeconds  = ElapsedMicroSeconds / 1000.0f;
+  double ElapsedMilliSeconds  = ElapsedMicroSeconds / 1000.0;
   if(_autoPrintMeasurement){
-    printf("[Measured: %s] Elapsed milliseconds: %f\n", _identifierString, ElapsedMilliSeconds);
+    printf("[Measured: %s] Elapsed milliseconds: %lf\n", _identifierString, ElapsedMilliSeconds);
   };
   return ElapsedMilliSeconds;
 }
