@@ -30,6 +30,8 @@ typedef struct CG_KeyboardKeys {
 
 typedef struct CG_Input {
   CG_KeyboardKeys Keyboard;
+  float mousePosX, mousePosY,mousePosXPrev, mousePosYPrev, mouseDeltaX, mouseDeltaY;
+
 } CG_Input;
 
 

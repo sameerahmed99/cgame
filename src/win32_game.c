@@ -14,6 +14,8 @@
 #include <audioclient.h>
 #include <audiopolicy.h>
 
+// for the GET_X_LPARAM and GET_Y_LPARAM macros
+#include <windowsx.h>
 //@TODO Consider switching to WASAPI
 // instead of XAudio. This way we can let the game control the audio buffer
 // and just use wasapi to play the buffer
@@ -36,7 +38,7 @@
 
 
 
-#include "game.h"
+#include "cgame.c"
 
 
 
@@ -622,6 +624,17 @@ LRESULT Win32CallbackFunc(HWND _window, UINT _msgId, WPARAM param3, LPARAM param
     EndPaint(_window, &p);
   } break;
 
+  case WM_MOUSEMOVE: {
+    int xPos = GET_X_LPARAM(param4); 
+    int yPos = GET_Y_LPARAM(param4);
+
+
+    // @NOTE mouse pos is in pixels here
+    // @TODO make it independent of pixels
+    // check mouse movement win32 docs
+    GlobalInput.mousePosX = xPos;
+    GlobalInput.mousePosY = yPos;
+  } break;
   case WM_KEYDOWN:
   case WM_KEYUP:
   case WM_SYSKEYDOWN:
@@ -729,6 +742,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
   win32_reset_key_state(&GlobalInput.Keyboard.s, false);
   win32_reset_key_state(&GlobalInput.Keyboard.d, false);
 
+
   // INIT APPLICATION HERE
 
   // main game memory allocation
@@ -810,6 +824,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     win32_reset_key_state(&GlobalInput.Keyboard.e, true);
     win32_reset_key_state(&GlobalInput.Keyboard.shift, true);
     win32_reset_key_state(&GlobalInput.Keyboard.alt, true);
+    GlobalInput.mousePosXPrev = GlobalInput.mousePosX;
+    GlobalInput.mousePosYPrev = GlobalInput.mousePosY;
+
+  
 
     while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
       TranslateMessage(&msg);

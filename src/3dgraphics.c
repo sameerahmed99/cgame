@@ -80,16 +80,6 @@ void point_to_all_spaces(Vec3 _point,Mat4x4 _model, Mat4x4 _inversedCameraMatrix
 }
 
 
-enum ClipPlane {
-  CLIP_PLANE_START,
-  CLIP_PLANE_SCREEN_LEFT,
-  CLIP_PLANE_SCREEN_RIGHT,
-  CLIP_PLANE_SCREEN_TOP,
-  CLIP_PLANE_SCREEN_BOTTOM,
-  CLIP_PLANE_NEAR_PLANE,
-  CLIP_PLANE_FAR_PLANE,
-  CLIP_PLANE_END
-};
 
 
 
@@ -113,66 +103,6 @@ internal const Vec4 all_clip_planes[6] = {clip_plane_left, clip_plane_right, cli
 
 
 internal const u32 NUM_CLIPPING_PLANES = 6;
-
-/* internal Vec4 clip_against_left_plane(Vec4 _a, Vec4 _b, Vec4 _plane, float *_outInterp){ */
-/*   // P(t) = A + t*(B-a); */
-/*   // P(x) = P(-w) */
-/*   // P(x) + P(w) = 0 */
-  
-/*   // when x is left side of screen, -w, adding w results in 0, i.e intersection */
-
-
-
-
-/*   /\* float margin = CLIPPING_MARGIN; *\/ */
-/*   /\* float t = -(_a.x + _a.w - margin*_a.w)/(_b.x-_a.x+_b.w-_a.w - _b.w*margin + _a.w*margin); *\/ */
-/*   /\* float x = _a.x + t * (_b.x - _a.x); *\/ */
-/*   /\* float y = _a.y + t * (_b.y - _a.y); *\/ */
-/*   /\* float z = _a.z + t * (_b.z - _a.z); *\/ */
-/*   /\* float w = _a.w + t * (_b.w - _a.w); *\/ */
-/*   /\* *_outInterp = t; *\/ */
-
-/*   /\* Vec4 ret ={x,y,z,w}; *\/ */
-/*   /\* return ret; *\/ */
-/* } */
-
-/* Vec4 clip_against_right_plane(Vec4 _a, Vec4 _b, float *_outInterp){ */
-/*   float t = -(_a.x - _a.w) /  ( (_a.x - _a.w) - (_b.x  - _b.w  )); */
-/*   float x = _a.x + t * (_b.x - _a.x); */
-/*   float y = _a.y + t * (_b.y - _a.y); */
-/*   float z = _a.z + t * (_b.z - _a.z); */
-/*   float w = _a.w + t * (_b.w - _a.w); */
-/*   *_outInterp = t; */
-
-/*     Vec4 ret ={x,y,z,w}; */
-/*   return ret; */
-/* } */
-
-/* Vec4 clip_against_top_plane(Vec4 _a, Vec4 _b, float *_outInterp){ */
-/*   float t = (_a.y - _a.w) /  ( (_a.y - _a.w) - (_b.y  - _b.w  )); */
-/*   float x = _a.x + t * (_b.x - _a.x); */
-/*   float y = _a.y + t * (_b.y - _a.y); */
-/*   float z = _a.z + t * (_b.z - _a.z); */
-/*   float w = _a.w + t * (_b.w - _a.w); */
-/*   *_outInterp = t; */
-
-/*     Vec4 ret ={x,y,z,w}; */
-/*   return ret; */
-/* } */
-
-/* Vec4 clip_against_bottom_plane(Vec4 _a, Vec4 _b, float *_outInterp){ */
-/*   float t = -(_a.y + _a.w) / ( (_b.y - _a.y) + (_b.w  - _a.w)  ); */
-/*   float x = _a.x + t * (_b.x - _a.x); */
-/*   float y = _a.y + t * (_b.y - _a.y); */
-/*   float z = _a.z + t * (_b.z - _a.z); */
-/*   float w = _a.w + t * (_b.w - _a.w); */
-/*   *_outInterp = t; */
-
-/*     Vec4 ret ={x,y,z,w}; */
-/*   return ret; */
-/* } */
-
-
 
 u32 clip_against_plane(CG_Triangle _tri, Vec4 _plane, CG_Triangle *clippedA, CG_Triangle *clippedB){
 
@@ -330,23 +260,7 @@ internal u32 clip_triangle(Vec4 _a, Vec4 _b, Vec4 _c, CG_Triangle *_outTriangles
 
 
 
-  /* { */
 
-  /*   CG_Triangle tri = {_a, _b, _c}; */
-  /*   _outTriangles[0] = tri; */
-  /*   return 1; */
-  /*   CG_Triangle clippedA, clippedB; */
-  /*   u32 num =clip_against_plane(tri, CLIP_PLANE_SCREEN_LEFT, &clippedA, &clippedB); */
-  /*   if(num == 1){ */
-  /*     _outTriangles[0] = clippedA; */
-  /*   } */
-  /*   else if(num == 2){ */
-  /*     _outTriangles[0] = clippedA; */
-  /*     _outTriangles[1] = clippedB; */
-  /*   } */
-
-  /*   return num; */
-  /* } */
 
 
   u32 numInList = 1;
@@ -499,16 +413,16 @@ void draw3d_mesh(CG_Mesh* _mesh,Mat4x4 _model, Mat4x4 _inversedCameraMatrix, Mat
       Vec3 ss1 = clip_to_ndc(newTriangles[ct].a);
       Vec3 ss2 = clip_to_ndc(newTriangles[ct].b);
       Vec3 ss3 = clip_to_ndc(newTriangles[ct].c);
-      if(ct == 1) {
-	col.r = 255;
-	col.g = 125;
-	col.b = 0;
-      }
-      if(ct == 2) {
-	col.r = 0;
-	col.g = 0;
-	col.b = 255;
-      }
+      /* if(ct == 1) { */
+      /* 	col.r = 255; */
+      /* 	col.g = 125; */
+      /* 	col.b = 0; */
+      /* } */
+      /* if(ct == 2) { */
+      /* 	col.r = 0; */
+      /* 	col.g = 0; */
+      /* 	col.b = 255; */
+      /* } */
       ss1 = ndc_to_screen(ss1);
       ss2 = ndc_to_screen(ss2);
       ss3 = ndc_to_screen(ss3);
@@ -516,42 +430,15 @@ void draw3d_mesh(CG_Mesh* _mesh,Mat4x4 _model, Mat4x4 _inversedCameraMatrix, Mat
 
 
 
-      draw3d_triangle_rasterize_test(ss1,ss2,ss3,1,1,1, col);
+      draw3d_triangle_rasterize(ss1,ss2,ss3,1,1,1, col);
 
     }
 
 
-    /* point_to_all_spaces(v1, _model, _inversedCameraMatrix, _projection, &worldPos, &eyeSpace, &clipSpace, &ndc, &v1s); */
-
-    /* zA = clipSpace.z; */
-    /* point_to_all_spaces(v2, _model, _inversedCameraMatrix, _projection, &worldPos, &eyeSpace, &clipSpace, &ndc, &v2s); */
-    /* zB = clipSpace.z; */
-    /* point_to_all_spaces(v3, _model, _inversedCameraMatrix, _projection, &worldPos, &eyeSpace, &clipSpace, &ndc, &v3s); */
-    /* zC = clipSpace.z; */
-
-    /* CG_Color col = {255,255,255}; */
-    // draw3d_triangle_rasterize_test(v1s,v2s,v3s,zA, zB, zC, col);
-
-
-
-
-
-
-
   
-
-
-
-    //    printf("Pos %d: %f, %f, %f\n",i, FormatXYZ(posa));
 
   }
   PLATFORM_STOP_FUNCTION_MEASUREMENT();
-  /* Vec3 ta = {screenBuffer->Width/2, screenBuffer->Height/2}; */
-  /* Vec3  tb = {ta.x + 25, ta.y}; */
-  /* Vec3  tc = {ta.x + 25, ta.y-25}; */
-  /* draw3d_triangle_rasterize_test( ta,tb,tc, 0xFFFFFFFF); */
-
-
 }
 
 
@@ -590,7 +477,7 @@ void draw3d_debug_vertices(CG_Vertex* verts, size_t _num, float _radius, Mat4x4 
 }
 
 
-// copied from geeksforgeeks
+
 void line_temp(float x1, float x2, float y1, float y2)
 {
 
@@ -689,7 +576,7 @@ u32 ucol=  cg_create_color_from_channels(col.r, col.g, col.b, col.a);
 
 
 // https://www.scratchapixel.com/lessons/3d-basic-rendering/rasterization-practical-implementation/rasterization-stage.html
-void draw3d_triangle_rasterize_test(Vec3 a, Vec3 b, Vec3 c,float _zA, float _zB, float _zC, CG_Color _color){
+void draw3d_triangle_rasterize(Vec3 a, Vec3 b, Vec3 c,float _zA, float _zB, float _zC, CG_Color _color){
 
 
   CG_Color lineCol = {0,0,125,0};
@@ -805,9 +692,9 @@ void draw3d_triangle_rasterize_test(Vec3 a, Vec3 b, Vec3 c,float _zA, float _zB,
     }
   }
 
-  line_temp(a.x,b.x,a.y,b.y);
-  line_temp(b.x,c.x,b.y,c.y);
-  line_temp(c.x,a.x,c.y,a.y);
+  /* line_temp(a.x,b.x,a.y,b.y); */
+  /* line_temp(b.x,c.x,b.y,c.y); */
+  /* line_temp(c.x,a.x,c.y,a.y); */
   
 }
 // use winding order to auto calc normals

@@ -35,7 +35,9 @@ internal CG_Buffer *DepthBuffer;
 internal CG_DebugSettings DebugSettings;
 internal float NearPlaneDistance = 0.3;
 internal float FarPlaneDistance = 25;
+internal CG_Input GameInput;
 
+internal b32 MouseInputInit = false;
 CG_PlatformConfig cg_get_platform_config(){
   
    CG_PlatformConfig config = {
@@ -91,7 +93,8 @@ internal void cg_init(CG_OffscreenBuffer *offscreenBuffer){
   
   ScreenBuffer = offscreenBuffer;
   size_t meshTotalSize;
-  TestCubeModel=  model_loader_load_gltf("../assets/models/cube-dense.glb");
+  //  TestCubeModel=  model_loader_load_gltf("../assets/models/CGameTestScene_a.glb");
+  TestCubeModel=  model_loader_load_gltf("../assets/models/suzanne.glb");
   srand(time(NULL));
   PlatformConfig = cg_get_platform_config();
   PlatformConfig.ScreenWidth = platform_get_client_screen_width();
@@ -376,10 +379,27 @@ void draw_sky(CG_OffscreenBuffer *_to, u32 _skyCol, u32 _sunCol, u32 _cloudCol)
 
   // no sun for now
   //  draw_circle(_to, 60, _sunCol, sunX, sunY);
+}
+
+
+internal void update_input(CG_Input inp){
+  GameInput = inp;
+
+  GameInput.mouseDeltaX = GameInput.mousePosXPrev - GameInput.mousePosX;
+  GameInput.mouseDeltaY = GameInput.mousePosYPrev - GameInput.mousePosY;
+
+  
+  if(!MouseInputInit){
+    GameInput.mouseDeltaX = 0;
+    GameInput.mouseDeltaY = 0;
+    MouseInputInit = true;
+  }
 
   
 }
 internal void cg_update(CG_Memory* _memory, CG_Input *_playerInput, float _deltaTime){
+
+  update_input(*_playerInput);
 
 
   //  printf("Dif den: %f\n", CurrentDifficultyDenominator);
@@ -443,11 +463,11 @@ dbuffer[i] = 99999999999;
     pos.z-=_deltaTime*pspeed;
     entity_set_world_pos(CubeEntity, pos); 
   }
-  if(k.q.IsPressed){
+
     Vec3 euler = CubeEntity->worldEulerAngles;
-    euler.y+=_deltaTime*playerRotationSpeed*5;
+    euler.y+=GameInput.mouseDeltaX;
     entity_set_world_euler_angles(CubeEntity, euler);
-  }
+
   if(k.e.IsPressed){
     Vec3 euler = CubeEntity->worldEulerAngles;
     euler.y-=_deltaTime*playerRotationSpeed*5;
