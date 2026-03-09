@@ -69,24 +69,47 @@ Vec4 math_vec4_create(float x, float y, float z, float w){
   return vec;
 }
 
-Vec3 math_vec4_lerp(Vec3 _a, Vec3 _b, float _t){
-  Vec3 res;
+Vec4 math_vec4_lerp(Vec4 _a, Vec4 _b, float _t){
+  Vec4 res;
   res.x = math_lerp(_a.x, _b.x, _t);
   res.y = math_lerp(_a.y, _b.y, _t);
   res.z = math_lerp(_a.z, _b.z, _t);
-
+  res.w = math_lerp(_a.w, _b.w, _t);
   return res;
 }
 
-Vec3 math_vec4_inverse_lerp(Vec3 _a, Vec3 _b, float _t){
-  Vec3 res;
+Vec4 math_vec4_inverse_lerp(Vec4 _a, Vec4 _b, float _t){
+  Vec4 res;
   res.x = math_inverse_lerp(_a.x, _b.x, _t);
   res.y = math_inverse_lerp(_a.y, _b.y, _t);
   res.z = math_inverse_lerp(_a.z, _b.z, _t);
+  res.w = math_inverse_lerp(_a.w, _b.w, _t);
 
   return res;
 }
 
+float math_vec4_dot(Vec4 _a, Vec4 _b){
+  float res = _a.x * _b.x + _a.y*_b.y + _a.z*_b.z + _a.w*_b.w;
+  return res;
+}
+
+Vec4 math_vec4_add(Vec4 _a, Vec4 _b){
+  Vec4 res;
+  res.x = _a.x + _b.x;
+  res.y = _a.y + _b.y;
+  res.z = _a.z + _b.z;
+  res.w = _a.w + _b.w;
+
+  return res;
+}
+Vec4 math_vec4_subtract(Vec4 _a, Vec4 _b){
+  Vec4 res;
+  res.x = _a.x - _b.x;
+  res.y = _a.y - _b.y;
+  res.z = _a.z - _b.z;
+  res.w = _a.w - _b.w;
+  return res;
+}
 
 float math_vec3_sqr_dist(Vec3 _a, Vec3 _b){
   float x = _b.x - _a.x;

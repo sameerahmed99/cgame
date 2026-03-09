@@ -4,6 +4,8 @@
 
 
 const u32 TEMP_MAX_TRIS = 16;
+
+// @NOTE margin should be 0 when not testing
 const float CLIPPING_MARGIN = .2;
 internal CG_Vertex TriangleVertices[3] = {
   {.pos = {-0.5f,-0.5f,0.0f}, .color = 0, .normal = {0,0,1}},
@@ -96,32 +98,66 @@ typedef struct CG_Triangle {
 } CG_Triangle;
 
 
+// normals of planes
+// w always 1
+// because w should always "align" with the vector we're doing dot product with in homogenous space
+internal const Vec4 clip_plane_left ={1,0,0,1};
+internal const Vec4 clip_plane_right ={-1,0,0,1};
+internal const Vec4 clip_plane_top ={0,-1,0,1};
+internal const Vec4 clip_plane_bottom ={0,1,0,1};
+internal const Vec4 clip_plane_near ={0,0,1,1};
+internal const Vec4 clip_plane_far ={0,0,-1,1};
 
 
+internal const Vec4 all_clip_planes[6] = {clip_plane_left, clip_plane_right, clip_plane_top, clip_plane_bottom, clip_plane_near, clip_plane_far};
 
-Vec4 clip_against_left_plane(Vec4 _a, Vec4 _b, float *_outInterp){
+
+internal const u32 NUM_CLIPPING_PLANES = 6;
+
+internal Vec4 plane_and_edge_intersection(Vec4 _a, Vec4 _b, Vec4 _plane, float *_outInterp){
   // P(t) = A + t*(B-a);
   // P(x) = P(-w)
   // P(x) + P(w) = 0
+  
   // when x is left side of screen, -w, adding w results in 0, i.e intersection
 
 
+  Vec4 marginedPlane = _plane;
+  marginedPlane.w-=CLIPPING_MARGIN;
+  float dot = math_vec4_dot(_a, marginedPlane);
+  float dot2 = math_vec4_dot(_b,marginedPlane);
 
-  // @NOTE margin should be 0 when not testing, it seems bugged anyways
-  float margin = CLIPPING_MARGIN;
-  float t = -(_a.x + _a.w - margin*_a.w)/(_b.x-_a.x+_b.w-_a.w - _b.w*margin + _a.w*margin);
-  float x = _a.x + t * (_b.x - _a.x);
-  float y = _a.y + t * (_b.y - _a.y);
-  float z = _a.z + t * (_b.z - _a.z);
-  float w = _a.w + t * (_b.w - _a.w);
+  // both points are on same side of the plane,
+  // no intersection
+  
+  // @NOTE commenting this out because we will never get to this case
+  // see code that leads up to this function 
+  /* if(dot*dot2 >=0.0f){ */
+  /*   return -1; */
+  /* } */
+
+  float t = dot / (dot-dot2);
   *_outInterp = t;
 
-  Vec4 ret ={x,y,z,w};
+  Vec4 ret;
+
+  ret = math_vec4_lerp(_a, _b, t);
   return ret;
+
+  /* float margin = CLIPPING_MARGIN; */
+  /* float t = -(_a.x + _a.w - margin*_a.w)/(_b.x-_a.x+_b.w-_a.w - _b.w*margin + _a.w*margin); */
+  /* float x = _a.x + t * (_b.x - _a.x); */
+  /* float y = _a.y + t * (_b.y - _a.y); */
+  /* float z = _a.z + t * (_b.z - _a.z); */
+  /* float w = _a.w + t * (_b.w - _a.w); */
+  /* *_outInterp = t; */
+
+  /* Vec4 ret ={x,y,z,w}; */
+  /* return ret; */
 }
 
 Vec4 clip_against_right_plane(Vec4 _a, Vec4 _b, float *_outInterp){
-  float t = (_a.x - _a.w) /  ( (_a.x - _a.w) - (_b.x  - _b.w  ));
+  float t = -(_a.x - _a.w) /  ( (_a.x - _a.w) - (_b.x  - _b.w  ));
   float x = _a.x + t * (_b.x - _a.x);
   float y = _a.y + t * (_b.y - _a.y);
   float z = _a.z + t * (_b.z - _a.z);
@@ -158,122 +194,126 @@ Vec4 clip_against_bottom_plane(Vec4 _a, Vec4 _b, float *_outInterp){
 
 
 
-u32 clip_against_plane(CG_Triangle _tri, i32 _plane, CG_Triangle *clippedA, CG_Triangle *clippedB){
-  switch(_plane){
+u32 clip_against_plane(CG_Triangle _tri, Vec4 _plane, CG_Triangle *clippedA, CG_Triangle *clippedB){
 
-  case CLIP_PLANE_SCREEN_LEFT : {
+  Vec4 marginedPlane = _plane;
+  marginedPlane.w-=CLIPPING_MARGIN*(marginedPlane.w>=0 ? 1:-1);
 
-    u32 numInside =0;
-    u32 numOutside = 0;
-    b32 aInside = false, bInside = false, cInside = false;
-    if(_tri.a.x >= -_tri.a.w + CLIPPING_MARGIN*_tri.a.w){
-      aInside = true;
-      numInside++;
-    }
-    else{
-      numOutside++;
-	}
-    if(_tri.b.x >= -_tri.b.w + CLIPPING_MARGIN*_tri.b.w){
-      bInside = true;
-      numInside++;
-    }
-    else{
-      numOutside++;
-	}
-    if(_tri.c.x >= -_tri.c.w + CLIPPING_MARGIN*_tri.c.w){
-      cInside = true;
-      numInside++;
-    }
-    else{
-      numOutside++;
-	}
+  
+  u32 numInside = 0;
+  u32 numOutside =0;
+  b32 aInside = false, bInside = false, cInside = false;
+  float dotA = math_vec4_dot(_tri.a, marginedPlane);
+  float dotB = math_vec4_dot(_tri.b, marginedPlane);
+  float dotC = math_vec4_dot(_tri.c, marginedPlane);
+  
+  aInside = dotA >=0.0f;
+  bInside = dotB >=0.0f;
+  cInside = dotC >=0.0f;
 
-    if(numInside == 0) return 0;
+  float lerpAB = dotA / (dotA - dotB);
+  float lerpBC = dotB / (dotB - dotC);
+  float lerpCA = dotC / (dotC - dotA);
     
-    if(numInside ==3) {
-      *clippedA = _tri;
-      return 1;
-    }
+  if(aInside){
+    numInside++;
+  }
+  else{
+    numOutside++;
+  }
+  if(bInside){
+    numInside++;
+  }
+  else{
+    numOutside++;
+  }
+  if(cInside){
+    numInside++;
+  }
+  else{
+    numOutside++;
+  }
+
+  if(numInside == 0) return 0;
     
-    if(numInside == 1) {
+  if(numInside ==3) {
+    *clippedA = _tri;
+    return 1;
+  }
+    
+  
+
+
+  if(numInside == 1) {
 
 
       
-      float t1,t2;
-      Vec4 clip1, clip2;
-      Vec4 start;
-      if(aInside) {
-	start = _tri.a;
-	clip1= clip_against_left_plane(_tri.a, _tri.b, &t1);
-	clip2= clip_against_left_plane(_tri.c, _tri.a, &t1);
-      }
-      else if(bInside){
-	start = _tri.b;
-	clip1= clip_against_left_plane(_tri.b, _tri.c, &t1);
-	clip2= clip_against_left_plane(_tri.a, _tri.b, &t1);
-      }
-      else {
-	start = _tri.c;
-  	clip1= clip_against_left_plane(_tri.c, _tri.a, &t1);
-	clip2= clip_against_left_plane(_tri.b, _tri.c, &t1);
-      }
 
-      CG_Triangle out;
-      out.a = start;
-      out.b = clip1;
-      out.c = clip2;
-      *clippedA = out;
-      return 1;
+    Vec4 clip1, clip2;
+    Vec4 start;
+    if(aInside) {
+      start = _tri.a;
+      clip1= math_vec4_lerp(_tri.a, _tri.b, lerpAB);
+      clip2= math_vec4_lerp(_tri.c, _tri.a, lerpCA);
     }
-    else if(numInside == 2) {
+    else if(bInside){
+      start = _tri.b;
+      clip1= math_vec4_lerp(_tri.b, _tri.c, lerpBC);
+      clip2= math_vec4_lerp(_tri.a, _tri.b, lerpAB);
+    }
+    else {
+      start = _tri.c;
+      clip1= math_vec4_lerp(_tri.c, _tri.a, lerpCA);
+      clip2= math_vec4_lerp(_tri.b, _tri.c, lerpBC);
+    }
 
-
-      float t1,t2;
-      Vec4 clip1, clip2;
-      Vec4 start, second;
-      if(aInside && bInside) {
-	start = _tri.a;
-	second = _tri.b;
-	clip1= clip_against_left_plane(_tri.b, _tri.c, &t1);
-	clip2= clip_against_left_plane(_tri.c, _tri.a, &t1);
-      }
-      else if(bInside && cInside){
-	start = _tri.b;
-	second = _tri.c;
-	clip1= clip_against_left_plane(_tri.c, _tri.a, &t1);
-	clip2= clip_against_left_plane(_tri.a, _tri.b, &t1);
-      }
-      else {
-	start = _tri.c;
-	second = _tri.a;
-  	clip1= clip_against_left_plane(_tri.a, _tri.b, &t1);
-	clip2= clip_against_left_plane(_tri.b, _tri.c, &t1);
-      }
-
-      CG_Triangle out;
-      out.a = start;
-      out.b = second;
-      out.c = clip1;
-      *clippedA = out;
-
-      CG_Triangle out2;
-      out2.a = clip1;
-      out2.b = clip2;
-      out2.c = start;
-      *clippedB = out2;
-      return 2;
-    } 
-	
-    
-  } break;
-
-
-  default : {
-
-    *clippedA = _tri;
+    CG_Triangle out;
+    out.a = start;
+    out.b = clip1;
+    out.c = clip2;
+    *clippedA = out;
     return 1;
-  } break;
   }
+  else if(numInside == 2) {
+
+
+    float t1,t2;
+    Vec4 clip1, clip2;
+    Vec4 start, second;
+    if(aInside && bInside) {
+      start = _tri.a;
+      second = _tri.b;
+      clip1= math_vec4_lerp(_tri.b, _tri.c, lerpBC);
+      clip2= math_vec4_lerp(_tri.c, _tri.a, lerpCA);
+    }
+    else if(bInside && cInside){
+      start = _tri.b;
+      second = _tri.c;
+      clip1= math_vec4_lerp(_tri.c, _tri.a, lerpCA);
+      clip2= math_vec4_lerp(_tri.a, _tri.b, lerpAB);
+    }
+    else {
+      start = _tri.c;
+      second = _tri.a;
+      clip1= math_vec4_lerp(_tri.a, _tri.b, lerpAB);
+      clip2= math_vec4_lerp(_tri.b, _tri.c, lerpBC);
+    }
+
+    CG_Triangle out;
+    out.a = start;
+    out.b = second;
+    out.c = clip1;
+    *clippedA = out;
+
+    CG_Triangle out2;
+    out2.a = clip1;
+    out2.b = clip2;
+    out2.c = start;
+    *clippedB = out2;
+    return 2;
+  } 
+	
+
 
   *clippedA = _tri;
   return 1;
@@ -311,7 +351,7 @@ internal u32 clip_triangle(Vec4 _a, Vec4 _b, Vec4 _c, CG_Triangle *_outTriangles
 
   CG_Triangle newList[TEMP_MAX_TRIS];
   u32 numNewList;
-  for(int p=CLIP_PLANE_START+1;p<CLIP_PLANE_END-1;p++){
+  for(int p=0;p<NUM_CLIPPING_PLANES;p++){
 
 
 
@@ -321,7 +361,7 @@ internal u32 clip_triangle(Vec4 _a, Vec4 _b, Vec4 _c, CG_Triangle *_outTriangles
     while(numInList>0){
       CG_Triangle tri = _outTriangles[numInList-1];
       CG_Triangle clippedA, clippedB;
-      u32 num =clip_against_plane(tri, p, &clippedA, &clippedB);
+      u32 num =clip_against_plane(tri, all_clip_planes[p], &clippedA, &clippedB);
 
       switch(num){
       case 1: {
@@ -669,10 +709,10 @@ void draw3d_triangle_rasterize_test(Vec3 a, Vec3 b, Vec3 c,float _zA, float _zB,
 	}
 
 	
-	p[0] = _color.b;
-	p[1] = _color.g;
-	p[2] = _color.r;
-	p[3] = _color.a;
+	/* p[0] = _color.b; */
+	/* p[1] = _color.g; */
+	/* p[2] = _color.r; */
+	/* p[3] = _color.a; */
       }
 
 

@@ -81,9 +81,14 @@ Vec3 math_vec3_create(float x, float y, float z);
 Vec4 math_mul_vec4_mat4x4(Vec4 _vec, Mat4x4 _mat);
 
 
-Vec3 math_vec4_lerp(Vec3 _a, Vec3 _b, float _t);
-Vec3 math_vec4_inverse_lerp(Vec3 _a, Vec3 _b, float _t);
+Vec4 math_vec4_lerp(Vec4 _a, Vec4 _b, float _t);
+Vec4 math_vec4_inverse_lerp(Vec4 _a, Vec4 _b, float _t);
 Vec4 math_vec4_create(float x, float y, float z, float w);
+float math_vec4_dot(Vec4 _a, Vec4 _b);
+
+Vec4 math_vec4_add(Vec4 _a, Vec4 _b);
+Vec4 math_vec4_subtract(Vec4 _a, Vec4 _b);
+
 Mat4x4 math_mat4x4_create_identity();
 Mat4x4 math_mat4x4_create_rotation(float _degrees, Vec3 _axis);
 Mat4x4 math_mat4x4_create_multi_axis_rotation(Vec3 _degrees);
