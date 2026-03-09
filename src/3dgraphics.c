@@ -114,83 +114,63 @@ internal const Vec4 all_clip_planes[6] = {clip_plane_left, clip_plane_right, cli
 
 internal const u32 NUM_CLIPPING_PLANES = 6;
 
-internal Vec4 plane_and_edge_intersection(Vec4 _a, Vec4 _b, Vec4 _plane, float *_outInterp){
-  // P(t) = A + t*(B-a);
-  // P(x) = P(-w)
-  // P(x) + P(w) = 0
+/* internal Vec4 clip_against_left_plane(Vec4 _a, Vec4 _b, Vec4 _plane, float *_outInterp){ */
+/*   // P(t) = A + t*(B-a); */
+/*   // P(x) = P(-w) */
+/*   // P(x) + P(w) = 0 */
   
-  // when x is left side of screen, -w, adding w results in 0, i.e intersection
+/*   // when x is left side of screen, -w, adding w results in 0, i.e intersection */
 
 
-  Vec4 marginedPlane = _plane;
-  marginedPlane.w-=CLIPPING_MARGIN;
-  float dot = math_vec4_dot(_a, marginedPlane);
-  float dot2 = math_vec4_dot(_b,marginedPlane);
 
-  // both points are on same side of the plane,
-  // no intersection
-  
-  // @NOTE commenting this out because we will never get to this case
-  // see code that leads up to this function 
-  /* if(dot*dot2 >=0.0f){ */
-  /*   return -1; */
-  /* } */
 
-  float t = dot / (dot-dot2);
-  *_outInterp = t;
+/*   /\* float margin = CLIPPING_MARGIN; *\/ */
+/*   /\* float t = -(_a.x + _a.w - margin*_a.w)/(_b.x-_a.x+_b.w-_a.w - _b.w*margin + _a.w*margin); *\/ */
+/*   /\* float x = _a.x + t * (_b.x - _a.x); *\/ */
+/*   /\* float y = _a.y + t * (_b.y - _a.y); *\/ */
+/*   /\* float z = _a.z + t * (_b.z - _a.z); *\/ */
+/*   /\* float w = _a.w + t * (_b.w - _a.w); *\/ */
+/*   /\* *_outInterp = t; *\/ */
 
-  Vec4 ret;
+/*   /\* Vec4 ret ={x,y,z,w}; *\/ */
+/*   /\* return ret; *\/ */
+/* } */
 
-  ret = math_vec4_lerp(_a, _b, t);
-  return ret;
+/* Vec4 clip_against_right_plane(Vec4 _a, Vec4 _b, float *_outInterp){ */
+/*   float t = -(_a.x - _a.w) /  ( (_a.x - _a.w) - (_b.x  - _b.w  )); */
+/*   float x = _a.x + t * (_b.x - _a.x); */
+/*   float y = _a.y + t * (_b.y - _a.y); */
+/*   float z = _a.z + t * (_b.z - _a.z); */
+/*   float w = _a.w + t * (_b.w - _a.w); */
+/*   *_outInterp = t; */
 
-  /* float margin = CLIPPING_MARGIN; */
-  /* float t = -(_a.x + _a.w - margin*_a.w)/(_b.x-_a.x+_b.w-_a.w - _b.w*margin + _a.w*margin); */
-  /* float x = _a.x + t * (_b.x - _a.x); */
-  /* float y = _a.y + t * (_b.y - _a.y); */
-  /* float z = _a.z + t * (_b.z - _a.z); */
-  /* float w = _a.w + t * (_b.w - _a.w); */
-  /* *_outInterp = t; */
+/*     Vec4 ret ={x,y,z,w}; */
+/*   return ret; */
+/* } */
 
-  /* Vec4 ret ={x,y,z,w}; */
-  /* return ret; */
-}
+/* Vec4 clip_against_top_plane(Vec4 _a, Vec4 _b, float *_outInterp){ */
+/*   float t = (_a.y - _a.w) /  ( (_a.y - _a.w) - (_b.y  - _b.w  )); */
+/*   float x = _a.x + t * (_b.x - _a.x); */
+/*   float y = _a.y + t * (_b.y - _a.y); */
+/*   float z = _a.z + t * (_b.z - _a.z); */
+/*   float w = _a.w + t * (_b.w - _a.w); */
+/*   *_outInterp = t; */
 
-Vec4 clip_against_right_plane(Vec4 _a, Vec4 _b, float *_outInterp){
-  float t = -(_a.x - _a.w) /  ( (_a.x - _a.w) - (_b.x  - _b.w  ));
-  float x = _a.x + t * (_b.x - _a.x);
-  float y = _a.y + t * (_b.y - _a.y);
-  float z = _a.z + t * (_b.z - _a.z);
-  float w = _a.w + t * (_b.w - _a.w);
-  *_outInterp = t;
+/*     Vec4 ret ={x,y,z,w}; */
+/*   return ret; */
+/* } */
 
-    Vec4 ret ={x,y,z,w};
-  return ret;
-}
+/* Vec4 clip_against_bottom_plane(Vec4 _a, Vec4 _b, float *_outInterp){ */
+/*   float t = -(_a.y + _a.w) / ( (_b.y - _a.y) + (_b.w  - _a.w)  ); */
+/*   float x = _a.x + t * (_b.x - _a.x); */
+/*   float y = _a.y + t * (_b.y - _a.y); */
+/*   float z = _a.z + t * (_b.z - _a.z); */
+/*   float w = _a.w + t * (_b.w - _a.w); */
+/*   *_outInterp = t; */
 
-Vec4 clip_against_top_plane(Vec4 _a, Vec4 _b, float *_outInterp){
-  float t = (_a.y - _a.w) /  ( (_a.y - _a.w) - (_b.y  - _b.w  ));
-  float x = _a.x + t * (_b.x - _a.x);
-  float y = _a.y + t * (_b.y - _a.y);
-  float z = _a.z + t * (_b.z - _a.z);
-  float w = _a.w + t * (_b.w - _a.w);
-  *_outInterp = t;
-
-    Vec4 ret ={x,y,z,w};
-  return ret;
-}
-
-Vec4 clip_against_bottom_plane(Vec4 _a, Vec4 _b, float *_outInterp){
-  float t = -(_a.y + _a.w) / ( (_b.y - _a.y) + (_b.w  - _a.w)  );
-  float x = _a.x + t * (_b.x - _a.x);
-  float y = _a.y + t * (_b.y - _a.y);
-  float z = _a.z + t * (_b.z - _a.z);
-  float w = _a.w + t * (_b.w - _a.w);
-  *_outInterp = t;
-
-    Vec4 ret ={x,y,z,w};
-  return ret;
-}
+/*     Vec4 ret ={x,y,z,w}; */
+/*   return ret; */
+/* } */
 
 
 
@@ -203,6 +183,32 @@ u32 clip_against_plane(CG_Triangle _tri, Vec4 _plane, CG_Triangle *clippedA, CG_
   u32 numInside = 0;
   u32 numOutside =0;
   b32 aInside = false, bInside = false, cInside = false;
+
+  // (@Sameer) One way to think about why we use dot product here is this:
+  // Imagine you wanted to do this in normal 3D space instead of homogeneous space.
+  // The shape of the view is a frustum
+  // which means the width of the view increases the further away you go along it.
+  //
+  // For a moment, imagine that the view was cube shaped instead with each side being 5 meters.
+  // To then check if a point is within the left border of the cube (the left plane),
+  // you would calculate the dot product between the border plane normal (normal points to right for left plane) and a line formed between any point on the plane and the point of interest
+  
+  // if this dot product is 0, point is on the plane and if it's >=0 then point is within the left view border
+
+  // now, since our view is actually a frustum, we need to expand the cube as we go along z
+  // to do this, we get the dot product the same we we did with the cube shaped view
+  // but now add the z value of the point of interest to the final dot product
+  // this gives us the expanding effect of the frustum by "delaying" at which point the dot product becomes 0
+  // if it was a cube, it might become 0 when the point is at -5,0,5
+  // but when we added the z value to the dot product, the dot product at -5,0,5
+  // is now 5 and only becomes 0 when you reach -5 dot product. So the frustum has expanded by 5 compared to the cube view.
+  
+  // if someone else is reading this, I assure you all of this makes sense to me and I am not on medication or under any influence.
+
+  // Taking the dot product in 4d does exactly that.
+  // it equates to normal 3d dot product + w component of the point of interested added.
+  // The w component in clip space is equal to the z positition in eye space.
+  
   float dotA = math_vec4_dot(_tri.a, marginedPlane);
   float dotB = math_vec4_dot(_tri.b, marginedPlane);
   float dotC = math_vec4_dot(_tri.c, marginedPlane);
@@ -486,17 +492,30 @@ void draw3d_mesh(CG_Mesh* _mesh,Mat4x4 _model, Mat4x4 _inversedCameraMatrix, Mat
     /* draw3d_triangle_rasterize_test(ss1,ss2,ss3, zA,zB, zC, col); */
 
 
+    //    CG_Color col = {i*5,i*25,i*4,0};
+    CG_Color col = {50,155,100,0};
 
     for(int ct=0;ct<clippedTriangles;ct++){
       Vec3 ss1 = clip_to_ndc(newTriangles[ct].a);
       Vec3 ss2 = clip_to_ndc(newTriangles[ct].b);
       Vec3 ss3 = clip_to_ndc(newTriangles[ct].c);
-
+      if(ct == 1) {
+	col.r = 255;
+	col.g = 125;
+	col.b = 0;
+      }
+      if(ct == 2) {
+	col.r = 0;
+	col.g = 0;
+	col.b = 255;
+      }
       ss1 = ndc_to_screen(ss1);
       ss2 = ndc_to_screen(ss2);
       ss3 = ndc_to_screen(ss3);
 
-      CG_Color col = {i*255+ct*5, i*125+ct*21, i*525+ct*123,0};
+
+
+
       draw3d_triangle_rasterize_test(ss1,ss2,ss3,1,1,1, col);
 
     }
@@ -570,6 +589,45 @@ void draw3d_debug_vertices(CG_Vertex* verts, size_t _num, float _radius, Mat4x4 
 
 }
 
+
+// copied from geeksforgeeks
+void line_temp(float x1, float x2, float y1, float y2)
+{
+
+  CG_OffscreenBuffer *buf = cg_get_current_off_screen_buffer();
+
+
+
+    float dx = x2 - x1;
+    float dy =y2 - y1;
+    
+
+    i32 steps = Max(fabsf(dx),fabsf(dy));
+
+    float xInc = dx/(float)steps;
+    float yInc = dy/(float)steps;
+
+    float x=x1,y=y1;
+    for(int i=0;i<steps;i++){
+      if(x < 0 || x>buf->Width-1) continue;
+      if(y < 0 || y>buf->Height-1) continue;
+      u32 rowCoordinate = ((i32)y)*buf->Width;
+      u32* row = (u32*)(buf->Memory) + rowCoordinate;
+      u8* p = (u8*) (row + (i32)x);
+
+      p[0] = 0;
+      p[1] = 0;
+      p[2] = 0;
+      p[3] = 0;
+      
+      
+      x+=xInc;
+      y+=yInc;
+    }
+
+}
+
+
 // https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
 // apparently the line algorithm can be made faster
 // by modifying it to only use integer math
@@ -615,8 +673,26 @@ float triangle_edge_function(Vec2 a, Vec2 b, Vec2 p){
 }
 
 
+internal void draw_screen_line_temp(Vec3 from, Vec3 to, CG_Color col){
+  CG_OffscreenBuffer *screenBuffer = cg_get_current_off_screen_buffer();
+
+u32 ucol=  cg_create_color_from_channels(col.r, col.g, col.b, col.a);
+
+ float rot = atanf((to.y - from.y)/(to.x-from.x));
+ Vec3 veca = {to.x, to.y,0};
+ Vec3 vecb = {from.x, from.y,0};
+ float length = math_vec3_magnitude(math_vec3_subtract(vecb,veca));
+ rot = Deg(rot);
+ // printf("Length: %f\n", length);
+ draw_rectangle(screenBuffer,  ucol, (int)from.x, (int)from.y, 5,length, rot, from.x, from.y);
+}
+
+
 // https://www.scratchapixel.com/lessons/3d-basic-rendering/rasterization-practical-implementation/rasterization-stage.html
 void draw3d_triangle_rasterize_test(Vec3 a, Vec3 b, Vec3 c,float _zA, float _zB, float _zC, CG_Color _color){
+
+
+  CG_Color lineCol = {0,0,125,0};
 
   CG_OffscreenBuffer *screenBuffer = cg_get_current_off_screen_buffer();
   CG_Buffer *depthBuffer = cg_get_current_depth_buffer();
@@ -649,6 +725,7 @@ void draw3d_triangle_rasterize_test(Vec3 a, Vec3 b, Vec3 c,float _zA, float _zB,
   float* depthBufferData = (float*)depthBuffer->Data;
 
 
+
   // winding order is counter clockwise, it's facing away from cam
   // so cull it
   if(totalArea<0) return;
@@ -656,7 +733,12 @@ void draw3d_triangle_rasterize_test(Vec3 a, Vec3 b, Vec3 c,float _zA, float _zB,
   Vec2 a_ = {a.x, a.y};
   Vec2 b_ = {b.x, b.y};
   Vec2 c_ =  {c.x, c.y};
+
+
+
   
+
+
   for(int y = minY; y < maxY; y++){
 
     u32 rowCoordinate = y*screenBuffer->Width;
@@ -671,6 +753,7 @@ void draw3d_triangle_rasterize_test(Vec3 a, Vec3 b, Vec3 c,float _zA, float _zB,
       float e3 = triangle_edge_function(a_, b_, p);
 
 
+      CG_Color col =_color;
       
       if(e1>=0 && e2>=0 && e3>=0){
            
@@ -679,6 +762,7 @@ void draw3d_triangle_rasterize_test(Vec3 a, Vec3 b, Vec3 c,float _zA, float _zB,
       float w2 = e2/totalArea;
       float w3 = e3/totalArea;
 
+      float width = 550;
 
 
 
@@ -696,10 +780,10 @@ void draw3d_triangle_rasterize_test(Vec3 a, Vec3 b, Vec3 c,float _zA, float _zB,
 	depthRow[x] = depth;
 	u8* p = (u8*) (row + x);
 
-	p[0] = w1*_color.b;
-	p[1] = w2*_color.g;
-	p[2] = w3*_color.r;
-	p[3] = _color.a;
+	p[0] = w1*col.b;
+	p[1] = w2*col.g;
+	p[2] = w3*col.r;
+	p[3] = col.a;
 
 	if(renderDepth){
 	  p[0] =Min(255,depth*255*depth*2*depth);
@@ -709,10 +793,10 @@ void draw3d_triangle_rasterize_test(Vec3 a, Vec3 b, Vec3 c,float _zA, float _zB,
 	}
 
 	
-	/* p[0] = _color.b; */
-	/* p[1] = _color.g; */
-	/* p[2] = _color.r; */
-	/* p[3] = _color.a; */
+	p[0] = col.b;
+	p[1] = col.g;
+	p[2] = col.r;
+	p[3] = col.a;
       }
 
 
@@ -721,7 +805,10 @@ void draw3d_triangle_rasterize_test(Vec3 a, Vec3 b, Vec3 c,float _zA, float _zB,
     }
   }
 
-
+  line_temp(a.x,b.x,a.y,b.y);
+  line_temp(b.x,c.x,b.y,c.y);
+  line_temp(c.x,a.x,c.y,a.y);
+  
 }
 // use winding order to auto calc normals
 void mesh_recalculate_normals(CG_Mesh *_mesh){
