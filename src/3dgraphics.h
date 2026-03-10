@@ -5,9 +5,10 @@
 
 typedef struct CG_Vertex {
   Vec3 pos;
+  float wVal;
   Vec3 normal;
   Vec2 texCoord;
-  CG_Color color;
+  Vec4 color;
   } CG_Vertex;
 
 
@@ -36,7 +37,7 @@ CG_Mesh graphics_get_triangle_mesh();
 
 void draw3d_debug_vertices(CG_Vertex* verts, size_t _num, float _radius, Mat4x4 _model, Mat4x4 _inversedCameraMatrix, Mat4x4 _projection);
 
-void draw3d_triangle_rasterize(Vec3 a, Vec3 b, Vec3 c,float _zA, float _zB, float _zC, CG_Color _color);
+void draw3d_triangle_rasterize(CG_Vertex a, CG_Vertex b, CG_Vertex c, Vec4 _color);
 
 
 // use winding order to auto calc normals

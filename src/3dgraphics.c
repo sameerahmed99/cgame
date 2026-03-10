@@ -6,7 +6,7 @@
 const u32 TEMP_MAX_TRIS = 16;
 
 // @NOTE margin should be 0 when not testing
-const float CLIPPING_MARGIN = .2;
+const float CLIPPING_MARGIN = 0;
 internal CG_Vertex TriangleVertices[3] = {
   {.pos = {-0.5f,-0.5f,0.0f}, .color = 0, .normal = {0,0,1}},
   {.pos = {0.0f,0.5f,0.0f}, .color = 0, .normal = {0,0,1}},
@@ -84,7 +84,7 @@ void point_to_all_spaces(Vec3 _point,Mat4x4 _model, Mat4x4 _inversedCameraMatrix
 
 
 typedef struct CG_Triangle {
-  Vec4 a,b,c;
+  CG_Vertex a,b,c;
 } CG_Triangle;
 
 
@@ -104,9 +104,29 @@ internal const Vec4 all_clip_planes[6] = {clip_plane_left, clip_plane_right, cli
 
 internal const u32 NUM_CLIPPING_PLANES = 6;
 
+CG_Vertex lerp_vertex(CG_Vertex start, CG_Vertex end, float lerp){
+  Vec3 pos = math_vec3_lerp(start.pos,end.pos,lerp);
+  float w = math_lerp(start.wVal, end.wVal, lerp);
+  Vec3 normal = math_vec3_lerp(start.normal, end.normal,lerp);
+  Vec2 texcoord = math_vec2_lerp(start.texCoord, end.texCoord,lerp); 
+  Vec4 color = math_vec4_lerp(start.color, end.color,lerp);
+
+  CG_Vertex v;
+
+  v.pos = pos;
+  v.wVal = w;
+  v.normal = normal;
+  v.texCoord = texcoord;
+  v.color = color;
+
+  return v;
+}
+
 u32 clip_against_plane(CG_Triangle _tri, Vec4 _plane, CG_Triangle *clippedA, CG_Triangle *clippedB){
 
   Vec4 marginedPlane = _plane;
+  
+  //@TODO what's  this .w >=0 thing for? w is always 1. Remove it and see what happens
   marginedPlane.w-=CLIPPING_MARGIN*(marginedPlane.w>=0 ? 1:-1);
 
   
@@ -138,10 +158,13 @@ u32 clip_against_plane(CG_Triangle _tri, Vec4 _plane, CG_Triangle *clippedA, CG_
   // Taking the dot product in 4d does exactly that.
   // it equates to normal 3d dot product + w component of the point of interested added.
   // The w component in clip space is equal to the z positition in eye space.
-  
-  float dotA = math_vec4_dot(_tri.a, marginedPlane);
-  float dotB = math_vec4_dot(_tri.b, marginedPlane);
-  float dotC = math_vec4_dot(_tri.c, marginedPlane);
+
+  Vec4 v4a = math_vec3_to_vec4(_tri.a.pos, _tri.a.wVal);
+  Vec4 v4b = math_vec3_to_vec4(_tri.b.pos, _tri.b.wVal);
+  Vec4 v4c = math_vec3_to_vec4(_tri.c.pos, _tri.c.wVal);
+  float dotA = math_vec4_dot(v4a, marginedPlane);
+  float dotB = math_vec4_dot(v4b, marginedPlane);
+  float dotC = math_vec4_dot(v4c, marginedPlane);
   
   aInside = dotA >=0.0f;
   bInside = dotB >=0.0f;
@@ -185,22 +208,22 @@ u32 clip_against_plane(CG_Triangle _tri, Vec4 _plane, CG_Triangle *clippedA, CG_
 
       
 
-    Vec4 clip1, clip2;
-    Vec4 start;
+    CG_Vertex clip1, clip2;
+    CG_Vertex start;
     if(aInside) {
       start = _tri.a;
-      clip1= math_vec4_lerp(_tri.a, _tri.b, lerpAB);
-      clip2= math_vec4_lerp(_tri.c, _tri.a, lerpCA);
+      clip1= lerp_vertex(_tri.a, _tri.b, lerpAB);
+      clip2= lerp_vertex(_tri.c, _tri.a, lerpCA);
     }
     else if(bInside){
       start = _tri.b;
-      clip1= math_vec4_lerp(_tri.b, _tri.c, lerpBC);
-      clip2= math_vec4_lerp(_tri.a, _tri.b, lerpAB);
+      clip1= lerp_vertex(_tri.b, _tri.c, lerpBC);
+      clip2= lerp_vertex(_tri.a, _tri.b, lerpAB);
     }
     else {
       start = _tri.c;
-      clip1= math_vec4_lerp(_tri.c, _tri.a, lerpCA);
-      clip2= math_vec4_lerp(_tri.b, _tri.c, lerpBC);
+      clip1= lerp_vertex(_tri.c, _tri.a, lerpCA);
+      clip2= lerp_vertex(_tri.b, _tri.c, lerpBC);
     }
 
     CG_Triangle out;
@@ -214,25 +237,25 @@ u32 clip_against_plane(CG_Triangle _tri, Vec4 _plane, CG_Triangle *clippedA, CG_
 
 
     float t1,t2;
-    Vec4 clip1, clip2;
-    Vec4 start, second;
+    CG_Vertex clip1, clip2;
+    CG_Vertex start, second;
     if(aInside && bInside) {
       start = _tri.a;
       second = _tri.b;
-      clip1= math_vec4_lerp(_tri.b, _tri.c, lerpBC);
-      clip2= math_vec4_lerp(_tri.c, _tri.a, lerpCA);
+      clip1= lerp_vertex(_tri.b, _tri.c, lerpBC);
+      clip2= lerp_vertex(_tri.c, _tri.a, lerpCA);
     }
     else if(bInside && cInside){
       start = _tri.b;
       second = _tri.c;
-      clip1= math_vec4_lerp(_tri.c, _tri.a, lerpCA);
-      clip2= math_vec4_lerp(_tri.a, _tri.b, lerpAB);
+      clip1= lerp_vertex(_tri.c, _tri.a, lerpCA);
+      clip2= lerp_vertex(_tri.a, _tri.b, lerpAB);
     }
     else {
       start = _tri.c;
       second = _tri.a;
-      clip1= math_vec4_lerp(_tri.a, _tri.b, lerpAB);
-      clip2= math_vec4_lerp(_tri.b, _tri.c, lerpBC);
+      clip1= lerp_vertex(_tri.a, _tri.b, lerpAB);
+      clip2= lerp_vertex(_tri.b, _tri.c, lerpBC);
     }
 
     CG_Triangle out;
@@ -256,7 +279,7 @@ u32 clip_against_plane(CG_Triangle _tri, Vec4 _plane, CG_Triangle *clippedA, CG_
 }
 
 
-internal u32 clip_triangle(Vec4 _a, Vec4 _b, Vec4 _c, CG_Triangle *_outTriangles){
+internal u32 clip_triangle(CG_Vertex _a, CG_Vertex _b, CG_Vertex _c, CG_Triangle *_outTriangles){
 
 
 
@@ -386,12 +409,21 @@ void draw3d_mesh(CG_Mesh* _mesh,Mat4x4 _model, Mat4x4 _inversedCameraMatrix, Mat
     eyePos3Vec4 = math_vec4_create(eyePos3.x, eyePos3.y, eyePos3.z, 1);
     clipPos3 = math_mul_vec4_mat4x4(eyePos3Vec4, _projection);
 
+    CG_Vertex vertA, vertB, vertC;
+    vertA = _mesh->vertices[i1];
+    vertB = _mesh->vertices[i2];
+    vertC = _mesh->vertices[i3];
     
-
+    vertA.pos = math_vec4_to_vec3(clipPos1);
+    vertB.pos =math_vec4_to_vec3(clipPos2);
+    vertC.pos = math_vec4_to_vec3(clipPos3);
+    vertA.wVal = clipPos1.w;
+    vertB.wVal = clipPos2.w;
+    vertC.wVal = clipPos3.w;
       // 16 is random, idk how many max triangles can be produced
   // this should be a safe number
     CG_Triangle newTriangles[TEMP_MAX_TRIS];
-    u32 clippedTriangles = clip_triangle(clipPos1, clipPos2, clipPos3, newTriangles);
+    u32 clippedTriangles = clip_triangle(vertA, vertB, vertC, newTriangles);
 
     /* Vec3 ss1 = clip_to_ndc(newTriangles[0].a); */
     /* ss1 = ndc_to_screen(ss1); */
@@ -406,13 +438,13 @@ void draw3d_mesh(CG_Mesh* _mesh,Mat4x4 _model, Mat4x4 _inversedCameraMatrix, Mat
     /* draw3d_triangle_rasterize_test(ss1,ss2,ss3, zA,zB, zC, col); */
 
 
-    //    CG_Color col = {i*5,i*25,i*4,0};
-    CG_Color col = {50,155,100,0};
+    //    Vec4 col = {i*5,i*25,i*4,0};
+    Vec4 col = {.2,.8,.2,0};
 
     for(int ct=0;ct<clippedTriangles;ct++){
-      Vec3 ss1 = clip_to_ndc(newTriangles[ct].a);
-      Vec3 ss2 = clip_to_ndc(newTriangles[ct].b);
-      Vec3 ss3 = clip_to_ndc(newTriangles[ct].c);
+      Vec3 ss1 = clip_to_ndc(math_vec3_to_vec4(newTriangles[ct].a.pos, newTriangles[ct].a.wVal));
+      Vec3 ss2 = clip_to_ndc(math_vec3_to_vec4(newTriangles[ct].b.pos, newTriangles[ct].b.wVal));
+      Vec3 ss3 = clip_to_ndc(math_vec3_to_vec4(newTriangles[ct].c.pos, newTriangles[ct].c.wVal));
       /* if(ct == 1) { */
       /* 	col.r = 255; */
       /* 	col.g = 125; */
@@ -426,11 +458,13 @@ void draw3d_mesh(CG_Mesh* _mesh,Mat4x4 _model, Mat4x4 _inversedCameraMatrix, Mat
       ss1 = ndc_to_screen(ss1);
       ss2 = ndc_to_screen(ss2);
       ss3 = ndc_to_screen(ss3);
+      newTriangles[ct].a.pos = ss1;
+      newTriangles[ct].b.pos = ss2;
+      newTriangles[ct].c.pos = ss3;
 
 
 
-
-      draw3d_triangle_rasterize(ss1,ss2,ss3,1,1,1, col);
+      draw3d_triangle_rasterize(newTriangles[ct].a, newTriangles[ct].b, newTriangles[ct].c,col);
 
     }
 
@@ -560,10 +594,10 @@ float triangle_edge_function(Vec2 a, Vec2 b, Vec2 p){
 }
 
 
-internal void draw_screen_line_temp(Vec3 from, Vec3 to, CG_Color col){
+internal void draw_screen_line_temp(Vec3 from, Vec3 to, Vec4 col){
   CG_OffscreenBuffer *screenBuffer = cg_get_current_off_screen_buffer();
 
-u32 ucol=  cg_create_color_from_channels(col.r, col.g, col.b, col.a);
+u32 ucol=  cg_create_color_from_channels(col.x, col.y, col.z, col.w);
 
  float rot = atanf((to.y - from.y)/(to.x-from.x));
  Vec3 veca = {to.x, to.y,0};
@@ -576,30 +610,30 @@ u32 ucol=  cg_create_color_from_channels(col.r, col.g, col.b, col.a);
 
 
 // https://www.scratchapixel.com/lessons/3d-basic-rendering/rasterization-practical-implementation/rasterization-stage.html
-void draw3d_triangle_rasterize(Vec3 a, Vec3 b, Vec3 c,float _zA, float _zB, float _zC, CG_Color _color){
+void draw3d_triangle_rasterize(CG_Vertex a, CG_Vertex b, CG_Vertex c, Vec4 _color){
 
 
-  CG_Color lineCol = {0,0,125,0};
+  Vec4 lineCol = {0,0,125,0};
 
   CG_OffscreenBuffer *screenBuffer = cg_get_current_off_screen_buffer();
   CG_Buffer *depthBuffer = cg_get_current_depth_buffer();
   
-  float minX = Min(a.x, b.x);
-  minX = Min(minX, c.x);
+  float minX = Min(a.pos.x, b.pos.x);
+  minX = Min(minX, c.pos.x);
 
-  float maxX = Max(a.x, b.x);
-  maxX = Max(maxX, c.x);
+  float maxX = Max(a.pos.x, b.pos.x);
+  maxX = Max(maxX, c.pos.x);
 
 
-  float minY = Min(a.y, b.y);
-  minY = Min(minY, c.y);
+  float minY = Min(a.pos.y, b.pos.y);
+  minY = Min(minY, c.pos.y);
 
-  float maxY = Max(a.y, b.y);
-  maxY = Max(maxY, c.y);
+  float maxY = Max(a.pos.y, b.pos.y);
+  maxY = Max(maxY, c.pos.y);
 
-  Vec2 triA = {a.x,a.y};
-  Vec2 triB = {b.x, b.y};
-  Vec2 triC = {c.x, c.y};
+  Vec2 triA = {a.pos.x,a.pos.y};
+  Vec2 triB = {b.pos.x, b.pos.y};
+  Vec2 triC = {c.pos.x, c.pos.y};
   float totalArea = triangle_edge_function(triA, triB, triC);
 
   maxX = Clamp(maxX,0, screenBuffer->Width-1);
@@ -617,9 +651,9 @@ void draw3d_triangle_rasterize(Vec3 a, Vec3 b, Vec3 c,float _zA, float _zB, floa
   // so cull it
   if(totalArea<0) return;
   b32 renderDepth = cg_get_debug_settings().RenderDepthTexture;
-  Vec2 a_ = {a.x, a.y};
-  Vec2 b_ = {b.x, b.y};
-  Vec2 c_ =  {c.x, c.y};
+  Vec2 a_ = {a.pos.x, a.pos.y};
+  Vec2 b_ = {b.pos.x, b.pos.y};
+  Vec2 c_ =  {c.pos.x, c.pos.y};
 
 
 
@@ -640,7 +674,7 @@ void draw3d_triangle_rasterize(Vec3 a, Vec3 b, Vec3 c,float _zA, float _zB, floa
       float e3 = triangle_edge_function(a_, b_, p);
 
 
-      CG_Color col =_color;
+      Vec4 col =_color;
       
       if(e1>=0 && e2>=0 && e3>=0){
            
@@ -661,16 +695,16 @@ void draw3d_triangle_rasterize(Vec3 a, Vec3 b, Vec3 c,float _zA, float _zB, floa
       float storedDepth=depthRow[x];
       //float inverseDepth = (1.0f/_zA) * w1 + (1.0f/_zB)*w2 + (1.0f/_zC)*w3;
       //float depth = 1/inverseDepth;
-      float depth = a.z*w1 + b.z*w2 + c.z*w3;
+      float depth = a.pos.z*w1 + b.pos.z*w2 + c.pos.z*w3;
 
       if(depth < storedDepth){
 	depthRow[x] = depth;
 	u8* p = (u8*) (row + x);
 
-	p[0] = w1*col.b;
-	p[1] = w2*col.g;
-	p[2] = w3*col.r;
-	p[3] = col.a;
+	p[0] = w1*255;
+	p[1] = w2*255;
+	p[2] = w3*255;
+	p[3] = 0;
 
 	if(renderDepth){
 	  p[0] =Min(255,depth*255*depth*2*depth);
@@ -680,10 +714,10 @@ void draw3d_triangle_rasterize(Vec3 a, Vec3 b, Vec3 c,float _zA, float _zB, floa
 	}
 
 	
-	p[0] = col.b;
-	p[1] = col.g;
-	p[2] = col.r;
-	p[3] = col.a;
+	/* p[0] = col.z; */
+	/* p[1] = col.y; */
+	/* p[2] = col.x; */
+	/* p[3] = col.w; */
       }
 
 

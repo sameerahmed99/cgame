@@ -34,6 +34,34 @@ float math_inverse_lerp(float _a, float _b, float _t){
   return (_t-_a)/(_b-_a);
 }
 
+
+Vec2 math_vec2_lerp(Vec2 _a, Vec2 _b, float _t){
+  Vec2 res;
+  res.x = math_lerp(_a.x, _b.x, _t);
+  res.y = math_lerp(_a.y, _b.y, _t);
+
+
+  return res;
+}
+Vec2 math_vec2_create(float x, float y){
+  Vec2 vec;
+  vec.x = x;
+  vec.y = y;
+
+  return vec;
+}
+
+Vec2 math_vec2_inverse_lerp(Vec2 _a, Vec2 _b, float _t){
+  Vec2 res;
+  res.x = math_inverse_lerp(_a.x, _b.x, _t);
+  res.y = math_inverse_lerp(_a.y, _b.y, _t);
+
+
+  return res;
+}
+
+
+
 Vec3 math_vec3_lerp(Vec3 _a, Vec3 _b, float _t){
   Vec3 res;
   res.x = math_lerp(_a.x, _b.x, _t);
@@ -430,3 +458,15 @@ b32 math_2Dline_intersection(Vec2 _subjectPointA, Vec2 _subjectPointB, Vec2 _edg
 }
 
 //b32 math_line_seg_to_plane_intersection(
+Vec3 math_vec4_to_vec3(Vec4 vec){
+  Vec3 vec3 = {vec.x, vec.y,vec.z};
+  return vec3;
+}
+
+Vec4 math_vec3_to_vec4(Vec3 vec, float wVal){
+  Vec4 vec4 = {vec.x, vec.y,vec.z, wVal};
+  return vec4;
+}
+
+
+
