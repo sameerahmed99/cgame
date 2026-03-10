@@ -95,6 +95,7 @@ internal void cg_init(CG_OffscreenBuffer *offscreenBuffer){
   size_t meshTotalSize;
   //  TestCubeModel=  model_loader_load_gltf("../assets/models/CGameTestScene_a.glb");
   TestCubeModel=  model_loader_load_gltf("../assets/models/suzanne.glb");
+
   srand(time(NULL));
   PlatformConfig = cg_get_platform_config();
   PlatformConfig.ScreenWidth = platform_get_client_screen_width();
@@ -305,7 +306,10 @@ void update_entities(float _dt){
     //        draw3d_debug_vertices(TestCubeModel->meshes[0].vertices,TestCubeModel->meshes[0].numVertices,5, model, camInverse, projection);
 
 
-    draw3d_mesh(TestCubeModel->meshes,model, camInverse, projection);
+    //    draw3d_mesh(TestCubeModel->meshes,model, camInverse, projection);
+
+    CG_Mesh trimesh = graphics_get_triangle_mesh();
+    draw3d_mesh(&trimesh, model, camInverse, projection);
 
 }
 

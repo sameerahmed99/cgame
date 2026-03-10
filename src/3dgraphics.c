@@ -8,9 +8,9 @@ const u32 TEMP_MAX_TRIS = 16;
 // @NOTE margin should be 0 when not testing
 const float CLIPPING_MARGIN = 0;
 internal CG_Vertex TriangleVertices[3] = {
-  {.pos = {-0.5f,-0.5f,0.0f}, .color = 0, .normal = {0,0,1}},
-  {.pos = {0.0f,0.5f,0.0f}, .color = 0, .normal = {0,0,1}},
-  {.pos = {0.5f,-0.5f,0.0f}, .color = 0, .normal = {0,0,1}},
+  {.pos = {-0.5f,-0.5f,0.0f}, .color = {1,0,0,1}, .normal = {0,0,1}},
+  {.pos = {0.0f,0.5f,0.0f}, .color = {0,1,0,1}, .normal = {0,0,1}},
+  {.pos = {0.5f,-0.5f,0.0f}, .color = {0,0,1,1}, .normal = {0,0,1}},
 };
 
 
@@ -608,6 +608,40 @@ u32 ucol=  cg_create_color_from_channels(col.x, col.y, col.z, col.w);
  draw_rectangle(screenBuffer,  ucol, (int)from.x, (int)from.y, 5,length, rot, from.x, from.y);
 }
 
+float lerp_vert_float(float _vala, float _valb, float _valc,float za, float zb, float zc, float areaA, float areaB, float areaC, float _currentDepth){
+  float interped =  (_vala / za) * areaA +  (_valb / zb) * areaB +  (_valc / zc) * areaC;
+  return interped*_currentDepth;
+}
+Vec2 lerp_vert_vec2(Vec2 _vala, Vec2 _valb, Vec2 _valc,float za, float zb, float zc, float areaA, float areaB, float areaC, float _currentDepth){
+  float interpedx =  (_vala.x / za) * areaA +  (_valb.x / zb) * areaB +  (_valc.x / zc) * areaC;
+  float interpedy =  (_vala.y / za) * areaA +  (_valb.y / zb) * areaB +  (_valc.y / zc) * areaC;
+
+
+  Vec2 vec = {interpedx*_currentDepth, interpedy*_currentDepth};
+  
+  return vec;
+}
+
+Vec3 lerp_vert_vec3(Vec3 _vala, Vec3 _valb, Vec3 _valc,float za, float zb, float zc, float areaA, float areaB, float areaC, float _currentDepth){
+  float interpedx =  (_vala.x / za) * areaA +  (_valb.x / zb) * areaB +  (_valc.x / zc) * areaC;
+  float interpedy =  (_vala.y / za) * areaA +  (_valb.y / zb) * areaB +  (_valc.y / zc) * areaC;
+  float interpedz =  (_vala.z / za) * areaA +  (_valb.z / zb) * areaB +  (_valc.z / zc) * areaC;
+
+  Vec3 vec = {interpedx*_currentDepth, interpedy*_currentDepth, interpedz*_currentDepth};
+  
+  return vec;
+}
+
+Vec4 lerp_vert_vec4(Vec4 _vala, Vec4 _valb, Vec4 _valc,float za, float zb, float zc, float areaA, float areaB, float areaC, float _currentDepth){
+  float interpedx =  (_vala.x / za) * areaA +  (_valb.x / zb) * areaB +  (_valc.x / zc) * areaC;
+  float interpedy =  (_vala.y / za) * areaA +  (_valb.y / zb) * areaB +  (_valc.y / zc) * areaC;
+  float interpedz =  (_vala.z / za) * areaA +  (_valb.z / zb) * areaB +  (_valc.z / zc) * areaC;
+  float interpedw =  (_vala.w / za) * areaA +  (_valb.w / zb) * areaB +  (_valc.w / zc) * areaC;
+
+  Vec4 vec = {interpedx*_currentDepth, interpedy*_currentDepth, interpedz*_currentDepth, interpedw*_currentDepth};
+  
+  return vec;
+}
 
 // https://www.scratchapixel.com/lessons/3d-basic-rendering/rasterization-practical-implementation/rasterization-stage.html
 void draw3d_triangle_rasterize(CG_Vertex a, CG_Vertex b, CG_Vertex c, Vec4 _color){
@@ -645,7 +679,9 @@ void draw3d_triangle_rasterize(CG_Vertex a, CG_Vertex b, CG_Vertex c, Vec4 _colo
 
   float* depthBufferData = (float*)depthBuffer->Data;
 
-
+  float inverseDepthA = (1.0f/a.wVal);
+  float inverseDepthB = (1.0f/b.wVal);
+  float inverseDepthC = (1.0f/c.wVal);
 
   // winding order is counter clockwise, it's facing away from cam
   // so cull it
@@ -669,7 +705,7 @@ void draw3d_triangle_rasterize(CG_Vertex a, CG_Vertex b, CG_Vertex c, Vec4 _colo
     for(int x = minX; x < maxX; x++){
       Vec2 p = {(float)x, (float)y};
 
-      float  e1 = triangle_edge_function(b_,c_,p);
+      float e1 = triangle_edge_function(b_,c_,p);
       float e2 = triangle_edge_function(c_, a_, p);
       float e3 = triangle_edge_function(a_, b_, p);
 
@@ -693,25 +729,34 @@ void draw3d_triangle_rasterize(CG_Vertex a, CG_Vertex b, CG_Vertex c, Vec4 _colo
 	
 
       float storedDepth=depthRow[x];
-      //float inverseDepth = (1.0f/_zA) * w1 + (1.0f/_zB)*w2 + (1.0f/_zC)*w3;
-      //float depth = 1/inverseDepth;
-      float depth = a.pos.z*w1 + b.pos.z*w2 + c.pos.z*w3;
+      float inverseDepth = inverseDepthA * w1 + inverseDepthB*w2 + inverseDepthC*w3;
+      float depth = 1/inverseDepth;
+      float ndcDepth = a.pos.z*w1 + b.pos.z*w2 + c.pos.z*w3;
 
-      if(depth < storedDepth){
+      Vec4 frag_color = lerp_vert_vec4(a.color, b.color, c.color, a.wVal, b.wVal, c.wVal,w1,w2,w3, depth);
+
+      Vec2 frag_tex_coord = lerp_vert_vec2(a.texCoord, b.texCoord, c.texCoord, a.wVal, b.wVal, c.wVal,w1,w2,w3, depth);
+      if(ndcDepth < storedDepth){
 	depthRow[x] = depth;
 	u8* p = (u8*) (row + x);
 
-	p[0] = w1*255;
-	p[1] = w2*255;
-	p[2] = w3*255;
-	p[3] = 0;
 
-	if(renderDepth){
-	  p[0] =Min(255,depth*255*depth*2*depth);
-	  p[1] =Min(255,depth*255*depth*2*depth);
-	  p[2] =Min(255,depth*255*depth*2*depth);
-	  p[3] =Min(255,depth*255*depth*2*depth);
-	}
+	p[0] = frag_color.z*255;
+	p[1] = frag_color.y*255;
+	p[2] = frag_color.x*255;
+	p[3] = frag_color.w*255;
+
+	/* p[0] = w1*255; */
+	/* p[1] = w2*255; */
+	/* p[2] = w3*255; */
+	/* p[3] = 0; */
+
+	/* if(renderDepth){ */
+	/*   p[0] =Min(255,depth*255*depth*2*depth); */
+	/*   p[1] =Min(255,depth*255*depth*2*depth); */
+	/*   p[2] =Min(255,depth*255*depth*2*depth); */
+	/*   p[3] =Min(255,depth*255*depth*2*depth); */
+	/* } */
 
 	
 	/* p[0] = col.z; */
