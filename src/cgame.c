@@ -10,6 +10,8 @@
 #include "3dgraphics.c"
 #include "model_loader.h"
 #include "model_loader.c"
+#include "texture.h"
+#include "texture.c"
 internal CG_PlatformConfig PlatformConfig;
 
 
@@ -18,7 +20,7 @@ internal CG_Memory *TEMP_gameMemory;
 internal CG_Model* TestCubeModel;
 
 internal Arena* ArenaEntities;
-
+internal Arena* TEMP_ArenaAssets;
 
 internal float Gravity = -9.81;
 internal float TimeSinceLastFixedUpdate = 0;
@@ -38,6 +40,10 @@ internal float FarPlaneDistance = 25;
 internal CG_Input GameInput;
 
 internal b32 MouseInputInit = false;
+
+internal CG_Material DefaultMaterial;
+internal CG_Texture *DefaultTexture;
+
 CG_PlatformConfig cg_get_platform_config(){
   
    CG_PlatformConfig config = {
@@ -125,9 +131,18 @@ internal void cg_init(CG_OffscreenBuffer *offscreenBuffer){
   /* printf("PlatformConfig.ScreenHeight: %u\n", PlatformConfig.ScreenHeight); */
   
   ArenaEntities = arena_create(Gigabytes(4), Megabytes(4), true);
+  TEMP_ArenaAssets = arena_create(Gigabytes(1), Megabytes(32), false);
 
 
   printf("platform ppu: %f\n", PlatformConfig.ppu);
+
+
+
+  DefaultTexture = texture_load_from_file("../assets/textures/DevGridTexture.png", TEMP_ArenaAssets);
+  DefaultMaterial.color = Vec4One;
+  DefaultMaterial.texture = DefaultTexture;
+
+  graphics_renderer_init(DefaultTexture, &DefaultMaterial);
   
   create_player();
 

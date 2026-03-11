@@ -7,10 +7,13 @@ const u32 TEMP_MAX_TRIS = 16;
 
 // @NOTE margin should be 0 when not testing
 const float CLIPPING_MARGIN = 0;
+
+
+CG_Renderer Renderer = {0};
 internal CG_Vertex TriangleVertices[3] = {
-  {.pos = {-0.5f,-0.5f,0.0f}, .color = {1,0,0,1}, .normal = {0,0,1}},
-  {.pos = {0.0f,0.5f,0.0f}, .color = {0,1,0,1}, .normal = {0,0,1}},
-  {.pos = {0.5f,-0.5f,0.0f}, .color = {0,0,1,1}, .normal = {0,0,1}},
+  {.pos = {-0.5f,-0.5f,0.0f}, .color = {1,0,0,1}, .normal = {0,0,1}, .texCoord = {0,0}},
+  {.pos = {0.0f,0.5f,0.0f}, .color = {0,1,0,1}, .normal = {0,0,1}, .texCoord = {0.5,1}},
+  {.pos = {0.5f,-0.5f,0.0f}, .color = {0,0,1,1}, .normal = {0,0,1}, .texCoord = {1,0}},
 };
 
 
@@ -643,6 +646,16 @@ Vec4 lerp_vert_vec4(Vec4 _vala, Vec4 _valb, Vec4 _valc,float za, float zb, float
   return vec;
 }
 
+
+internal CG_Color graphics_sample_texture(CG_Texture *tex, float uvx, float uvy){
+
+  float width = (float)tex->Width;
+  float height = (float)tex->Height;
+  u32 coordinateX = (u32)(uvx*width);
+  u32 coordinateY = (u32)(uvy*height);
+
+  return tex->pixels[coordinateY * tex->Width + coordinateX];
+}
 // https://www.scratchapixel.com/lessons/3d-basic-rendering/rasterization-practical-implementation/rasterization-stage.html
 void draw3d_triangle_rasterize(CG_Vertex a, CG_Vertex b, CG_Vertex c, Vec4 _color){
 
@@ -735,7 +748,9 @@ void draw3d_triangle_rasterize(CG_Vertex a, CG_Vertex b, CG_Vertex c, Vec4 _colo
 
       Vec4 frag_color = lerp_vert_vec4(a.color, b.color, c.color, a.wVal, b.wVal, c.wVal,w1,w2,w3, depth);
 
+
       Vec2 frag_tex_coord = lerp_vert_vec2(a.texCoord, b.texCoord, c.texCoord, a.wVal, b.wVal, c.wVal,w1,w2,w3, depth);
+      frag_color = graphics_sample_texture(Renderer.defaultTexture, frag_tex_coord.x, frag_tex_coord.y);
       if(ndcDepth < storedDepth){
 	depthRow[x] = depth;
 	u8* p = (u8*) (row + x);
@@ -779,4 +794,8 @@ void draw3d_triangle_rasterize(CG_Vertex a, CG_Vertex b, CG_Vertex c, Vec4 _colo
 // use winding order to auto calc normals
 void mesh_recalculate_normals(CG_Mesh *_mesh){
 
+}
+void graphics_renderer_init(CG_Texture* _defaultTexture, CG_Material *_defaultMaterial){
+  Renderer.defaultTexture = _defaultTexture;
+  Renderer.defaultMaterial = _defaultMaterial;
 }

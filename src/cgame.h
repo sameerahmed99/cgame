@@ -74,6 +74,7 @@ typedef struct CG_OffscreenBuffer {
 typedef struct CG_Buffer {
   void *Data;
   int Height, Width;
+  u32 BytesPerData;
 } CG_Buffer;
 
 typedef struct CG_GameState{

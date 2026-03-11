@@ -18,30 +18,6 @@
 #define EULER_ANGLE_YXZ 1
 
 
-typedef struct Vec2{
-  float x, y;
-} Vec2;
-typedef struct Vec3{
- float x,y,z;
-} Vec3;
-typedef struct Vec4{
-  float x,y,z,w;
-} Vec4;
-
-
-typedef struct iVec2 {
-  i32 x,y;
-} iVec2;
-typedef struct iVec3 {
-  i32 x,y;
-} iVec3;
-
-typedef struct Mat4x4{
-  float m00,m01,m02,m03,
-    m10,m11,m12,m13,
-    m20,m21,m22,m23,
-    m30,m31,m32,m33;
-} Mat4x4;
 
 // @TODO functions for rotating vectors, instead of manually multiplying matrices everywhere
 
@@ -54,6 +30,8 @@ const Vec3 Vec3Right = {1,0,0};
 const Vec3 Vec3Left = {-1,0,0};
 const Vec3 Vec3Down = {0,-1,0};
 
+const Vec4 Vec4Zero = {0,0,0,0};
+const Vec4 Vec4One = {1,1,1,1};
 float math_lerp(float _a, float _b, float _t);
 void math_get_rotated_point(float *x, float *y, float _sinRot, float _cosRot,float _pivotX, float _pivotY);
 
