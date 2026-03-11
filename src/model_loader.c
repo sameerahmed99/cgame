@@ -1,6 +1,8 @@
 #include "platform.h"
 #define CGLTF_IMPLEMENTATION
 #include "cgltf.h"
+
+
 static size_t get_gltf_mesh_vert_count(cgltf_mesh *_m);
 static size_t get_gltf_mesh_indices_count(cgltf_mesh *_m);
 static CG_Mesh *mesh_from_node(cgltf_node _node);
@@ -23,6 +25,7 @@ CG_Model *model_loader_load_gltf(const char *_path)
     }
     res = cgltf_load_buffers(&opts, data, _path);
     CG_Model *model;
+
     CG_Mesh *meshes;
     if (res == cgltf_result_success)
     {
@@ -30,7 +33,13 @@ CG_Model *model_loader_load_gltf(const char *_path)
         meshes = malloc(sizeof(CG_Mesh) * data->meshes_count);
         model->meshes = meshes;
         model->numMeshes = data->meshes_count;
+	
+	model->materialPerMesh = malloc(sizeof(CG_Material) * data->meshes_count);
 
+	// @TODO decide on a proper mesh/model format and set materials accordingly
+	for(int m=0;m<data->meshes_count;m++){
+	  model->materialPerMesh[m] = Renderer.defaultMaterial;
+	}
         int meshIndex = 0;
         printf("Model loaded, meshes: %d\n", data->meshes_count);
         for (int i = 0; i < data->nodes_count; i++)

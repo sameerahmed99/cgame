@@ -21,6 +21,7 @@ internal CG_Model* TestCubeModel;
 
 internal Arena* ArenaEntities;
 internal Arena* TEMP_ArenaAssets;
+internal Arena* ArenaRenderList;
 
 internal float Gravity = -9.81;
 internal float TimeSinceLastFixedUpdate = 0;
@@ -132,6 +133,7 @@ internal void cg_init(CG_OffscreenBuffer *offscreenBuffer){
   
   ArenaEntities = arena_create(Gigabytes(4), Megabytes(4), true);
   TEMP_ArenaAssets = arena_create(Gigabytes(1), Megabytes(32), false);
+  ArenaRenderList = arena_create(Gigabytes(1), Megabytes(32), false);
 
 
   printf("platform ppu: %f\n", PlatformConfig.ppu);
@@ -142,7 +144,7 @@ internal void cg_init(CG_OffscreenBuffer *offscreenBuffer){
   DefaultMaterial.color = Vec4One;
   DefaultMaterial.texture = DefaultTexture;
 
-  graphics_renderer_init(DefaultTexture, &DefaultMaterial);
+  graphics_renderer_init(ArenaRenderList,DefaultTexture, &DefaultMaterial);
   
   create_player();
 
@@ -324,7 +326,7 @@ void update_entities(float _dt){
     //    draw3d_mesh(TestCubeModel->meshes,model, camInverse, projection);
 
     CG_Mesh trimesh = graphics_get_triangle_mesh();
-    draw3d_mesh(&trimesh, model, camInverse, projection);
+    draw3d_mesh(&trimesh, model, camInverse, projection, &DefaultMaterial);
 
 }
 

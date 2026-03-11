@@ -342,7 +342,7 @@ internal u32 clip_triangle(CG_Vertex _a, CG_Vertex _b, CG_Vertex _c, CG_Triangle
 
 
 
-void draw3d_mesh(CG_Mesh* _mesh,Mat4x4 _model, Mat4x4 _inversedCameraMatrix, Mat4x4 _projection){
+void draw3d_mesh(CG_Mesh* _mesh,Mat4x4 _model, Mat4x4 _inversedCameraMatrix, Mat4x4 _projection, CG_Material* _material){
 
   PLATFORM_BEGIN_FUNCTION_MEASUREMENT();
   CG_OffscreenBuffer *screenBuffer = cg_get_current_off_screen_buffer();
@@ -467,7 +467,7 @@ void draw3d_mesh(CG_Mesh* _mesh,Mat4x4 _model, Mat4x4 _inversedCameraMatrix, Mat
 
 
 
-      draw3d_triangle_rasterize(newTriangles[ct].a, newTriangles[ct].b, newTriangles[ct].c,col);
+      draw3d_triangle_rasterize(newTriangles[ct].a, newTriangles[ct].b, newTriangles[ct].c,_material);
 
     }
 
@@ -657,7 +657,7 @@ internal CG_Color graphics_sample_texture(CG_Texture *tex, float uvx, float uvy)
   return tex->pixels[coordinateY * tex->Width + coordinateX];
 }
 // https://www.scratchapixel.com/lessons/3d-basic-rendering/rasterization-practical-implementation/rasterization-stage.html
-void draw3d_triangle_rasterize(CG_Vertex a, CG_Vertex b, CG_Vertex c, Vec4 _color){
+void draw3d_triangle_rasterize(CG_Vertex a, CG_Vertex b, CG_Vertex c,CG_Material *_material){
 
 
   Vec4 lineCol = {0,0,125,0};
@@ -723,7 +723,7 @@ void draw3d_triangle_rasterize(CG_Vertex a, CG_Vertex b, CG_Vertex c, Vec4 _colo
       float e3 = triangle_edge_function(a_, b_, p);
 
 
-      Vec4 col =_color;
+
       
       if(e1>=0 && e2>=0 && e3>=0){
            
@@ -750,7 +750,7 @@ void draw3d_triangle_rasterize(CG_Vertex a, CG_Vertex b, CG_Vertex c, Vec4 _colo
 
 
       Vec2 frag_tex_coord = lerp_vert_vec2(a.texCoord, b.texCoord, c.texCoord, a.wVal, b.wVal, c.wVal,w1,w2,w3, depth);
-      frag_color = graphics_sample_texture(Renderer.defaultTexture, frag_tex_coord.x, frag_tex_coord.y);
+      frag_color = graphics_sample_texture(_material->texture, frag_tex_coord.x, frag_tex_coord.y);
       if(ndcDepth < storedDepth){
 	depthRow[x] = depth;
 	u8* p = (u8*) (row + x);
@@ -795,7 +795,38 @@ void draw3d_triangle_rasterize(CG_Vertex a, CG_Vertex b, CG_Vertex c, Vec4 _colo
 void mesh_recalculate_normals(CG_Mesh *_mesh){
 
 }
-void graphics_renderer_init(CG_Texture* _defaultTexture, CG_Material *_defaultMaterial){
+void graphics_renderer_init(Arena* _renderList,CG_Texture* _defaultTexture, CG_Material *_defaultMaterial){
   Renderer.defaultTexture = _defaultTexture;
   Renderer.defaultMaterial = _defaultMaterial;
+  Renderer.renderList = _renderList;
+}
+
+void graphics_renderer_render_list(){
+  size_t entrySize = sizeof(CG_RenderItem);
+  for(int i=0;i<Renderer.renderList->numItems;i++){
+    CG_RenderItem *e = arena_get_at(Renderer.renderList, i, entrySize);
+    draw3d_mesh(e->mesh,e->modelMatrix, e->inversedCameraMatrix, e->projectionMatrix, e->material);    
+  }
+  arena_clear(Renderer.renderList);
+}
+
+void graphics_renderer_submit_mesh(CG_Mesh *mesh, CG_Material *material,Mat4x4 _modelMatrix, Mat4x4 _inversedCameraMatrix, Mat4x4 _projection){
+  CG_RenderItem it;
+  it.mesh = mesh;
+  it.material = material;
+  it.modelMatrix = _modelMatrix;
+  it.inversedCameraMatrix = _inversedCameraMatrix;
+  it.projectionMatrix = _projection;
+
+
+  CG_RenderItem* p=  (CG_RenderItem*)arena_push(Renderer.renderList, sizeof(it), false);
+  ASSERT_NO_EVAL(p);
+
+
+  *p = it;
+}
+void graphics_renderer_submit_model(CG_Model* model,Mat4x4 _modelMatrix, Mat4x4 _inversedCameraMatrix, Mat4x4 _projection){
+  for(int i=0;i<model->numMeshes;i++){
+    graphics_renderer_submit_mesh(&model->meshes[i], model->materialPerMesh[i],_modelMatrix,  _inversedCameraMatrix, _projection);
+  }
 }
