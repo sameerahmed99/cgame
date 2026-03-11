@@ -647,12 +647,12 @@ Vec4 lerp_vert_vec4(Vec4 _vala, Vec4 _valb, Vec4 _valc,float za, float zb, float
 }
 
 
-internal CG_Color graphics_sample_texture(CG_Texture *tex, float uvx, float uvy){
+internal CG_Color graphics_sample_texture(CG_Texture *tex, float uvx, float uvy, Vec2 _tiling){
 
   float width = (float)tex->Width;
   float height = (float)tex->Height;
-  u32 coordinateX = (u32)(uvx*width);
-  u32 coordinateY = (u32)(uvy*height);
+  u32 coordinateX = (u32)(uvx*width *_tiling.x ) % tex->Width;
+  u32 coordinateY = (u32)(uvy*height * _tiling.y) %tex->Height;
 
   return tex->pixels[coordinateY * tex->Width + coordinateX];
 }
@@ -746,13 +746,17 @@ void draw3d_triangle_rasterize(CG_Vertex a, CG_Vertex b, CG_Vertex c,CG_Material
       float depth = 1/inverseDepth;
       float ndcDepth = a.pos.z*w1 + b.pos.z*w2 + c.pos.z*w3;
 
-      Vec4 frag_color = lerp_vert_vec4(a.color, b.color, c.color, a.wVal, b.wVal, c.wVal,w1,w2,w3, depth);
 
-
-      Vec2 frag_tex_coord = lerp_vert_vec2(a.texCoord, b.texCoord, c.texCoord, a.wVal, b.wVal, c.wVal,w1,w2,w3, depth);
-      frag_color = graphics_sample_texture(_material->texture, frag_tex_coord.x, frag_tex_coord.y);
       if(ndcDepth < storedDepth){
-	depthRow[x] = depth;
+
+
+	/* Vec4 frag_color = lerp_vert_vec4(a.color, b.color, c.color, a.wVal, b.wVal, c.wVal,w1,w2,w3, depth); */
+
+
+	Vec2 frag_tex_coord = lerp_vert_vec2(a.texCoord, b.texCoord, c.texCoord, a.wVal, b.wVal, c.wVal,w1,w2,w3, depth);
+	Vec4 frag_color = graphics_sample_texture(_material->texture, frag_tex_coord.x, frag_tex_coord.y, _material->textureTiling);
+	
+	depthRow[x] = ndcDepth;
 	u8* p = (u8*) (row + x);
 
 
@@ -767,10 +771,10 @@ void draw3d_triangle_rasterize(CG_Vertex a, CG_Vertex b, CG_Vertex c,CG_Material
 	/* p[3] = 0; */
 
 	/* if(renderDepth){ */
-	/*   p[0] =Min(255,depth*255*depth*2*depth); */
-	/*   p[1] =Min(255,depth*255*depth*2*depth); */
-	/*   p[2] =Min(255,depth*255*depth*2*depth); */
-	/*   p[3] =Min(255,depth*255*depth*2*depth); */
+	/*   p[0] =Min(255,ndcDepth*255*ndcDepth*2*ndcDepth); */
+	/*   p[1] =Min(255,ndcDepth*255*ndcDepth*2*ndcDepth); */
+	/*   p[2] =Min(255,ndcDepth*255*ndcDepth*2*ndcDepth); */
+	/*   p[3] =Min(255,ndcDepth*255*ndcDepth*2*ndcDepth); */
 	/* } */
 
 	
@@ -830,3 +834,4 @@ void graphics_renderer_submit_model(CG_Model* model,Mat4x4 _modelMatrix, Mat4x4 
     graphics_renderer_submit_mesh(&model->meshes[i], model->materialPerMesh[i],_modelMatrix,  _inversedCameraMatrix, _projection);
   }
 }
+

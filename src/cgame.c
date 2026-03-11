@@ -25,7 +25,7 @@ internal Arena* ArenaRenderList;
 
 internal float Gravity = -9.81;
 internal float TimeSinceLastFixedUpdate = 0;
-internal float FixedTimeStep = 0.02;
+internal float FixedTimeStep = 0.3;
 internal float PlayerBaseRadius = 10;
 internal CG_Entity* PlayerEntity;
 internal CG_Entity* CubeEntity;
@@ -36,7 +36,7 @@ internal CG_OffscreenBuffer *ScreenBuffer;
 internal CG_Buffer *DepthBuffer;
 
 internal CG_DebugSettings DebugSettings;
-internal float NearPlaneDistance = 0.3;
+internal float NearPlaneDistance = 0.02;
 internal float FarPlaneDistance = 25;
 internal CG_Input GameInput;
 
@@ -99,9 +99,7 @@ internal void cg_init(CG_OffscreenBuffer *offscreenBuffer){
 
   
   ScreenBuffer = offscreenBuffer;
-  size_t meshTotalSize;
-  //  TestCubeModel=  model_loader_load_gltf("../assets/models/CGameTestScene_a.glb");
-  TestCubeModel=  model_loader_load_gltf("../assets/models/suzanne.glb");
+
 
   srand(time(NULL));
   PlatformConfig = cg_get_platform_config();
@@ -140,11 +138,18 @@ internal void cg_init(CG_OffscreenBuffer *offscreenBuffer){
 
 
 
-  DefaultTexture = texture_load_from_file("../assets/textures/DevGridTexture.png", TEMP_ArenaAssets);
+  DefaultTexture = texture_load_from_file("../assets/textures/pistol-color.png", TEMP_ArenaAssets);
   DefaultMaterial.color = Vec4One;
   DefaultMaterial.texture = DefaultTexture;
+  DefaultMaterial.textureTiling.x = 1;
+  DefaultMaterial.textureTiling.y = 1;
 
   graphics_renderer_init(ArenaRenderList,DefaultTexture, &DefaultMaterial);
+
+    //  TestCubeModel=  model_loader_load_gltf("../assets/models/CGameTestScene_a.glb");
+  //  TestCubeModel=  model_loader_load_gltf("../assets/models/suzanne.glb");
+  //  TestCubeModel=  model_loader_load_gltf("../assets/models/torus.glb");
+  TestCubeModel=  model_loader_load_gltf("../assets/models/pistol.glb");
   
   create_player();
 
@@ -323,10 +328,12 @@ void update_entities(float _dt){
     //        draw3d_debug_vertices(TestCubeModel->meshes[0].vertices,TestCubeModel->meshes[0].numVertices,5, model, camInverse, projection);
 
 
-    //    draw3d_mesh(TestCubeModel->meshes,model, camInverse, projection);
+    //       draw3d_mesh(TestCubeModel->meshes,model, camInverse, projection, TestCubeModel->materialPerMesh[0]);
 
-    CG_Mesh trimesh = graphics_get_triangle_mesh();
-    draw3d_mesh(&trimesh, model, camInverse, projection, &DefaultMaterial);
+       graphics_renderer_submit_model(TestCubeModel,model, camInverse, projection);
+
+    /* CG_Mesh trimesh = graphics_get_triangle_mesh(); */
+    /* draw3d_mesh(&trimesh, model, camInverse, projection, &DefaultMaterial); */
 
 }
 
@@ -435,7 +442,7 @@ dbuffer[i] = 99999999999;
 
 
 
-  u32 skyCol =cg_create_color_from_channels(32, 34, 38,0);
+  u32 skyCol =cg_create_color_from_channels(96, 85, 65,0);
   u32 sunCol = cg_create_color_from_channels(214, 203, 84,0);
   u32 cloudCol =cg_create_color_from_channels(100,100,100,0);
   u32 groundColor = cg_create_color_from_channels(57, 82, 56,0);
@@ -485,6 +492,21 @@ dbuffer[i] = 99999999999;
     entity_set_world_pos(CubeEntity, pos); 
   }
 
+
+  if(k.q.IsPressed){
+
+    Vec3 pos = CubeEntity->worldPos;
+    pos.y-=_deltaTime*pspeed;
+    entity_set_world_pos(CubeEntity, pos); 
+  }
+  if(k.e.IsPressed){
+
+    Vec3 pos = CubeEntity->worldPos;
+    pos.y+=_deltaTime*pspeed;
+    entity_set_world_pos(CubeEntity, pos); 
+  }
+
+
     Vec3 euler = CubeEntity->worldEulerAngles;
     euler.y+=GameInput.mouseDeltaX;
     entity_set_world_euler_angles(CubeEntity, euler);
@@ -533,7 +555,9 @@ dbuffer[i] = 99999999999;
 
   }
   update_entities(_deltaTime);
-  
+
+
+  graphics_renderer_render_list();
 }
 void write_sound_test(){
   CG_Memory *_memory = TEMP_gameMemory;

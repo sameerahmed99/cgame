@@ -16,6 +16,7 @@ typedef struct CG_Vertex {
 typedef struct CG_Material {
   CG_Color color;
   CG_Texture *texture;
+  Vec2 textureTiling;
 } CG_Material;
 
 
