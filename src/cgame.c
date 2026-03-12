@@ -29,6 +29,8 @@ internal float FixedTimeStep = 0.3;
 internal float PlayerBaseRadius = 10;
 internal CG_Entity* PlayerEntity;
 internal CG_Entity* CubeEntity;
+internal CG_Entity* FreeCam;
+internal CG_Entity* ActiveCam;
 internal float playerPosX, playerPosY;
 
 
@@ -37,7 +39,7 @@ internal CG_Buffer *DepthBuffer;
 
 internal CG_DebugSettings DebugSettings;
 internal float NearPlaneDistance = 0.02;
-internal float FarPlaneDistance = 25;
+internal float FarPlaneDistance = 100;
 internal CG_Input GameInput;
 
 internal b32 MouseInputInit = false;
@@ -54,8 +56,10 @@ CG_PlatformConfig cg_get_platform_config(){
    .AudioChannelsCount = 2,
    .ScreenWidth = 0,
    .ScreenHeight = 0,
-   .RequestedScreenWidth = 1200,
-   .RequestedScreenHeight = 900,
+   .RequestedScreenWidth = 1920,
+   .RequestedScreenHeight = 1080,
+   .RenderResolutionWidth = 800,
+   .RenderResolutionHeight = 600,
    .BaseScreenWidth = 1280,
    .BaseScreenHeight = 720,
    .BasePixelsPerWorldUnit = 5
@@ -88,7 +92,13 @@ void create_player(){
   Vec3 angles = {90,0,0};
   entity_set_world_euler_angles(PlayerEntity,  angles);
 
-    CubeEntity = entity_create(ArenaEntities, ENTITY_TYPE_STATIC);
+  CubeEntity = entity_create(ArenaEntities, ENTITY_TYPE_STATIC);
+
+  FreeCam = entity_create(ArenaEntities, ENTITY_TYPE_CAMERA);
+  ActiveCam = FreeCam;
+
+
+    
   }
 
 
@@ -138,18 +148,21 @@ internal void cg_init(CG_OffscreenBuffer *offscreenBuffer){
 
 
 
-  DefaultTexture = texture_load_from_file("../assets/textures/pistol-color.png", TEMP_ArenaAssets);
+  //  DefaultTexture = texture_load_from_file("../assets/textures/pistol-color.png", TEMP_ArenaAssets);
+
+    DefaultTexture = texture_load_from_file("../assets/textures/elias-wick-checker.png", TEMP_ArenaAssets);
   DefaultMaterial.color = Vec4One;
   DefaultMaterial.texture = DefaultTexture;
-  DefaultMaterial.textureTiling.x = 1;
-  DefaultMaterial.textureTiling.y = 1;
+  DefaultMaterial.textureTiling.x = 4;
+  DefaultMaterial.textureTiling.y = 4;
 
   graphics_renderer_init(ArenaRenderList,DefaultTexture, &DefaultMaterial);
 
-    //  TestCubeModel=  model_loader_load_gltf("../assets/models/CGameTestScene_a.glb");
+      TestCubeModel=  model_loader_load_gltf("../assets/models/CGameTestScene_a.glb");
   //  TestCubeModel=  model_loader_load_gltf("../assets/models/suzanne.glb");
   //  TestCubeModel=  model_loader_load_gltf("../assets/models/torus.glb");
-  TestCubeModel=  model_loader_load_gltf("../assets/models/pistol.glb");
+  //      TestCubeModel=  model_loader_load_gltf("../assets/models/pistol.glb");
+  //TestCubeModel=  model_loader_load_gltf("../assets/models/cube1x1.glb");
   
   create_player();
 
@@ -189,11 +202,15 @@ internal float tempOffsetX, tempOffsetY;
 
 
 
-float speed = .25;
-float playerSpeed = 3;
-float playerWalkSpeed = .1;
-float playerSprintSpeed = 10;
-float playerRotationSpeed = 10;
+internal float speed = .25;
+internal float playerSpeed = 3;
+internal float playerWalkSpeed = .1;
+internal float playerSprintSpeed = 10;
+internal float playerRotationSpeed = 10;
+
+internal float CameraSpeed = 3;
+internal float CameraSlowSpeed = .5;
+internal float CameraFastSpeed = 10;
 
 internal float SquareWaveFrequency = 100;
 
@@ -317,11 +334,13 @@ void update_entities(float _dt){
     CG_Mesh tri = graphics_get_triangle_mesh();
     Mat4x4 model = CubeEntity->worldMatrix;
 
-    Vec3 pos = {0,0,10};
+
     
 
-    Mat4x4 camInverse = math_mat4x4_create_identity();
-    Mat4x4 projection = math_mat4x4_create_perspective_projection(70, false, aspect, NearPlaneDistance, FarPlaneDistance);
+
+    Mat4x4 projection = math_mat4x4_create_perspective_projection(60, false, aspect, NearPlaneDistance, FarPlaneDistance);
+
+    
     //    draw_debug_vertices(tri.vertices,3,mat , 5);
 
 
@@ -330,10 +349,10 @@ void update_entities(float _dt){
 
     //       draw3d_mesh(TestCubeModel->meshes,model, camInverse, projection, TestCubeModel->materialPerMesh[0]);
 
-       graphics_renderer_submit_model(TestCubeModel,model, camInverse, projection);
+             graphics_renderer_submit_model(TestCubeModel,model, ActiveCam->viewMatrix, projection);
 
-    /* CG_Mesh trimesh = graphics_get_triangle_mesh(); */
-    /* draw3d_mesh(&trimesh, model, camInverse, projection, &DefaultMaterial); */
+    //	     CG_Mesh trimesh = graphics_get_triangle_mesh();
+    //	     draw3d_mesh(&trimesh, model, ActiveCam->viewMatrix, projection, &DefaultMaterial);
 
 }
 
@@ -442,7 +461,7 @@ dbuffer[i] = 99999999999;
 
 
 
-  u32 skyCol =cg_create_color_from_channels(96, 85, 65,0);
+  u32 skyCol =cg_create_color_from_channels(32, 34, 38,0);
   u32 sunCol = cg_create_color_from_channels(214, 203, 84,0);
   u32 cloudCol =cg_create_color_from_channels(100,100,100,0);
   u32 groundColor = cg_create_color_from_channels(57, 82, 56,0);
@@ -456,7 +475,7 @@ dbuffer[i] = 99999999999;
   CG_GameState *state = (CG_GameState*)_memory;
   
   CG_KeyboardKeys k = _playerInput->Keyboard;
-
+  float camSpeed = CameraSpeed;
   float pspeed = playerSpeed;
   if(k.shift.IsPressed){
     pspeed = playerSprintSpeed;
@@ -464,58 +483,96 @@ dbuffer[i] = 99999999999;
   else if(k.alt.IsPressed){
     pspeed = playerWalkSpeed;
   }
-  if(k.w.WasDownedThisFrame){
-    DebugSettings.RenderDepthTexture = !DebugSettings.RenderDepthTexture;
+  if(k.w.IsPressed){
+    //    DebugSettings.RenderDepthTexture = !DebugSettings.RenderDepthTexture;
+
+    Vec3 pos = FreeCam->worldPos;
+    Vec3 dir = FreeCam->forward;
+
+    Vec3 move = math_vec3_scale(dir, camSpeed *_deltaTime);
+
+    pos = math_vec3_add(pos, move);
+
+    entity_set_world_pos(FreeCam, pos);
   }
   if(k.a.IsPressed){
 
-    Vec3 pos = CubeEntity->worldPos;
-    pos.x-=_deltaTime*pspeed;
-    entity_set_world_pos(CubeEntity, pos); 
   }
   if(k.d.IsPressed){
 
-    Vec3 pos = CubeEntity->worldPos;
-    pos.x+=_deltaTime*pspeed;
-    entity_set_world_pos(CubeEntity, pos); 
-  }
-  if(k.w.IsPressed){
 
-    Vec3 pos = CubeEntity->worldPos;
-    pos.z+=_deltaTime*pspeed;
-    entity_set_world_pos(CubeEntity, pos); 
   }
+
+
   if(k.s.IsPressed){
 
-    Vec3 pos = CubeEntity->worldPos;
-    pos.z-=_deltaTime*pspeed;
-    entity_set_world_pos(CubeEntity, pos); 
+
+    Vec3 pos = FreeCam->worldPos;
+    Vec3 dir = FreeCam->forward;
+
+    Vec3 move = math_vec3_scale(dir, -camSpeed *_deltaTime);
+
+    pos = math_vec3_add(pos, move);
+
+    entity_set_world_pos(FreeCam, pos);
   }
+
+  if(k.a.IsPressed){
+
+
+    Vec3 pos = FreeCam->worldPos;
+    Vec3 dir = FreeCam->right;
+
+    Vec3 move = math_vec3_scale(dir, -camSpeed *_deltaTime);
+
+    pos = math_vec3_add(pos, move);
+
+    entity_set_world_pos(FreeCam, pos);
+  }
+  if(k.d.IsPressed){
+
+
+    Vec3 pos = FreeCam->worldPos;
+    Vec3 dir = FreeCam->right;
+
+    Vec3 move = math_vec3_scale(dir, camSpeed *_deltaTime);
+
+    pos = math_vec3_add(pos, move);
+
+    entity_set_world_pos(FreeCam, pos);
+  }
+
 
 
   if(k.q.IsPressed){
+    Vec3 pos = FreeCam->worldPos;
+    Vec3 dir = FreeCam->up;
 
-    Vec3 pos = CubeEntity->worldPos;
-    pos.y-=_deltaTime*pspeed;
-    entity_set_world_pos(CubeEntity, pos); 
+    Vec3 move = math_vec3_scale(dir, -camSpeed *_deltaTime);
+
+    pos = math_vec3_add(pos, move);
+
+    entity_set_world_pos(FreeCam, pos);
+
   }
   if(k.e.IsPressed){
+    Vec3 pos = FreeCam->worldPos;
+    Vec3 dir = FreeCam->up;
 
-    Vec3 pos = CubeEntity->worldPos;
-    pos.y+=_deltaTime*pspeed;
-    entity_set_world_pos(CubeEntity, pos); 
+    Vec3 move = math_vec3_scale(dir, camSpeed *_deltaTime);
+
+    pos = math_vec3_add(pos, move);
+
+    entity_set_world_pos(FreeCam, pos);
+
   }
 
 
-    Vec3 euler = CubeEntity->worldEulerAngles;
-    euler.y+=GameInput.mouseDeltaX;
-    entity_set_world_euler_angles(CubeEntity, euler);
+  Vec3 euler = FreeCam->worldEulerAngles;
+  euler.y+=GameInput.mouseDeltaX;
+  euler.x+=GameInput.mouseDeltaY;
+  entity_set_world_euler_angles(FreeCam, euler);
 
-  if(k.e.IsPressed){
-    Vec3 euler = CubeEntity->worldEulerAngles;
-    euler.y-=_deltaTime*playerRotationSpeed*5;
-    entity_set_world_euler_angles(CubeEntity, euler);
-  }
   /* Vec3 playerRotAxis = {0,0,1}; */
   /* Vec3 forward = {0,1,0}; */
   /* Vec3 piv = {0,0,0}; */

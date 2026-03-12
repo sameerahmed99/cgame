@@ -71,8 +71,10 @@ float math_vec4_dot(Vec4 _a, Vec4 _b);
 Vec4 math_vec4_add(Vec4 _a, Vec4 _b);
 Vec4 math_vec4_subtract(Vec4 _a, Vec4 _b);
 
+
 Mat4x4 math_mat4x4_create_identity();
 Mat4x4 math_mat4x4_create_rotation(float _degrees, Vec3 _axis);
+Mat4x4 math_mat4x4_transpose3x3(Mat4x4 _mat);
 Mat4x4 math_mat4x4_create_multi_axis_rotation(Vec3 _degrees);
 Mat4x4 math_mat4x4_create_translation(Vec3 _translation);
 Mat4x4 math_mat4x4_mul(Mat4x4 _a, Mat4x4 _b);

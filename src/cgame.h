@@ -44,6 +44,8 @@ typedef struct CG_PlatformConfig{
   
   u32 RequestedScreenWidth;
   u32 RequestedScreenHeight;
+  u32 RenderResolutionWidth;
+  u32 RenderResolutionHeight;
   uint32_t ScreenWidth;
   uint32_t ScreenHeight;
 

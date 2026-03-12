@@ -237,8 +237,8 @@ internal void win32_resize_dib_section(Win32OffscreenBuffer *buffer, int _width,
 internal void win32_copy_buffer_to_window(Win32OffscreenBuffer buffer, HDC hdc, int winWidth, int winHeight)
 {
   StretchDIBits(hdc, 0, 0,
-		buffer.Width,
-		buffer.Height,
+		winWidth,
+		winHeight,
 		0, 0, buffer.Width, buffer.Height,
 		buffer.Memory, &buffer.Info, DIB_RGB_COLORS, SRCCOPY);
 
@@ -718,7 +718,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 
                               windclass.lpszClassName,          // Window class
                               L"cgame",                         // Window text
-                              WS_OVERLAPPEDWINDOW | WS_VISIBLE, // Window style
+                              WS_POPUP | WS_VISIBLE, // Window style
 
                               // Size and position
                               CW_USEDEFAULT, CW_USEDEFAULT,
@@ -781,7 +781,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
   Win32PlatformConfig.ScreenWidth = platform_get_client_screen_width();
   Win32PlatformConfig.ScreenHeight = platform_get_client_screen_height();
   win32_update_window_rect(hwnd);
-    win32_resize_dib_section(&GlobalOffscreenBuffer, Win32PlatformConfig.ScreenWidth, Win32PlatformConfig.ScreenHeight);
+    win32_resize_dib_section(&GlobalOffscreenBuffer, Win32PlatformConfig.RenderResolutionWidth, Win32PlatformConfig.RenderResolutionHeight);
 
 
     CG_OffscreenBuffer buffer;

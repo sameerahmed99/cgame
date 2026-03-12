@@ -29,6 +29,7 @@ CG_Entity *entity_create(Arena *arena, enum CG_EntityType _type){
 
   ent->worldMatrix = math_mat4x4_create_identity();
   ent->localMatrix = math_mat4x4_create_identity();
+  ent->viewMatrix = math_mat4x4_create_identity();
   
 
   return ent;
@@ -66,20 +67,35 @@ void entity_update_matrices(CG_Entity* _entity){
   Mat4x4 rotation = math_mat4x4_create_multi_axis_rotation(_entity->worldEulerAngles);
   Mat4x4 scale = math_mat4x4_create_identity();
 
-  Mat4x4 finalWorld = math_mat4x4_mul(translation, rotation);
-  finalWorld = math_mat4x4_mul(finalWorld, scale);
+  // scale at right most
+  // rotation to its left, so that rotation happens before the translation
+  // because we want to rotate around the object's own pivot
+  // then translate
+  Mat4x4 finalWorld = math_mat4x4_mul(translation, math_mat4x4_mul(rotation, scale));
 
   Mat4x4 translationLocal = math_mat4x4_create_translation(_entity->localPos);
   Mat4x4 rotationLocal = math_mat4x4_create_multi_axis_rotation(_entity->localEulerAngles);
   Mat4x4 scaleLocal = math_mat4x4_create_identity();
 
 
-  Mat4x4 finalLocal = math_mat4x4_mul(translationLocal, rotationLocal);
-  finalLocal = math_mat4x4_mul(finalLocal, scale);
+  Mat4x4 finalLocal = math_mat4x4_mul(translationLocal, math_mat4x4_mul(rotationLocal, scaleLocal));
+
+
+
+
   _entity->worldMatrix = finalWorld;
-
-
   _entity->localMatrix = finalLocal;
+
+  if(_entity->type == ENTITY_TYPE_CAMERA){
+      Mat4x4 inverseTranslation = math_mat4x4_create_translation(math_vec3_scale(_entity->worldPos,-1));
+      Mat4x4 inverseRotation = math_mat4x4_transpose3x3(rotation);
+
+      // translate first
+      // then rotate, because we want to rotate around camera pivot, not object pivot
+      Mat4x4 viewMatrix = math_mat4x4_mul(inverseRotation, inverseTranslation);
+    _entity->viewMatrix = viewMatrix;
+  }
+
 }
 void entity_set_world_pos(CG_Entity* _entity, Vec3 _worldPos){
 

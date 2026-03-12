@@ -52,6 +52,8 @@ Vec3 ndc_to_screen(Vec3 pos){
 
   pos.x*=screenBuffer->Width;
   pos.y*=screenBuffer->Height;
+
+  
   pos.z = pos.z;
 
   return pos;
@@ -59,7 +61,6 @@ Vec3 ndc_to_screen(Vec3 pos){
 
 Vec3 clip_to_ndc(Vec4 clipSpace){
   Vec3 ndc = {clipSpace.x/clipSpace.w, clipSpace.y/clipSpace.w, clipSpace.z/clipSpace.w};
-
   return ndc;
 }
 void point_to_all_spaces(Vec3 _point,Mat4x4 _model, Mat4x4 _inversedCameraMatrix, Mat4x4 _projection,  Vec3 *_outWorldPos, Vec3 *_outCamSpacePos, Vec4 *_outClipPos, Vec3 *_outNdc, Vec3 *_outScreenPos){
@@ -397,20 +398,43 @@ void draw3d_mesh(CG_Mesh* _mesh,Mat4x4 _model, Mat4x4 _inversedCameraMatrix, Mat
     Vec4 clipPos3;
     Vec3 ndc3;
 
-    worldPos1 = math_mul_vec3_mat4x4(v1, _model);
-    eyePos1 = math_mul_vec3_mat4x4(worldPos1, _inversedCameraMatrix);
-    eyePos1Vec4 = math_vec4_create(eyePos1.x, eyePos1.y, eyePos1.z, 1);
-    clipPos1 = math_mul_vec4_mat4x4(eyePos1Vec4, _projection);
 
-    worldPos2 = math_mul_vec3_mat4x4(v2, _model);
-    eyePos2 = math_mul_vec3_mat4x4(worldPos2, _inversedCameraMatrix);
-    eyePos2Vec4 = math_vec4_create(eyePos2.x, eyePos2.y, eyePos2.z, 1);
-    clipPos2 = math_mul_vec4_mat4x4(eyePos2Vec4, _projection);
 
-    worldPos3 = math_mul_vec3_mat4x4(v3, _model);
-    eyePos3 = math_mul_vec3_mat4x4(worldPos3, _inversedCameraMatrix);
-    eyePos3Vec4 = math_vec4_create(eyePos3.x, eyePos3.y, eyePos3.z, 1);
-    clipPos3 = math_mul_vec4_mat4x4(eyePos3Vec4, _projection);
+    // pvm because we need to get this order at the end:
+    // p * v * m * modelPos
+    // so that model pos is applied first, then view matrix, then projection
+    Mat4x4 pvm = math_mat4x4_mul(_projection, math_mat4x4_mul(_inversedCameraMatrix, _model));
+
+
+
+    Vec4 vec4Pos1 = math_vec3_to_vec4(v1, 1);
+    clipPos1 = math_mul_vec4_mat4x4(vec4Pos1,pvm);
+
+
+    Vec4 vec4Pos2 = math_vec3_to_vec4(v2, 1);
+    clipPos2 = math_mul_vec4_mat4x4( vec4Pos2,pvm);
+
+    
+    Vec4 vec4Pos3 = math_vec3_to_vec4(v3, 1);
+    clipPos3 = math_mul_vec4_mat4x4(vec4Pos3,pvm);
+    
+
+ 
+ 
+    /* worldPos1 = math_mul_vec3_mat4x4(v1, _model); */
+    /* eyePos1 = math_mul_vec3_mat4x4(worldPos1, _inversedCameraMatrix); */
+    /* eyePos1Vec4 = math_vec4_create(eyePos1.x, eyePos1.y, eyePos1.z, 1); */
+    /* clipPos1 = math_mul_vec4_mat4x4(eyePos1Vec4, _projection); */
+
+    /* worldPos2 = math_mul_vec3_mat4x4(v2, _model); */
+    /* eyePos2 = math_mul_vec3_mat4x4(worldPos2, _inversedCameraMatrix); */
+    /* eyePos2Vec4 = math_vec4_create(eyePos2.x, eyePos2.y, eyePos2.z, 1); */
+    /* clipPos2 = math_mul_vec4_mat4x4(eyePos2Vec4, _projection); */
+
+    /* worldPos3 = math_mul_vec3_mat4x4(v3, _model); */
+    /* eyePos3 = math_mul_vec3_mat4x4(worldPos3, _inversedCameraMatrix); */
+    /* eyePos3Vec4 = math_vec4_create(eyePos3.x, eyePos3.y, eyePos3.z, 1); */
+    /* clipPos3 = math_mul_vec4_mat4x4(eyePos3Vec4, _projection); */
 
     CG_Vertex vertA, vertB, vertC;
     vertA = _mesh->vertices[i1];

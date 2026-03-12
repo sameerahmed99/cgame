@@ -165,6 +165,9 @@ Vec3 math_vec3_rotate(Vec3 _vec,Vec3 _pivot,Vec3 _axis, float _degrees){
   res.z+=_pivot.z;
   return res;
 }
+
+
+
 float math_vec3_dist(Vec3 _a, Vec3 _b){
   return sqrtf(math_vec3_sqr_dist(_a,_b));
 }
@@ -223,15 +226,35 @@ Vec3 math_mul_vec3_mat4x4(Vec3 _vec, Mat4x4 _mat){
   res.x = _mat.m00 * vec4.x + _mat.m01 * vec4.y + _mat.m02 * vec4.z + _mat.m03*vec4.w;
   res.y = _mat.m10 * vec4.x + _mat.m11 * vec4.y + _mat.m12 * vec4.z + _mat.m13*vec4.w;
   res.z = _mat.m20 * vec4.x + _mat.m21 * vec4.y + _mat.m22 * vec4.z + _mat.m23*vec4.w;
-  float w = _mat.m30 * vec4.x + _mat.m31 * vec4.y + _mat.m32 * vec4.z + _mat.m33 * vec4.w;
+  // float w = _mat.m30 * vec4.x + _mat.m31 * vec4.y + _mat.m32 * vec4.z + _mat.m33 * vec4.w;
 
   
-  if(w!=0){
-    res.x/=w;
-    res.y/=w;
-    res.z/=w;
-  }
+  /* if(w!=0){ */
+  /*   res.x/=w; */
+  /*   res.y/=w; */
+  /*   res.z/=w; */
+  /* } */
   return res;
+}
+
+Mat4x4 math_mat4x4_transpose3x3(Mat4x4 _mat){
+  Mat4x4 transposed = _mat;
+
+
+  transposed.m00 = _mat.m00;
+  transposed.m01 = _mat.m10; 
+  transposed.m02 = _mat.m20;
+
+  transposed.m10 = _mat.m01; 
+  transposed.m11 = _mat.m11;
+  transposed.m12 = _mat.m21;
+  
+  transposed.m20 = _mat.m02; 
+  transposed.m21 = _mat.m12;
+  transposed.m22 = _mat.m22;
+  
+
+  return transposed;
 }
 
 Vec4 math_mul_vec4_mat4x4(Vec4 _vec, Mat4x4 _mat){
@@ -287,10 +310,12 @@ Mat4x4 math_mat4x4_create_multi_axis_rotation(Vec3 _degrees){
   Mat4x4 aroundZ = math_mat4x4_create_rotation(_degrees.z, Vec3Forward);
 
 
-  // yxz order
-  Mat4x4 final = aroundY;
+  // ZXY
+  // so that when multiplied by vector it becomes:
+  // ZXY * v, right to left
+  Mat4x4 final = aroundZ;
   final = math_mat4x4_mul(final, aroundX);
-  final = math_mat4x4_mul(final, aroundZ);
+  final = math_mat4x4_mul(final, aroundY);
 
   return final;
 
@@ -339,15 +364,11 @@ Mat4x4 math_mat4x4_create_translation(Vec3 _translation){
 
 Vec3 math_vec3_apply_euler_angles(Vec3 _current, Vec3 _eulerAngles){
 
-  Mat4x4 roty = math_mat4x4_create_rotation(_eulerAngles.y, Vec3Up);
-  Mat4x4 rotx = math_mat4x4_create_rotation(_eulerAngles.x, Vec3Right);
-  Mat4x4 rotz = math_mat4x4_create_rotation(_eulerAngles.z, Vec3Forward);
 
-  Vec3 res = _current;
+  Mat4x4 rot =math_mat4x4_create_multi_axis_rotation(_eulerAngles);
+  Vec3 res = math_mul_vec3_mat4x4(_current, rot);
 
-  res = math_mul_vec3_mat4x4(res, roty);
-  res = math_mul_vec3_mat4x4(res, rotx);
-  res = math_mul_vec3_mat4x4(res, rotz);
+
 
   return res;
 }
@@ -390,28 +411,42 @@ Mat4x4 math_mat4x4_mul(Mat4x4 _a, Mat4x4 _b){
 // ref: https://www.songho.ca/opengl/gl_projectionmatrix.html
 Mat4x4 math_mat4x4_create_perspective_projection(float _fovDegrees, b32 _vertical, float _widthPerHeight, float _nearPlaneDistance, float _farPlaneDistance){
 
+  float fov = Rad(_fovDegrees);
 
   float top, right;
   if(_vertical){
-    top = tanf(_fovDegrees/2.0f) * _nearPlaneDistance;
+    top = tanf(fov/2.0f) * _nearPlaneDistance;
     right = top*_widthPerHeight;
   }
   else{
-  right = tanf(_fovDegrees/2.0f) * _nearPlaneDistance;
+  right = tanf(fov/2.0f) * _nearPlaneDistance;
   top =  right * 1/_widthPerHeight;
   }
 
   float height = top*2;
   float width = right*2;
 
-  
-  Mat4x4 mat = math_mat4x4_create_identity();
 
+
+  // this little shit here created a bug where objects would be offset
+  // from their position because identity matrix's m33 is set to 1, which
+  // results in the offset. 
+  // Mat4x4 mat = math_mat4x4_create_identity();
+
+
+  Mat4x4 mat = {0};
+
+
+    // @TODO
+  // Consider using 0 to 1 mapping for near plane to ndc
+  // instead of -1 to 1, for better accuracy
+  // should be trivial to rework the A and B coefficients and update m22 and m33
   mat.m00 = (2 * _nearPlaneDistance)/width;
   mat.m11 = (2 * _nearPlaneDistance) / height;
   mat.m22 = (_farPlaneDistance + _nearPlaneDistance) / (_farPlaneDistance - _nearPlaneDistance);
   mat.m23 = (-2*_farPlaneDistance * _nearPlaneDistance) / (_farPlaneDistance - _nearPlaneDistance);
   mat.m32 = 1;
+  
   return mat;
 }
 

@@ -11,8 +11,10 @@ enum CG_EntityType {
   ENTITY_TYPE_ASTEROID,
   ENTITY_TYPE_PROJECTILE,
   ENTITY_TYPE_GAME_BORDER,
+  ENTITY_TYPE_CAMERA,
   ENTITY_TYPE_TEST,
-  ENTITY_TYPE_STATIC
+  ENTITY_TYPE_STATIC,
+
   
 };
 
@@ -36,7 +38,7 @@ typedef struct CG_Entity{
   
   Mat4x4 localMatrix;
   Mat4x4 worldMatrix;
-  
+  Mat4x4 viewMatrix;
 
 
   struct CG_Entity* parent;
