@@ -302,53 +302,34 @@ Mat4x4 math_mat4x4_create_identity(){
   return mat;
 }
 
+// i didn't check how this is derrived, just got it from learnopengl
+Mat4x4 math_mat4x4_create_rotation(float deg, Vec3 axis) {
 
-Mat4x4 math_mat4x4_create_multi_axis_rotation(Vec3 _degrees){
+  float angleRad = Rad(deg);
+    axis = math_vec3_normalize(axis);
+    float c = cosf(angleRad);
+    float s = sinf(angleRad);
+    float t = 1 - c;
 
-  Mat4x4 aroundX = math_mat4x4_create_rotation(_degrees.x, Vec3Right);
-  Mat4x4 aroundY = math_mat4x4_create_rotation(_degrees.y, Vec3Up);
-  Mat4x4 aroundZ = math_mat4x4_create_rotation(_degrees.z, Vec3Forward);
+    float x = axis.x, y = axis.y, z = axis.z;
 
+    Mat4x4 mat = math_mat4x4_create_identity();
 
-  // ZXY
-  // so that when multiplied by vector it becomes:
-  // ZXY * v, right to left
-  Mat4x4 final = aroundZ;
-  final = math_mat4x4_mul(final, aroundX);
-  final = math_mat4x4_mul(final, aroundY);
+    mat.m00 = t*x*x + c;
+    mat.m01 = t*x*y - s*z;
+    mat.m02 = t*x*z + s*y;
 
-  return final;
+    mat.m10 = t*x*y + s*z;
+    mat.m11 = t*y*y + c;
+    mat.m12 = t*y*z - s*x;
 
+    mat.m20 = t*x*z - s*y;
+    mat.m21 = t*y*z + s*x;
+    mat.m22 = t*z*z + c;
+
+    return mat;
 }
-Mat4x4 math_mat4x4_create_rotation(float _degrees, Vec3 _axis){
 
-  _degrees*=ANGLE_CONVENTION;
-  Mat4x4 mat = math_mat4x4_create_identity();
-  float rad = Rad(_degrees);
-
-  float s = sinf(rad);
-  float c = cosf(rad);
-  if(_axis.x !=0){
-    mat.m11 = c;
-    mat.m12 = -s;
-    mat.m21 = s;
-    mat.m22 = c;
-  }
-  else if(_axis.y !=0){
-    mat.m00 = c;
-    mat.m02 = s;
-    mat.m20 = -s;
-    mat.m22 = c;
-  }
-  else if(_axis.z !=0){
-    mat.m00 = c;
-    mat.m01 = -s;
-    mat.m10 = s;
-    mat.m11 = c;
-  }
-
-  return mat;
-}
 
 Mat4x4 math_mat4x4_create_translation(Vec3 _translation){
   Mat4x4 mat = math_mat4x4_create_identity();
@@ -362,16 +343,6 @@ Mat4x4 math_mat4x4_create_translation(Vec3 _translation){
 }
 
 
-Vec3 math_vec3_apply_euler_angles(Vec3 _current, Vec3 _eulerAngles){
-
-
-  Mat4x4 rot =math_mat4x4_create_multi_axis_rotation(_eulerAngles);
-  Vec3 res = math_mul_vec3_mat4x4(_current, rot);
-
-
-
-  return res;
-}
 
 
 Mat4x4 math_mat4x4_mul(Mat4x4 _a, Mat4x4 _b){

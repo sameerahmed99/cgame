@@ -2,6 +2,7 @@
 
 
 
+
 CG_Entity *entity_create(Arena *arena, enum CG_EntityType _type){
   CG_Entity* ent = ARENA_PUSH_TYPE(arena, CG_Entity);
   ent->destroyed = false;
@@ -64,7 +65,27 @@ void entity_sync_local_pos_with_world_pos(CG_Entity* _entity){
 
 void entity_update_matrices(CG_Entity* _entity){
   Mat4x4 translation = math_mat4x4_create_translation(_entity->worldPos);
-  Mat4x4 rotation = math_mat4x4_create_multi_axis_rotation(_entity->worldEulerAngles);
+
+
+  Mat4x4 rotation = math_mat4x4_create_identity();
+  // set basis vectors manually, no need to recompute
+
+  // x axis
+  rotation.m00 = _entity->right.x;
+  rotation.m10 = _entity->right.y;
+  rotation.m20 = _entity->right.z;
+
+  // y axis
+  rotation.m01 = _entity->up.x;
+  rotation.m11 = _entity->up.y;
+  rotation.m21 = _entity->up.z;
+
+  // z axis
+  rotation.m02 = _entity->forward.x;
+  rotation.m12 = _entity->forward.y;
+  rotation.m22 = _entity->forward.z;
+
+  
   Mat4x4 scale = math_mat4x4_create_identity();
 
   // scale at right most
@@ -73,18 +94,37 @@ void entity_update_matrices(CG_Entity* _entity){
   // then translate
   Mat4x4 finalWorld = math_mat4x4_mul(translation, math_mat4x4_mul(rotation, scale));
 
-  Mat4x4 translationLocal = math_mat4x4_create_translation(_entity->localPos);
-  Mat4x4 rotationLocal = math_mat4x4_create_multi_axis_rotation(_entity->localEulerAngles);
-  Mat4x4 scaleLocal = math_mat4x4_create_identity();
+
+  // don't need local stuff right now
+  /* Mat4x4 translationLocal = math_mat4x4_create_translation(_entity->localPos); */
+  /* Mat4x4 rotationLocal = math_mat4x4_create_identity(); */
+
+  /*   // x axis */
+  /* rotationLocal.m00 = _entity->right.x; */
+  /* rotationLocal.m10 = _entity->right.y; */
+  /* rotationLocal.m20 = _entity->right.z; */
+
+  /* // y axis */
+  /* rotationLocal.m01 = _entity->up.x; */
+  /* rotationLocal.m11 = _entity->up.y; */
+  /* rotationLocal.m21 = _entity->up.z; */
+
+  /* // z axis */
+  /* rotationLocal.m02 = _entity->forward.x; */
+  /* rotationLocal.m12 = _entity->forward.y; */
+  /* rotationLocal.m22 = _entity->forward.z; */
+
+  
+  /* Mat4x4 scaleLocal = math_mat4x4_create_identity(); */
 
 
-  Mat4x4 finalLocal = math_mat4x4_mul(translationLocal, math_mat4x4_mul(rotationLocal, scaleLocal));
+  /* Mat4x4 finalLocal = math_mat4x4_mul(translationLocal, math_mat4x4_mul(rotationLocal, scaleLocal)); */
 
 
 
 
   _entity->worldMatrix = finalWorld;
-  _entity->localMatrix = finalLocal;
+  //  _entity->localMatrix = finalLocal;
 
   if(_entity->type == ENTITY_TYPE_CAMERA){
       Mat4x4 inverseTranslation = math_mat4x4_create_translation(math_vec3_scale(_entity->worldPos,-1));
@@ -148,10 +188,25 @@ void entity_set_world_euler_angles(CG_Entity* _entity, Vec3 _angles){
   
   Vec3 original = _entity->worldEulerAngles;
   _entity->worldEulerAngles = _angles;
+  Vec3 forward = Vec3Forward;
+  Vec3 right = Vec3Right;
+  Vec3 up = Vec3Up;
 
-  Vec3 forward = math_vec3_apply_euler_angles(Vec3Forward, _entity->worldEulerAngles);
-  Vec3 right = math_vec3_apply_euler_angles(Vec3Right, _entity->worldEulerAngles);
-  Vec3 up = math_vec3_apply_euler_angles(Vec3Up, _entity->worldEulerAngles);
+
+  Mat4x4 yRot = math_mat4x4_create_rotation(_angles.y, up);
+
+  right  = math_mul_vec3_mat4x4(right, yRot); 
+  forward  = math_mul_vec3_mat4x4(forward, yRot);   
+
+
+  Mat4x4 xRot = math_mat4x4_create_rotation(_angles.x, right);
+  up  = math_mul_vec3_mat4x4(up, xRot);
+  forward  = math_mul_vec3_mat4x4(forward, xRot);
+
+  Mat4x4 zRot = math_mat4x4_create_rotation(_angles.z, forward);
+  up  = math_mul_vec3_mat4x4(up, zRot);
+  right  = math_mul_vec3_mat4x4(right, zRot);
+
 
   _entity->forward = forward;
   _entity->right = right;

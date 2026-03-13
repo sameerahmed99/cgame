@@ -35,6 +35,8 @@ typedef struct CG_Entity{
   Vec3 forward;
   Vec3 up;
   Vec3 right;
+
+  
   
   Mat4x4 localMatrix;
   Mat4x4 worldMatrix;

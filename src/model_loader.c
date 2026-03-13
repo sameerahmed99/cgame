@@ -5,10 +5,10 @@
 
 static size_t get_gltf_mesh_vert_count(cgltf_mesh *_m);
 static size_t get_gltf_mesh_indices_count(cgltf_mesh *_m);
-static CG_Mesh *mesh_from_node(cgltf_node _node);
+static CG_Mesh *mesh_from_node(cgltf_node _node, b32 _convertFromBlender);
 static size_t get_gltf_primitive_vert_count(cgltf_primitive *_p);
 
-CG_Model *model_loader_load_gltf(const char *_path)
+CG_Model *model_loader_load_gltf(const char *_path, b32 _convertFromBlenderCoordinates)
 {
     cgltf_options opts = {0};
 
@@ -46,7 +46,7 @@ CG_Model *model_loader_load_gltf(const char *_path)
         {
             if (data->nodes[i].mesh != NULL)
             {
-                CG_Mesh *m = mesh_from_node(data->nodes[i]);
+	      CG_Mesh *m = mesh_from_node(data->nodes[i], _convertFromBlenderCoordinates);
                 meshes[meshIndex] = *m;
                 free(m);
                 meshIndex++;
@@ -88,7 +88,7 @@ CG_Model *model_loader_load_gltf(const char *_path)
 
 
 
-static CG_Mesh *mesh_from_node(cgltf_node _node)
+static CG_Mesh *mesh_from_node(cgltf_node _node, b32 _convertFromBlenderCoordinates)
 {
     size_t trisCount = get_gltf_mesh_indices_count(_node.mesh);
     size_t vertCount = get_gltf_mesh_vert_count(_node.mesh);
@@ -112,7 +112,9 @@ static CG_Mesh *mesh_from_node(cgltf_node _node)
     //@FIX this only works if there is one primitive
     //otherwise we get a segfault when freeing the mesh, haven't checked why
     // might be becuase we were doing i+=3, not sure why but test if it works with multiple primitives now before trying to fix
-    
+
+
+
     for (int i = 0; i < _node.mesh->primitives_count; i++)
     {
         cgltf_accessor *indicesAccessor = _node.mesh->primitives[i].indices;
@@ -128,9 +130,19 @@ static CG_Mesh *mesh_from_node(cgltf_node _node)
             t[1] = cgltf_accessor_read_index(indicesAccessor, index + 1);
             t[2] = cgltf_accessor_read_index(indicesAccessor, index + 2);
 
-            indices[index] = t[0];
-            indices[index + 1] = t[1];
-            indices[index + 2] = t[2];
+	    if(_convertFromBlenderCoordinates){
+
+	      // blender uses counter clockwise winding order
+	      // convert to clockwise
+	      indices[index] = t[0];
+	      indices[index + 2] = t[1];
+	      indices[index + 1] = t[2];
+	    }
+            else{
+	      indices[index] = t[0];
+	      indices[index + 1] = t[1];
+	      indices[index + 2] = t[2];
+	    }
         }
 
         for (int j = 0; j < _node.mesh->primitives[i].attributes_count; j++)
@@ -151,7 +163,11 @@ static CG_Mesh *mesh_from_node(cgltf_node _node)
 
                     cgltf_accessor_read_float(atrib->data, k, &v.pos.x, 3);
 
-
+		    if(_convertFromBlenderCoordinates){
+		      Vec3 original = v.pos;
+		      v.pos.y = original.z;
+		      v.pos.z = original.y;
+		    }
 
                     vertices[vindex] = v;
                 }

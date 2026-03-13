@@ -24,13 +24,15 @@ typedef struct CG_KeyboardKeys {
   CG_InputKey alt;
 
   CG_InputKey space;
+  CG_InputKey escape;
 } CG_KeyboardKeys;
 
 
 
 typedef struct CG_Input {
   CG_KeyboardKeys Keyboard;
-  float mousePosX, mousePosY,mousePosXPrev, mousePosYPrev, mouseDeltaX, mouseDeltaY;
+  float mousePrevPosX, mousePrevPosY;
+  float mouseDeltaX, mouseDeltaY;
 
 } CG_Input;
 
@@ -77,6 +79,11 @@ u32 platform_convert_color(u32 _rgba);
 
 void platform_begin_measurement();
 double platform_stop_measurement_ms(b32 _autoPrintMeasurement, const char* _idString);
+
+void platform_show_cursor();
+void platform_hide_cursor();
+void platform_lock_cursor();
+void platform_unlock_cursor();
 
 
 #endif //CG_PLATFORM_

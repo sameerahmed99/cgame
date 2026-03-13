@@ -2,6 +2,6 @@
 #define _CG_MODEL_LOADER
 #include "memory.h"
 
-CG_Model* model_loader_load_gltf(const char* _filePath);
+CG_Model* model_loader_load_gltf(const char* _filePath, b32 _convertFromBlenderCoordinates);
 
 #endif

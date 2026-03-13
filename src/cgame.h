@@ -53,6 +53,7 @@ typedef struct CG_PlatformConfig{
   float BasePixelsPerWorldUnit;
 
   float ppu;
+
 } CG_PlatformConfig;
 
 typedef struct CG_Memory{
@@ -80,7 +81,8 @@ typedef struct CG_Buffer {
 } CG_Buffer;
 
 typedef struct CG_GameState{
-
+  b32 cursorVisible;
+  b32 cursorLocked;
 } CG_GameState;
 
 typedef struct CG_DebugSettings{
@@ -104,6 +106,12 @@ internal uint32_t cg_create_color_from_channels(uint8_t r, uint8_t g, uint8_t b,
 
 void write_sound_test();
 
+void cg_toggle_cursor();
+void cg_hide_cursor();
+void cg_show_cursor();
 
+void cg_lock_cursor();
+void cg_unlock_cursor();
+CG_GameState cg_get_state();
 #endif // CG_
 

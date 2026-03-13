@@ -1,5 +1,4 @@
 #include <windows.h>
-#include <winuser.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <wingdi.h>
@@ -623,18 +622,6 @@ LRESULT Win32CallbackFunc(HWND _window, UINT _msgId, WPARAM param3, LPARAM param
 
     EndPaint(_window, &p);
   } break;
-
-  case WM_MOUSEMOVE: {
-    int xPos = GET_X_LPARAM(param4); 
-    int yPos = GET_Y_LPARAM(param4);
-
-
-    // @NOTE mouse pos is in pixels here
-    // @TODO make it independent of pixels
-    // check mouse movement win32 docs
-    GlobalInput.mousePosX = xPos;
-    GlobalInput.mousePosY = yPos;
-  } break;
   case WM_KEYDOWN:
   case WM_KEYUP:
   case WM_SYSKEYDOWN:
@@ -667,6 +654,9 @@ LRESULT Win32CallbackFunc(HWND _window, UINT _msgId, WPARAM param3, LPARAM param
     } break;
     case 'E': {
       win32_set_key_state(&GlobalInput.Keyboard.e, wasDownedThisFrame, isDown, wasReleasedThisFrame);
+    } break;
+    case VK_ESCAPE: {
+      win32_set_key_state(&GlobalInput.Keyboard.escape, wasDownedThisFrame, isDown, wasReleasedThisFrame);
     } break;
     case VK_SPACE:{
       win32_set_key_state(&GlobalInput.Keyboard.space, wasDownedThisFrame, isDown, wasReleasedThisFrame);
@@ -741,8 +731,34 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
   win32_reset_key_state(&GlobalInput.Keyboard.a, false);
   win32_reset_key_state(&GlobalInput.Keyboard.s, false);
   win32_reset_key_state(&GlobalInput.Keyboard.d, false);
+  win32_reset_key_state(&GlobalInput.Keyboard.space, false);
+  win32_reset_key_state(&GlobalInput.Keyboard.q, false);
+  win32_reset_key_state(&GlobalInput.Keyboard.e, false);
+  win32_reset_key_state(&GlobalInput.Keyboard.shift, false);
+  win32_reset_key_state(&GlobalInput.Keyboard.alt, false);
+  win32_reset_key_state(&GlobalInput.Keyboard.escape, false);  win32_reset_key_state(&GlobalInput.Keyboard.w, false);
+  win32_reset_key_state(&GlobalInput.Keyboard.a, false);
+  win32_reset_key_state(&GlobalInput.Keyboard.s, false);
+  win32_reset_key_state(&GlobalInput.Keyboard.d, false);
+
+  {
+    // init mouse
+    POINT center;
+    RECT clientRect;
+    GetClientRect(hwnd, &clientRect);
+    center.x = clientRect.left + (clientRect.right -clientRect.left)/2;
+
+    center.y = clientRect.top + (clientRect.bottom -clientRect.top)/2;
+
+    GlobalInput.mousePrevPosX = (float)center.x;
+    GlobalInput.mousePrevPosY = (float)center.y;
+    GlobalInput.mouseDeltaX = 0;
+    GlobalInput.mouseDeltaY = 0;
 
 
+    SetCursorPos(center.x, center.y);
+
+  }
   // INIT APPLICATION HERE
 
   // main game memory allocation
@@ -824,10 +840,38 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     win32_reset_key_state(&GlobalInput.Keyboard.e, true);
     win32_reset_key_state(&GlobalInput.Keyboard.shift, true);
     win32_reset_key_state(&GlobalInput.Keyboard.alt, true);
-    GlobalInput.mousePosXPrev = GlobalInput.mousePosX;
-    GlobalInput.mousePosYPrev = GlobalInput.mousePosY;
+    win32_reset_key_state(&GlobalInput.Keyboard.escape, true);
 
-  
+    POINT center;
+    RECT clientRect;
+    GetClientRect(hwnd, &clientRect);
+    center.x = clientRect.left + (clientRect.right -clientRect.left)/2;
+
+    center.y = clientRect.top + (clientRect.bottom -clientRect.top)/2;
+    POINT cursorPoint;
+    BOOL cu= GetCursorPos(&cursorPoint);
+    ASSERT_NO_EVAL(cu);
+
+    ScreenToClient(hwnd, &cursorPoint);
+
+    
+
+    GlobalInput.mouseDeltaX = cursorPoint.x - GlobalInput.mousePrevPosX;
+    GlobalInput.mouseDeltaY = cursorPoint.y - GlobalInput.mousePrevPosY;
+
+    printf("Mouse delta: %f, %f\n", GlobalInput.mouseDeltaX, GlobalInput.mouseDeltaY);
+
+    CG_GameState state = cg_get_state();
+    if(cg_get_state().cursorLocked){
+      GlobalInput.mousePrevPosX = (float)center.x;
+      GlobalInput.mousePrevPosY = (float)center.y;
+      SetCursorPos(center.x, center.y);
+    }
+    else {
+      GlobalInput.mousePrevPosX = (float)cursorPoint.x;
+      GlobalInput.mousePrevPosY = (float)cursorPoint.y;
+    }
+
 
     while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
       TranslateMessage(&msg);
@@ -991,4 +1035,19 @@ double platform_stop_measurement_ms(b32 _autoPrintMeasurement, const char* _iden
     printf("[Measured: %s] Elapsed milliseconds: %lf\n", _identifierString, ElapsedMilliSeconds);
   };
   return ElapsedMilliSeconds;
+}
+
+
+void platform_show_cursor(){
+  ShowCursor(true);
+}
+
+void platform_hide_cursor(){
+    ShowCursor(false);
+}
+void platform_lock_cursor(){
+  // no need to do anything, we check for lock every frame  
+}
+void platform_unlock_cursor(){
+  // no need to do anything, we check for lock every frame  
 }

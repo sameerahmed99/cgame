@@ -13,7 +13,7 @@
 #include "texture.h"
 #include "texture.c"
 internal CG_PlatformConfig PlatformConfig;
-
+internal CG_GameState GameState;
 
 internal CG_Memory *TEMP_gameMemory;
 
@@ -32,7 +32,7 @@ internal CG_Entity* CubeEntity;
 internal CG_Entity* FreeCam;
 internal CG_Entity* ActiveCam;
 internal float playerPosX, playerPosY;
-
+internal float MouseSens = .5f;
 
 internal CG_OffscreenBuffer *ScreenBuffer;
 internal CG_Buffer *DepthBuffer;
@@ -106,7 +106,8 @@ void create_player(){
 
 internal void cg_init(CG_OffscreenBuffer *offscreenBuffer){
 
-
+  cg_hide_cursor();
+  cg_lock_cursor();
   
   ScreenBuffer = offscreenBuffer;
 
@@ -158,11 +159,11 @@ internal void cg_init(CG_OffscreenBuffer *offscreenBuffer){
 
   graphics_renderer_init(ArenaRenderList,DefaultTexture, &DefaultMaterial);
 
-      TestCubeModel=  model_loader_load_gltf("../assets/models/CGameTestScene_a.glb");
-  //  TestCubeModel=  model_loader_load_gltf("../assets/models/suzanne.glb");
-  //  TestCubeModel=  model_loader_load_gltf("../assets/models/torus.glb");
-  //      TestCubeModel=  model_loader_load_gltf("../assets/models/pistol.glb");
-  //TestCubeModel=  model_loader_load_gltf("../assets/models/cube1x1.glb");
+  TestCubeModel=  model_loader_load_gltf("../assets/models/CGameTestScene_a.glb", true);
+  //  TestCubeModel=  model_loader_load_gltf("../assets/models/suzanne.glb", true);
+  //  TestCubeModel=  model_loader_load_gltf("../assets/models/torus.glb", true);
+  //      TestCubeModel=  model_loader_load_gltf("../assets/models/pistol.glb",true);
+  //TestCubeModel=  model_loader_load_gltf("../assets/models/cube1x1.glb",true);
   
   create_player();
 
@@ -338,7 +339,7 @@ void update_entities(float _dt){
     
 
 
-    Mat4x4 projection = math_mat4x4_create_perspective_projection(60, false, aspect, NearPlaneDistance, FarPlaneDistance);
+    Mat4x4 projection = math_mat4x4_create_perspective_projection(80, false, aspect, NearPlaneDistance, FarPlaneDistance);
 
     
     //    draw_debug_vertices(tri.vertices,3,mat , 5);
@@ -429,26 +430,12 @@ void draw_sky(CG_OffscreenBuffer *_to, u32 _skyCol, u32 _sunCol, u32 _cloudCol)
 }
 
 
-internal void update_input(CG_Input inp){
-  GameInput = inp;
 
-  GameInput.mouseDeltaX = GameInput.mousePosXPrev - GameInput.mousePosX;
-  GameInput.mouseDeltaY = GameInput.mousePosYPrev - GameInput.mousePosY;
-
-  
-  if(!MouseInputInit){
-    GameInput.mouseDeltaX = 0;
-    GameInput.mouseDeltaY = 0;
-    MouseInputInit = true;
-  }
-
-  
-}
 internal void cg_update(CG_Memory* _memory, CG_Input *_playerInput, float _deltaTime){
 
-  update_input(*_playerInput);
 
 
+  GameInput = *_playerInput;
   //  printf("Dif den: %f\n", CurrentDifficultyDenominator);
 
 
@@ -501,6 +488,15 @@ dbuffer[i] = 99999999999;
   if(k.d.IsPressed){
 
 
+  }
+  if(k.escape.WasDownedThisFrame){
+    cg_toggle_cursor();
+    if(GameState.cursorVisible){
+      cg_unlock_cursor();
+    }
+    else {
+      cg_lock_cursor();
+    }
   }
 
 
@@ -567,10 +563,10 @@ dbuffer[i] = 99999999999;
 
   }
 
-
+  //    printf("Mouse delta: %f, %f\n", GameInput.mouseDeltaX, GameInput.mouseDeltaY);
   Vec3 euler = FreeCam->worldEulerAngles;
-  euler.y+=GameInput.mouseDeltaX;
-  euler.x+=GameInput.mouseDeltaY;
+  euler.y+=GameInput.mouseDeltaX * MouseSens;
+  euler.x+=GameInput.mouseDeltaY * MouseSens;
   entity_set_world_euler_angles(FreeCam, euler);
 
   /* Vec3 playerRotAxis = {0,0,1}; */
@@ -618,9 +614,12 @@ dbuffer[i] = 99999999999;
 }
 void write_sound_test(){
   CG_Memory *_memory = TEMP_gameMemory;
-    write_square_wave_to_audio_buffer(_memory->AudioBuffer, _memory->AudioBufferCurrentWriteLengthFrames, _memory->AudioBufferCurrentWritePositionFrames, _memory->AudioBufferTotalFrames);
+    /* write_square_wave_to_audio_buffer(_memory->AudioBuffer, _memory->AudioBufferCurrentWriteLengthFrames, _memory->AudioBufferCurrentWritePositionFrames, _memory->AudioBufferTotalFrames); */
 }
 
+CG_GameState cg_get_state(){
+  return GameState;
+}
 
 CG_OffscreenBuffer *cg_get_current_off_screen_buffer(){
   return ScreenBuffer;
@@ -639,3 +638,29 @@ float cg_get_current_near_plane_distance(){
 float cg_get_current_far_plane_distance(){
   return FarPlaneDistance;
 };
+void cg_toggle_cursor(){
+  if(GameState.cursorVisible){
+    cg_hide_cursor();
+  }
+  else {
+    cg_show_cursor();
+  }
+};
+
+void cg_hide_cursor(){
+    GameState.cursorVisible = false;
+    platform_hide_cursor();
+};
+void cg_show_cursor(){
+  GameState.cursorVisible = true;
+  platform_show_cursor();
+}
+
+void cg_lock_cursor(){
+  GameState.cursorLocked = true;
+  platform_lock_cursor();
+}
+void cg_unlock_cursor(){
+  GameState.cursorLocked = false;
+  platform_unlock_cursor();
+}

@@ -25,11 +25,11 @@ Collider2D phys2D_create_rect_collider(Vec3 _min, float _width, float _height, V
   col.pivot = _pivot;
   col.angles = _angles;
 
-  col.p1 = math_vec3_apply_euler_angles(col.p1, _angles);
-  col.p2 = math_vec3_apply_euler_angles(col.p2, _angles);
-  col.p3 = math_vec3_apply_euler_angles(col.p3, _angles);
-  col.p4 = math_vec3_apply_euler_angles(col.p4, _angles);
-  col.center = math_vec3_apply_euler_angles(col.center, _angles);
+  /* col.p1 = math_vec3_apply_euler_angles(col.p1, _angles); */
+  /* col.p2 = math_vec3_apply_euler_angles(col.p2, _angles); */
+  /* col.p3 = math_vec3_apply_euler_angles(col.p3, _angles); */
+  /* col.p4 = math_vec3_apply_euler_angles(col.p4, _angles); */
+  /* col.center = math_vec3_apply_euler_angles(col.center, _angles); */
   return col;
 }
 

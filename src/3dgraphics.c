@@ -6,7 +6,7 @@
 const u32 TEMP_MAX_TRIS = 16;
 
 // @NOTE margin should be 0 when not testing
-const float CLIPPING_MARGIN = 0;
+const float CLIPPING_MARGIN = 0.0;
 
 
 CG_Renderer Renderer = {0};
@@ -42,7 +42,29 @@ CG_Mesh graphics_get_triangle_mesh(){
 
 
 
-Vec3 ndc_to_screen(Vec3 pos){
+Vec3 ndc_to_buffer(Vec3 pos){
+
+  // @Sameer
+  // This might seem weird, why remap ndc to buffer dimensions?
+
+  // the reasoning behind this is probably more easily explained logically, rather than mathematically
+  // Think about what our whole rendering pipeline does, from the projection till the final stretching of the render buffer onto the screen size
+
+  // The render pipeline creates a viewing window into our world with the aspect ratio windowWidth/windowHeight.
+  // it then distorts it into a cube shape (when we are doing the conversion to clip space)
+  // then, all borders of our world view window map with the border of the clip space cube
+  // we then chop off triangles that are beyond the bounds of the view, because again the bounds map exactly with the bounds of our viewing window, just distorted to form a square aspect
+
+  // then, we map the cube to -1 and 1 (ndc) so we still have a square shape (distorted from our original aspect)
+  // finally, we come to this function. We distort the square shape to fit our buffer size so we can do the rasterization
+  // all borders of the square map to all borders of our buffer
+  
+  // for eg if triangle is on border of ndc at 1,1 then in our buffer it is at bufferWidth, bufferHeight. 
+
+  // finally, in our platform layer we contort the buffer to fit into the screen's aspect and size, returning our final render to the expect aspect ratio (expected because of the aspect ratio we passed to our projection matrix).
+
+  // this also means our render buffer can be of any size and of any aspect ratio, as long as we stretch it to fit the screen at the end.
+  
   CG_OffscreenBuffer *screenBuffer = cg_get_current_off_screen_buffer();
  
   pos.x+=1;
@@ -71,7 +93,7 @@ void point_to_all_spaces(Vec3 _point,Mat4x4 _model, Mat4x4 _inversedCameraMatrix
 
     Vec3 ndc = {clipSpace.x/clipSpace.w, clipSpace.y/clipSpace.w, clipSpace.z/clipSpace.w};
 
-    Vec3 posa = ndc_to_screen(ndc);
+    Vec3 posa = ndc_to_buffer(ndc);
 
 
     *_outWorldPos = worldPos;
@@ -345,7 +367,7 @@ internal u32 clip_triangle(CG_Vertex _a, CG_Vertex _b, CG_Vertex _c, CG_Triangle
 
 void draw3d_mesh(CG_Mesh* _mesh,Mat4x4 _model, Mat4x4 _inversedCameraMatrix, Mat4x4 _projection, CG_Material* _material){
 
-  PLATFORM_BEGIN_FUNCTION_MEASUREMENT();
+  //  PLATFORM_BEGIN_FUNCTION_MEASUREMENT();
   CG_OffscreenBuffer *screenBuffer = cg_get_current_off_screen_buffer();
   for(int i=0;i<_mesh->numIndices;i+=3){
     Vec3 worldPos;
@@ -453,14 +475,14 @@ void draw3d_mesh(CG_Mesh* _mesh,Mat4x4 _model, Mat4x4 _inversedCameraMatrix, Mat
     u32 clippedTriangles = clip_triangle(vertA, vertB, vertC, newTriangles);
 
     /* Vec3 ss1 = clip_to_ndc(newTriangles[0].a); */
-    /* ss1 = ndc_to_screen(ss1); */
+    /* ss1 = ndc_to_buffer(ss1); */
      
     /* Vec3 ss2 = clip_to_ndc(newTriangles[0].b); */
-    /* ss2 = ndc_to_screen(ss2); */
+    /* ss2 = ndc_to_buffer(ss2); */
  
 
     /* Vec3 ss3 = clip_to_ndc(newTriangles[0].c); */
-    /* ss3 = ndc_to_screen(ss3); */
+    /* ss3 = ndc_to_buffer(ss3); */
  
     /* draw3d_triangle_rasterize_test(ss1,ss2,ss3, zA,zB, zC, col); */
 
@@ -482,9 +504,9 @@ void draw3d_mesh(CG_Mesh* _mesh,Mat4x4 _model, Mat4x4 _inversedCameraMatrix, Mat
       /* 	col.g = 0; */
       /* 	col.b = 255; */
       /* } */
-      ss1 = ndc_to_screen(ss1);
-      ss2 = ndc_to_screen(ss2);
-      ss3 = ndc_to_screen(ss3);
+      ss1 = ndc_to_buffer(ss1);
+      ss2 = ndc_to_buffer(ss2);
+      ss3 = ndc_to_buffer(ss3);
       newTriangles[ct].a.pos = ss1;
       newTriangles[ct].b.pos = ss2;
       newTriangles[ct].c.pos = ss3;
@@ -499,7 +521,7 @@ void draw3d_mesh(CG_Mesh* _mesh,Mat4x4 _model, Mat4x4 _inversedCameraMatrix, Mat
   
 
   }
-  PLATFORM_STOP_FUNCTION_MEASUREMENT();
+  //  PLATFORM_STOP_FUNCTION_MEASUREMENT();
 }
 
 
