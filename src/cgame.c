@@ -58,8 +58,8 @@ CG_PlatformConfig cg_get_platform_config(){
    .ScreenHeight = 0,
    .RequestedScreenWidth = 1920,
    .RequestedScreenHeight = 1080,
-   .RenderResolutionWidth = 800,
-   .RenderResolutionHeight = 600,
+   .RenderResolutionWidth = 400,
+   .RenderResolutionHeight = 400,
    .BaseScreenWidth = 1280,
    .BaseScreenHeight = 720,
    .BasePixelsPerWorldUnit = 5
@@ -106,6 +106,7 @@ void create_player(){
 
 internal void cg_init(CG_OffscreenBuffer *offscreenBuffer){
 
+
   cg_hide_cursor();
   cg_lock_cursor();
   
@@ -151,23 +152,22 @@ internal void cg_init(CG_OffscreenBuffer *offscreenBuffer){
 
   //  DefaultTexture = texture_load_from_file("../assets/textures/pistol-color.png", TEMP_ArenaAssets);
 
-    DefaultTexture = texture_load_from_file("../assets/textures/elias-wick-checker.png", TEMP_ArenaAssets);
+  //    DefaultTexture = texture_load_from_file("../assets/textures/elias-wick-checker.png", TEMP_ArenaAssets);
+  DefaultTexture = texture_load_from_file("../assets/textures/pistol-color.png", TEMP_ArenaAssets);
   DefaultMaterial.color = Vec4One;
   DefaultMaterial.texture = DefaultTexture;
-  DefaultMaterial.textureTiling.x = 4;
-  DefaultMaterial.textureTiling.y = 4;
+  DefaultMaterial.textureTiling.x = 1;
+  DefaultMaterial.textureTiling.y = 1;
 
   graphics_renderer_init(ArenaRenderList,DefaultTexture, &DefaultMaterial);
 
-  TestCubeModel=  model_loader_load_gltf("../assets/models/CGameTestScene_a.glb", true);
+  // TestCubeModel=  model_loader_load_gltf("../assets/models/CGameTestScene_a.glb", true);
   //  TestCubeModel=  model_loader_load_gltf("../assets/models/suzanne.glb", true);
   //  TestCubeModel=  model_loader_load_gltf("../assets/models/torus.glb", true);
-  //      TestCubeModel=  model_loader_load_gltf("../assets/models/pistol.glb",true);
+      TestCubeModel=  model_loader_load_gltf("../assets/models/pistol.glb",true);
   //TestCubeModel=  model_loader_load_gltf("../assets/models/cube1x1.glb",true);
   
   create_player();
-
-
 }
 
 

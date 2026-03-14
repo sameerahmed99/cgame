@@ -859,7 +859,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     GlobalInput.mouseDeltaX = cursorPoint.x - GlobalInput.mousePrevPosX;
     GlobalInput.mouseDeltaY = cursorPoint.y - GlobalInput.mousePrevPosY;
 
-    printf("Mouse delta: %f, %f\n", GlobalInput.mouseDeltaX, GlobalInput.mouseDeltaY);
 
     CG_GameState state = cg_get_state();
     if(cg_get_state().cursorLocked){

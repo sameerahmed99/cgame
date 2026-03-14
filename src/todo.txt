@@ -1,5 +1,3 @@
-1. Triangle clipping, performance drops when triangles become big, especially when they're bigger than the resolution
+1. Remove random malloc and free calls, use platform calls or use arena or other appropriate allocators more thoughtfully 
 
-2. Move game core features to a common file (such as the main loop, fixed loop, cg_create_color_from_channels function etc) so that we have those functions ready to use in all test games
-
-3. Create rule for overlapping triangle edges such that no two triangles try to color the same pixel
+1. Create rule for overlapping triangle edges such that no two triangles try to color the same pixel

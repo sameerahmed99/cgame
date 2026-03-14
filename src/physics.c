@@ -150,6 +150,8 @@ b32 phys2D_rect_to_rect_collision(Collider2D _a, Collider2D _b){
   return axisOne && axisTwo;
 }
 
+
+
 b32 phys2D_are_colliding(Collider2D _a, Collider2D _b){
   b32 sphere_to_sphere = _a.shape == COLLIDER2D_SPHERE && _b.shape==COLLIDER2D_SPHERE;
   b32 rect_to_rect = _a.shape == COLLIDER2D_RECTANGLE && _b.shape == COLLIDER2D_RECTANGLE;
@@ -173,3 +175,12 @@ b32 phys2D_are_colliding(Collider2D _a, Collider2D _b){
   exit(1);
 }
 
+
+// physics system
+
+void phys_init(float dt);
+void phys_add_body();
+void phys_remove_body();
+void phys_step();
+
+void phys_set_collision_callback();

@@ -1,4 +1,7 @@
 #include "math.h"
+#include "cgame.h"
+
+
 
 
 u64 math_get_aligned_pos_pow2(u64 _pos, u64 _alignTo){
@@ -212,6 +215,17 @@ Vec3 math_vec3_normalize(Vec3 _a){
 float math_vec3_dot(Vec3 _a, Vec3 _b){
   float res = _a.x * _b.x + _a.y*_b.y + _a.z*_b.z;
   return res;
+}
+
+Vec3 math_vec3_cross(Vec3 a, Vec3 b){
+  
+  float cx = a.y * b.z  - a.z*b.y;
+  float cy = a.z * b.x  - a.x*b.z;
+  float cz = a.x * b.y - a.y * b.x;
+
+  Vec3 ret = {cx,cy,cz};
+
+  return ret;
 }
 
 Vec3 math_mul_vec3_mat4x4(Vec3 _vec, Mat4x4 _mat){
@@ -476,3 +490,115 @@ Vec4 math_vec3_to_vec4(Vec3 vec, float wVal){
 
 
 
+
+// Quaternion stuff
+// I directly copied and modified some quaternion functions from randy gual's qu3e library
+// https://www.youtube.com/watch?v=en2QcehKJd8
+// Refer to the part where he plots the "Amount of identity" against "Amount of line"
+
+Quaternion math_quaternion_create(Vec3 axis, float _degrees){
+  float rad = Rad(_degrees);
+  rad/=2;
+  
+  Quaternion q;
+  float s = sinf(rad);
+  q.x = axis.x * s;
+  q.y = axis.y * s;
+  q.z = axis.z * s;
+  q.w = cosf(rad);
+
+  return q;
+}
+
+Quaternion math_quaternion_invert(Quaternion quat){
+  quat.x*=-1;
+  quat.y*=-1;
+  quat.z*=-1;
+  return quat;
+}
+
+Quaternion quaternion_multiply(Quaternion lhs, Quaternion rhs )
+{
+
+  float w= lhs.w;
+  float x= lhs.x;
+  float y= lhs.y;
+  float z= lhs.z;
+  Quaternion ret = {
+    w * rhs.x + x * rhs.w + y * rhs.z - z * rhs.y,
+    w * rhs.y + y * rhs.w + z * rhs.x - x * rhs.z,
+    w * rhs.z + z * rhs.w + x * rhs.y - y * rhs.x,
+    w * rhs.w - x * rhs.x - y * rhs.y - z * rhs.z
+  };
+  return ret;
+}
+
+Vec3 math_quaternion_rotate_vector(Quaternion _q, Vec3 _vec){
+
+  Vec3 qvec = {_q.x, _q.y, _q.z};
+  Vec3 c1 = math_vec3_cross(qvec, _vec);
+  Vec3 c2= math_vec3_cross(qvec,c1);
+  c2 = math_vec3_scale(c2,2);
+
+  Vec3 ret = math_vec3_add(_vec, math_vec3_scale(c1, 2*_q.w));
+  ret = math_vec3_add(ret, c2);
+  return ret;
+}
+
+
+Mat4x4 math_quaterion_to_rotation_matrix(Quaternion q ) 
+{
+  float x = q.x;
+  float y = q.y;
+  float z = q.z;
+  float w= q.w;
+
+  
+  float qx2 = x + x;
+  float qy2 = y + y;
+  float qz2 = z + z;
+  float qxqx2 = x * qx2;
+  float qxqy2 = x * qy2;
+  float qxqz2 = x * qz2;
+  float qxqw2 = w * qx2;
+  float qyqy2 = y * qy2;
+  float qyqz2 = y * qz2;
+  float qyqw2 = w * qy2;
+  float qzqz2 = z * qz2;
+  float qzqw2 = w * qz2;
+
+  Mat4x4 mat = {
+    1.0  - qyqy2 - qzqz2, qxqy2 + qzqw2, qxqz2 - qyqw2 ,0,
+    qxqy2 - qzqw2,  1.0 - qxqx2 - qzqz2, qyqz2 + qxqw2 ,0,
+    qxqz2 + qyqw2, qyqz2 - qxqw2, 1.0  - qxqx2 - qyqy2,0,
+    0,0,0,1
+  };
+
+  return mat;
+}
+
+void math_quaternion_to_axis_angle(Quaternion q, Vec3* axis, float* angle )
+{
+  float x = q.x;
+  float y = q.y;
+  float z = q.z;
+  float w=  q.w;
+  ASSERT_NO_EVAL(w <=  1.0f);
+
+  *angle = ( 2.0f ) * acosf( w );
+
+  float l = sqrtf(( 1.0f ) - w * w );
+
+  if ( l == ( 0.0f ) )
+    {
+      Vec3 vec = {( 0.0f ), ( 0.0f ), ( 0.0f )};
+      *axis=vec;
+    }
+
+  else
+    {
+      l = 1.0f / l;
+      Vec3 vec = {x * l, y * l, z * l};
+      *axis=vec;
+    }
+}
