@@ -1,4 +1,7 @@
 #include "physics.h"
+#include "cgame.h"
+#include "memory.h"
+internal phys_Scene Phys;
 
 Collider2D phys2D_create_rect_collider(Vec3 _min, float _width, float _height, Vec3 _pivot, Vec3 _angles){
   Collider2D col;
@@ -178,9 +181,32 @@ b32 phys2D_are_colliding(Collider2D _a, Collider2D _b){
 
 // physics system
 
-void phys_init(float dt);
-void phys_add_body();
-void phys_remove_body();
-void phys_step();
+void phys_init(float dt){
 
-void phys_set_collision_callback();
+  Phys.timestep = dt;
+
+  Phys.rigidbodies = arena_create(Gigabytes(1), Megabytes(32), true);  
+}
+void phys_set_iterations(u32 it){
+  Phys.iterations = it;
+}
+void phys_set_gravity(Vec3 g){
+  Phys.gravity = g;
+}
+void phys_set_contact_listener(phys_contact_listener listener){
+  Phys.contactListener = listener;
+};
+
+
+phys_Rigidbody *phys_create_body(phys_RigidbodyConfig config){
+  phys_Rigidbody *rb = ARENA_PUSH_TYPE(Phys.rigidbodies, phys_Rigidbody);
+
+  return rb;
+};
+b32 phys_delete_body()
+{
+  ASSERT_NO_EVAL(false);
+};
+void phys_step(){
+  ASSERT_NO_EVAL(false);
+};

@@ -32,7 +32,7 @@ internal CG_Entity* CubeEntity;
 internal CG_Entity* FreeCam;
 internal CG_Entity* ActiveCam;
 internal float playerPosX, playerPosY;
-internal float MouseSens = .5f;
+internal float MouseSens = .2f;
 
 internal CG_OffscreenBuffer *ScreenBuffer;
 internal CG_Buffer *DepthBuffer;
@@ -47,6 +47,8 @@ internal b32 MouseInputInit = false;
 internal CG_Material DefaultMaterial;
 internal CG_Texture *DefaultTexture;
 
+float CamXRot, CamYRot;
+
 CG_PlatformConfig cg_get_platform_config(){
   
    CG_PlatformConfig config = {
@@ -58,8 +60,8 @@ CG_PlatformConfig cg_get_platform_config(){
    .ScreenHeight = 0,
    .RequestedScreenWidth = 1920,
    .RequestedScreenHeight = 1080,
-   .RenderResolutionWidth = 400,
-   .RenderResolutionHeight = 400,
+   .RenderResolutionWidth = 600,
+   .RenderResolutionHeight = 450,
    .BaseScreenWidth = 1280,
    .BaseScreenHeight = 720,
    .BasePixelsPerWorldUnit = 5
@@ -152,8 +154,8 @@ internal void cg_init(CG_OffscreenBuffer *offscreenBuffer){
 
   //  DefaultTexture = texture_load_from_file("../assets/textures/pistol-color.png", TEMP_ArenaAssets);
 
-  //    DefaultTexture = texture_load_from_file("../assets/textures/elias-wick-checker.png", TEMP_ArenaAssets);
-  DefaultTexture = texture_load_from_file("../assets/textures/pistol-color.png", TEMP_ArenaAssets);
+      DefaultTexture = texture_load_from_file("../assets/textures/elias-wick-checker.png", TEMP_ArenaAssets);
+  //  DefaultTexture = texture_load_from_file("../assets/textures/pistol-color.png", TEMP_ArenaAssets);
   DefaultMaterial.color = Vec4One;
   DefaultMaterial.texture = DefaultTexture;
   DefaultMaterial.textureTiling.x = 1;
@@ -161,10 +163,10 @@ internal void cg_init(CG_OffscreenBuffer *offscreenBuffer){
 
   graphics_renderer_init(ArenaRenderList,DefaultTexture, &DefaultMaterial);
 
-  // TestCubeModel=  model_loader_load_gltf("../assets/models/CGameTestScene_a.glb", true);
+   TestCubeModel=  model_loader_load_gltf("../assets/models/CGameTestScene_a.glb", true);
   //  TestCubeModel=  model_loader_load_gltf("../assets/models/suzanne.glb", true);
   //  TestCubeModel=  model_loader_load_gltf("../assets/models/torus.glb", true);
-      TestCubeModel=  model_loader_load_gltf("../assets/models/pistol.glb",true);
+  //    TestCubeModel=  model_loader_load_gltf("../assets/models/pistol.glb",true);
   //TestCubeModel=  model_loader_load_gltf("../assets/models/cube1x1.glb",true);
   
   create_player();
@@ -563,11 +565,19 @@ dbuffer[i] = 99999999999;
 
   }
 
+  CamYRot += MouseSens*GameInput.mouseDeltaX;
+  CamXRot += MouseSens*GameInput.mouseDeltaY;
+  
+  Quaternion yaw = math_quaternion_create(Vec3Up, CamYRot);
+  Quaternion pitch = math_quaternion_create(Vec3Right, CamXRot);
+  Quaternion world = math_quaternion_multiply(yaw,pitch);
+
+  entity_set_world_rotation(FreeCam,world);
   //    printf("Mouse delta: %f, %f\n", GameInput.mouseDeltaX, GameInput.mouseDeltaY);
-  Vec3 euler = FreeCam->worldEulerAngles;
-  euler.y+=GameInput.mouseDeltaX * MouseSens;
-  euler.x+=GameInput.mouseDeltaY * MouseSens;
-  entity_set_world_euler_angles(FreeCam, euler);
+  /* Vec3 euler = FreeCam->worldEulerAngles; */
+  /* euler.y+=GameInput.mouseDeltaX * MouseSens; */
+  /* euler.x+=GameInput.mouseDeltaY * MouseSens; */
+  /* entity_set_world_euler_angles(FreeCam, euler); */
 
   /* Vec3 playerRotAxis = {0,0,1}; */
   /* Vec3 forward = {0,1,0}; */

@@ -22,6 +22,9 @@ typedef struct Collider2D{
   Vec3 angles;
 } Collider2D;
 
+
+
+
 typedef struct phys_Rigidbody{
 
 } phys_Rigidbody;
@@ -37,6 +40,8 @@ typedef struct phys_ContactData{
   phys_Rigidbody* rbA, rbB;
 } phys_ContactData;
 
+typedef void (*phys_contact_listener)(phys_ContactData *_contact);
+
 typedef struct phys_Island{
   Arena *rigidbodies;
   
@@ -46,9 +51,17 @@ typedef struct phys_SystemState{
     
 } phys_SystemState;
 
+typedef struct phys_Scene{
+  Arena *rigidbodies;
+  u32 iterations;
+  Vec3 gravity;
+  float timestep;
+  phys_contact_listener contactListener;
+  
+} phys_Scene;
 
 
-typedef void (*phys_contact_listener)(phys_ContactData *_contact);
+
 
 b32 phys2D_are_colliding(Collider2D _a, Collider2D _b);
 
@@ -60,9 +73,9 @@ Collider2D phys2D_create_rect_collider(Vec3 _min, float _width, float _height, V
 void phys_init(float dt);
 void phys_set_iterations(u32 it);
 void phys_set_gravity(Vec3 g);
-void phys_set_contact_listener();
+void phys_set_contact_listener(phys_contact_listener listener);
 
-phys_Rigidbody *phys_create_body();
+phys_Rigidbody *phys_create_body(phys_RigidbodyConfig config);
 b32 phys_delete_body();
 void phys_step();
 

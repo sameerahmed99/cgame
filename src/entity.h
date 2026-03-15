@@ -30,6 +30,9 @@ typedef struct CG_Entity{
   Vec3 worldScale;
   Vec3 localScale;
 
+  Quaternion worldRotation;
+  Quaternion localRotation;
+
 
 
   Vec3 forward;
@@ -85,7 +88,8 @@ typedef struct CG_Entity{
 void entity_move_to(CG_Entity* _entity, Vec3 _worldPos);
 void entity_sync_local_pos_with_world_pos(CG_Entity* _entity);
 void entity_set_world_euler_angles(CG_Entity* _entity, Vec3 _angles);
-
+void entity_set_world_rotation(CG_Entity* _entity, Quaternion _rot);
+void entity_set_local_rotation(CG_Entity* _entity, Quaternion _rot);
 void entity_set_vectors(CG_Entity* _entity, Vec3 _forward, Vec3 _right, Vec3 _up);
 
 void entity_set_parent(CG_Entity* _entity, CG_Entity* _parent);

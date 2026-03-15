@@ -2,7 +2,7 @@
 #include "cgame.h"
 
 
-
+internal const Quaternion QuaternionIdentity = {0,0,0,1};
 
 u64 math_get_aligned_pos_pow2(u64 _pos, u64 _alignTo){
 
@@ -495,7 +495,9 @@ Vec4 math_vec3_to_vec4(Vec3 vec, float wVal){
 // I directly copied and modified some quaternion functions from randy gual's qu3e library
 // https://www.youtube.com/watch?v=en2QcehKJd8
 // Refer to the part where he plots the "Amount of identity" against "Amount of line"
-
+Quaternion math_quaternion_identity(){
+  return QuaternionIdentity;
+};
 Quaternion math_quaternion_create(Vec3 axis, float _degrees){
   float rad = Rad(_degrees);
   rad/=2;
@@ -517,7 +519,7 @@ Quaternion math_quaternion_invert(Quaternion quat){
   return quat;
 }
 
-Quaternion quaternion_multiply(Quaternion lhs, Quaternion rhs )
+Quaternion math_quaternion_multiply(Quaternion lhs, Quaternion rhs )
 {
 
   float w= lhs.w;
@@ -533,7 +535,7 @@ Quaternion quaternion_multiply(Quaternion lhs, Quaternion rhs )
   return ret;
 }
 
-Vec3 math_quaternion_rotate_vector(Quaternion _q, Vec3 _vec){
+Vec3 math_quaternion_rotate_vec3(Quaternion _q, Vec3 _vec){
 
   Vec3 qvec = {_q.x, _q.y, _q.z};
   Vec3 c1 = math_vec3_cross(qvec, _vec);
@@ -544,9 +546,26 @@ Vec3 math_quaternion_rotate_vector(Quaternion _q, Vec3 _vec){
   ret = math_vec3_add(ret, c2);
   return ret;
 }
+Vec3 math_quaternion_rotate_vec3_around_pivot(Quaternion _q, Vec3 _vec, Vec3 _pivot){
+
+  Vec3 pivotShifted = math_vec3_subtract(_vec, _pivot);
+  Vec3 original = _vec;
+  _vec = pivotShifted;
+  
+  Vec3 qvec = {_q.x, _q.y, _q.z};
+  Vec3 c1 = math_vec3_cross(qvec, _vec);
+  Vec3 c2= math_vec3_cross(qvec,c1);
+  c2 = math_vec3_scale(c2,2);
+
+  Vec3 ret = math_vec3_add(_vec, math_vec3_scale(c1, 2*_q.w));
+  ret = math_vec3_add(ret, c2);
+
+  ret = math_vec3_add(original, ret);
+  return ret;
+}
 
 
-Mat4x4 math_quaterion_to_rotation_matrix(Quaternion q ) 
+Mat4x4 math_quaterion_to_rotation_matrix(Quaternion q) 
 {
   float x = q.x;
   float y = q.y;

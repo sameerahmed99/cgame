@@ -317,7 +317,9 @@ internal u32 clip_triangle(CG_Vertex _a, CG_Vertex _b, CG_Vertex _c, CG_Triangle
   _outTriangles[0].b = _b;
   _outTriangles[0].c = _c;
 
-
+  
+  //  return 1;
+  
   CG_Triangle newList[TEMP_MAX_TRIS];
   u32 numNewList;
   for(int p=0;p<NUM_CLIPPING_PLANES;p++){

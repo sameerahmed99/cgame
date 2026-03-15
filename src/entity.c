@@ -1,5 +1,8 @@
 #include "entity.h"
 
+//@TODO
+// maybe we don't want to update matrices all the time
+// only before rendering
 
 
 
@@ -24,6 +27,9 @@ CG_Entity *entity_create(Arena *arena, enum CG_EntityType _type){
 
   ent->localEulerAngles = Vec3Zero;
   ent->worldEulerAngles = Vec3Zero;
+
+  ent->worldRotation = math_quaternion_identity();
+  ent->localRotation = math_quaternion_identity();
 
   ent->worldScale = Vec3One;
   ent->localScale = Vec3One;
@@ -182,7 +188,73 @@ void entity_set_local_pos(CG_Entity* _entity, Vec3 _localPos){
 
 
 
+void entity_update_direction_vectors_based_on_world_rot(CG_Entity* _entity){
+  Quaternion _rot = _entity->worldRotation;
+  Vec3 forward = Vec3Forward;
+  Vec3 right = Vec3Right;
+  Vec3 up = Vec3Up;
 
+  right = math_quaternion_rotate_vec3(_rot, right);
+  up = math_quaternion_rotate_vec3(_rot, up);
+  forward = math_quaternion_rotate_vec3(_rot, forward);
+
+  _entity->forward = forward;
+  _entity->right = right;
+  _entity->up = up;
+  
+}
+void entity_update_world_pos_based_on_local_pos(CG_Entity* _entity){
+  if(_entity->parent == NULL){
+    _entity->worldPos = _entity->localPos;
+    return;
+  }
+
+  CG_Entity* p = _entity->parent;
+  Vec3 l = _entity->localPos;
+  
+  Vec3 right = math_vec3_add(p->worldPos, math_vec3_scale(p->right,l.x));
+  Vec3 up = math_vec3_add(p->worldPos, math_vec3_scale(p->up,l.y));
+  Vec3 forward = math_vec3_add(p->worldPos, math_vec3_scale(p->forward,l.z));
+
+  _entity->worldPos = math_vec3_add(right,math_vec3_add(up, forward));
+}
+void entity_set_world_rotation(CG_Entity* _entity, Quaternion _rot){
+
+
+  _entity->worldRotation = _rot;
+  entity_update_direction_vectors_based_on_world_rot(_entity);
+
+  if(_entity->parent!=NULL){
+    Quaternion localRot = math_quaternion_multiply(math_quaternion_invert(_entity->worldRotation), _entity->parent->worldRotation);
+    _entity->localRotation  = localRot;
+  }
+  entity_update_matrices(_entity);
+
+  for(int i=0;i<_entity->childCount;i++){
+    CG_Entity* child= _entity->children[i];
+    Quaternion local = child->localRotation;
+    Quaternion childWorld = math_quaternion_multiply(_entity->worldRotation,  local);
+    child->worldRotation = childWorld;
+
+    entity_update_direction_vectors_based_on_world_rot(child);
+    entity_update_world_pos_based_on_local_pos(child);
+    entity_update_matrices(child);
+    //printf("Original xyz: %f,%f,%f - New xyz: %f, %f, %f\n", en->worldPos.x, en->worldPos.y, en->worldPos.z, newWorldPos.x, newWorldPos.y, newWorldPos.z);   
+
+  }
+
+
+
+}
+
+void entity_set_local_rotation(CG_Entity* _entity, Quaternion _rot){
+  Quaternion worldRot = _rot;
+  if(_entity->parent!=NULL){
+    worldRot = math_quaternion_multiply(_entity->parent->worldRotation, _rot);
+
+  }
+  entity_set_world_rotation(_entity, worldRot);
+}
 
 void entity_set_world_euler_angles(CG_Entity* _entity, Vec3 _angles){
   

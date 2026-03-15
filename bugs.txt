@@ -1,0 +1,1 @@
+- Left and bottom clipping plane issues. There is some flickering going on when moving, possible due to bad border check or something with the pixel positions rounding. Noticeable on small render buffer sizes

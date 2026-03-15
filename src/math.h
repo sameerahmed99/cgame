@@ -128,9 +128,12 @@ Vec4 math_vec3_to_vec4(Vec3 vec, float wVal);
 
 // Quaternion
 Quaternion math_quaternion_create(Vec3 axis, float _degrees);
+Quaternion math_quaternion_identity();
 Quaternion math_quaternion_invert(Quaternion quat);
-Quaternion quaternion_multiply(Quaternion lhs, Quaternion rhs );
-Vec3 math_quaternion_rotate_vector(Quaternion _q, Vec3 _vec);
+Quaternion math_quaternion_multiply(Quaternion lhs, Quaternion rhs );
+Vec3 math_quaternion_rotate_vec3(Quaternion _q, Vec3 _vec);
+Vec3 math_quaternion_rotate_vec3_around_pivot(Quaternion _q, Vec3 _vec, Vec3 _pivot);
 Mat4x4 math_quaterion_to_rotation_matrix(Quaternion q );
 void math_quaternion_to_axis_angle(Quaternion q, Vec3* axis, float* angle );
+
 #endif // 
