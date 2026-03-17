@@ -184,8 +184,8 @@ b32 phys2D_are_colliding(Collider2D _a, Collider2D _b){
 void phys_init(float dt){
 
   Phys.timestep = dt;
-
-  Phys.rigidbodies = arena_create(Gigabytes(1), Megabytes(32), true);  
+  Phys.tempRigidbodies = arena_create(Gigabytes(1), Megabytes(32), true);
+  Phys.tempColliders = arena_create(Gigabytes(1), Megabytes(32), true);
 }
 void phys_set_iterations(u32 it){
   Phys.iterations = it;
@@ -199,14 +199,19 @@ void phys_set_contact_listener(phys_contact_listener listener){
 
 
 phys_Rigidbody *phys_create_body(phys_RigidbodyConfig config){
-  phys_Rigidbody *rb = ARENA_PUSH_TYPE(Phys.rigidbodies, phys_Rigidbody);
-
+  phys_Rigidbody *rb = ARENA_PUSH_TYPE(Phys.tempRigidbodies, phys_Rigidbody);
+  
   return rb;
 };
+
 b32 phys_delete_body()
 {
   ASSERT_NO_EVAL(false);
 };
+
 void phys_step(){
-  ASSERT_NO_EVAL(false);
+  for(int i=0;i<Phys.tempRigidbodies->numItems;i++){
+    phys_Rigidbody *body = arena_get_at(Phys.tempRigidbodies, i, sizeof(phys_Rigidbody));
+    //    phys_rigidbody_apply_linear_force(body,Phys.gravity);
+  }
 };

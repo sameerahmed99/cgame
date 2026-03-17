@@ -5,7 +5,8 @@ This project is currently in very early development, I've recently implemented t
 
 ## Images
 
-### Texture mapping 
+![alt text](./assets/github-images/3d-scene-textured.png "textured pistol 3d model")
+
 
 ![alt text](./assets/github-images/pistol-textures.png "textured pistol 3d model")
 

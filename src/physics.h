@@ -25,8 +25,56 @@ typedef struct Collider2D{
 
 
 
-typedef struct phys_Rigidbody{
 
+
+
+b32 phys2D_are_colliding(Collider2D _a, Collider2D _b);
+
+Collider2D phys2D_create_rect_collider(Vec3 _min, float _width, float _height, Vec3 _pivot, Vec3 _angles);
+
+
+
+
+// physics system
+// @TODO
+// AAB tree and broadphase
+
+enum phys_ColliderShape{
+  COLLIDER_SPHERE,
+  COLLIDER_BOX
+};
+
+typedef struct phys_Surface{
+  float friction;
+}  phys_Surface;
+
+
+
+struct phys_Collider;
+typedef struct phys_Collider {
+  enum phys_ColliderShape shape;
+  phys_Surface surface;
+  float radius;
+  Vec3 center;
+  Vec3 halfExtent;
+
+  Vec3 localPos;
+  Quaternion localRot;
+
+  struct phys_Collider* next;
+  struct phys_Collider* prev;
+} phys_Collider;
+
+
+typedef struct phys_Rigidbody{
+  phys_Collider *colliders;
+  float mass;
+
+  Vec3 velocity;
+  Quaternion rotation;
+  
+  Vec3 force;
+  Vec3 torque;
 } phys_Rigidbody;
 
 typedef struct phys_RigidbodyConfig{
@@ -42,30 +90,20 @@ typedef struct phys_ContactData{
 
 typedef void (*phys_contact_listener)(phys_ContactData *_contact);
 
-typedef struct phys_Island{
-  Arena *rigidbodies;
-  
-} phys_Island;
-typedef struct phys_SystemState{
-  float timestep;
-    
-} phys_SystemState;
 
+
+
+// @TODO
+// better memory structures, marked as temp
 typedef struct phys_Scene{
-  Arena *rigidbodies;
+  Arena *tempRigidbodies;
+  Arena *tempColliders;
   u32 iterations;
   Vec3 gravity;
   float timestep;
   phys_contact_listener contactListener;
   
 } phys_Scene;
-
-
-
-
-b32 phys2D_are_colliding(Collider2D _a, Collider2D _b);
-
-Collider2D phys2D_create_rect_collider(Vec3 _min, float _width, float _height, Vec3 _pivot, Vec3 _angles);
 
 
 
