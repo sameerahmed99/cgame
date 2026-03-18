@@ -46,6 +46,7 @@ enum phys_ColliderShape{
 
 typedef struct phys_Surface{
   float friction;
+  float restitution;
 }  phys_Surface;
 
 
@@ -58,8 +59,7 @@ typedef struct phys_Collider {
   Vec3 center;
   Vec3 halfExtent;
 
-  Vec3 localPos;
-  Quaternion localRot;
+  Mat3x3 localRot;
 
   struct phys_Collider* next;
   struct phys_Collider* prev;
@@ -69,6 +69,8 @@ typedef struct phys_Collider {
 typedef struct phys_Rigidbody{
   phys_Collider *colliders;
   float mass;
+  float density;
+  Mat3x3 inertiaTensor;
 
   Vec3 velocity;
   Quaternion rotation;
@@ -80,6 +82,15 @@ typedef struct phys_Rigidbody{
 typedef struct phys_RigidbodyConfig{
 
 } phys_RigidbodyConfig;
+
+typedef struct phys_ColliderConfig{
+  enum phys_ColliderShape shape;
+  Vec3 halfExtent;
+  float radius;
+  Vec3 localPos;
+  Mat3x3 localRot;
+} phys_ColliderConfig;
+
 
 typedef struct phys_ContactData{
 

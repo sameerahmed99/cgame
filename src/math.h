@@ -43,6 +43,12 @@ typedef struct Mat4x4{
     m30,m31,m32,m33;
 } Mat4x4;
 
+typedef struct Mat3x3{
+  float m00,m01,m02,
+        m10,m11,m12,
+        m20,m21,m22
+} Mat3x3;
+
 
 typedef struct Quaternion {
   float x,y,z,w;
@@ -93,6 +99,7 @@ Vec3 math_vec3_add(Vec3 _a, Vec3 _b);
 Vec3 math_vec3_subtract(Vec3 _a, Vec3 _b);
 float math_vec3_dot(Vec3 _a, Vec3 _b);
 Vec3 math_vec3_cross(Vec3 a, Vec3 b);
+Mat3x3 math_vec3_outer_product(Vec3 a, Vec3 b);
 
 Vec3 math_vec3_scale(Vec3 _vec, float _scale);
 
@@ -117,7 +124,12 @@ Mat4x4 math_mat4x4_mul(Mat4x4 _a, Mat4x4 _b);
 
 Mat4x4 math_mat4x4_create_perspective_projection(float _fovDegrees, b32 _vertical, float _widthPerHeight, float _nearPlaneDistance, float _farPlaneDistance);
 
-
+Mat3x3 math_mat3x3_create_identity();
+Mat3x3 math_mat3x3_mul(Mat3x3 _a, Mat3x3 _b);
+Mat3x3 math_mat3x3_transpose(Mat3x3 _mat);
+Mat3x3 math_mat3x3_add(Mat3x3 _a, Mat3x3 _b);
+Mat3x3 math_mat3x3_subtract(Mat3x3 _a, Mat3x3 _b);
+Mat3x3 math_mat3x3_scale(Mat3x3 mat, float scale);
 b32 math_2Dline_intersection(Vec2 _subjectPointA, Vec2 _subjectPointB, Vec2 _edge2A, Vec2 _edge2B, Vec2 *_out);
 
 
@@ -128,12 +140,12 @@ Vec4 math_vec3_to_vec4(Vec3 vec, float wVal);
 
 // Quaternion
 Quaternion math_quaternion_create(Vec3 axis, float _degrees);
-Quaternion math_quaternion_identity();
+Quaternion math_quaternion_create_identity();
 Quaternion math_quaternion_invert(Quaternion quat);
 Quaternion math_quaternion_multiply(Quaternion lhs, Quaternion rhs );
 Vec3 math_quaternion_rotate_vec3(Quaternion _q, Vec3 _vec);
 Vec3 math_quaternion_rotate_vec3_around_pivot(Quaternion _q, Vec3 _vec, Vec3 _pivot);
-Mat4x4 math_quaterion_to_rotation_matrix(Quaternion q );
+Mat3x3 math_quaterion_to_mat3x3(Quaternion q);
 void math_quaternion_to_axis_angle(Quaternion q, Vec3* axis, float* angle );
 
 #endif // 

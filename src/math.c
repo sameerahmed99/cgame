@@ -228,6 +228,25 @@ Vec3 math_vec3_cross(Vec3 a, Vec3 b){
   return ret;
 }
 
+Mat3x3 math_vec3_outer_product(Vec3 a, Vec3 b){
+
+  Mat3x3 mat = {0};
+  mat.m00 = a.x * b.x;
+  mat.m01 = a.x * b.y;
+  mat.m01 = a.x * b.z;
+
+  mat.m10 = a.y * b.x;
+  mat.m11 = a.y * b.y;
+  mat.m11 = a.y * b.z;
+  
+  mat.m20 = a.z * b.x;
+  mat.m21 = a.z * b.y;
+  mat.m21 = a.z * b.z;
+  
+
+  return mat;
+}
+
 Vec3 math_mul_vec3_mat4x4(Vec3 _vec, Mat4x4 _mat){
   Vec4 vec4;
   vec4.x = _vec.x;
@@ -435,6 +454,115 @@ Mat4x4 math_mat4x4_create_perspective_projection(float _fovDegrees, b32 _vertica
   return mat;
 }
 
+
+Mat3x3 math_mat3x3_create_identity(){
+  Mat3x3 mat = {0};
+  mat.m00 = 1;
+  mat.m11 = 1;
+  mat.m22 = 1;
+}
+
+Mat3x3 math_mat3x3_mul(Mat3x3 _a, Mat3x3 _b){
+  Mat3x3 mat;
+
+
+  // row 1
+  mat.m00 = _a.m00 * _b.m00 + _a.m01 * _b.m10 + _a.m02 * _b.m20;
+  mat.m01 = _a.m00 * _b.m01 + _a.m01 * _b.m11 + _a.m02 * _b.m21;
+  mat.m02 = _a.m00 * _b.m02 + _a.m01 * _b.m12 + _a.m02 * _b.m22;
+
+
+  // row 2
+  mat.m10 = _a.m10 * _b.m00 + _a.m11 * _b.m10 + _a.m12 * _b.m20;
+  mat.m11 = _a.m10 * _b.m01 + _a.m11 * _b.m11 + _a.m12 * _b.m21;
+  mat.m12 = _a.m10 * _b.m02 + _a.m11 * _b.m12 + _a.m12 * _b.m22;
+
+
+  // row 3
+  mat.m20 = _a.m20 * _b.m00 + _a.m21 * _b.m10 + _a.m22 * _b.m20;
+  mat.m21 = _a.m20 * _b.m01 + _a.m21 * _b.m11 + _a.m22 * _b.m21;
+  mat.m22 = _a.m20 * _b.m02 + _a.m21 * _b.m12 + _a.m22 * _b.m22;
+
+
+
+
+  return mat;
+}
+Mat3x3 math_mat3x3_transpose(Mat3x3 _mat){
+
+  Mat3x3 transposed = _mat;
+
+
+  transposed.m00 = _mat.m00;
+  transposed.m01 = _mat.m10; 
+  transposed.m02 = _mat.m20;
+
+  transposed.m10 = _mat.m01; 
+  transposed.m11 = _mat.m11;
+  transposed.m12 = _mat.m21;
+  
+  transposed.m20 = _mat.m02; 
+  transposed.m21 = _mat.m12;
+  transposed.m22 = _mat.m22;
+  
+  return transposed;
+}
+Mat3x3 math_mat3x3_add(Mat3x3 _a, Mat3x3 _b){
+  Mat3x3 mat;
+
+  // row 1
+  mat.m00 = _a.m00 + _b.m00;
+  mat.m01 = _a.m01 + _b.m01;
+  mat.m02 = _a.m02 + _b.m02;
+
+  // row 2
+  mat.m10 = _a.m10 + _b.m10;
+  mat.m11 = _a.m11 + _b.m11;
+  mat.m12 = _a.m12 + _b.m12;
+
+  // row 3
+  mat.m20 = _a.m20 + _b.m20;
+  mat.m21 = _a.m21 + _b.m21;
+  mat.m22 = _a.m22 + _b.m22;
+
+  return mat;
+}
+Mat3x3 math_mat3x3_subtract(Mat3x3 _a, Mat3x3 _b){
+  Mat3x3 mat;
+
+  // row 1
+  mat.m00 = _a.m00 - _b.m00;
+  mat.m01 = _a.m01 - _b.m01;
+  mat.m02 = _a.m02 - _b.m02;
+
+  // row 2
+  mat.m10 = _a.m10 - _b.m10;
+  mat.m11 = _a.m11 - _b.m11;
+  mat.m12 = _a.m12 - _b.m12;
+
+  // row 3
+  mat.m20 = _a.m20 - _b.m20;
+  mat.m21 = _a.m21 - _b.m21;
+  mat.m22 = _a.m22 - _b.m22;
+
+  return mat;
+}
+Mat3x3 math_mat3x3_scale(Mat3x3 mat, float scale){
+  mat.m00*=scale;
+  mat.m01*=scale;
+  mat.m02*=scale;
+
+  mat.m10*=scale;
+  mat.m11*=scale;
+  mat.m12*=scale;
+
+  mat.m20*=scale;
+  mat.m21*=scale;
+  mat.m22*=scale;
+
+  return mat;
+}
+
 b32 math_2Dline_intersection(Vec2 _subjectPointA, Vec2 _subjectPointB, Vec2 _edge2A, Vec2 _edge2B, Vec2 *_out){
 
   Vec2 _edge1A = _subjectPointA;
@@ -495,7 +623,7 @@ Vec4 math_vec3_to_vec4(Vec3 vec, float wVal){
 // I directly copied and modified some quaternion functions from randy gual's qu3e library
 // https://www.youtube.com/watch?v=en2QcehKJd8
 // Refer to the part where he plots the "Amount of identity" against "Amount of line"
-Quaternion math_quaternion_identity(){
+Quaternion math_quaternion_create_identity(){
   return QuaternionIdentity;
 };
 Quaternion math_quaternion_create(Vec3 axis, float _degrees){
@@ -565,7 +693,7 @@ Vec3 math_quaternion_rotate_vec3_around_pivot(Quaternion _q, Vec3 _vec, Vec3 _pi
 }
 
 
-Mat4x4 math_quaterion_to_rotation_matrix(Quaternion q) 
+Mat3x3 math_quaterion_to_mat3x3(Quaternion q) 
 {
   float x = q.x;
   float y = q.y;
@@ -586,11 +714,10 @@ Mat4x4 math_quaterion_to_rotation_matrix(Quaternion q)
   float qzqz2 = z * qz2;
   float qzqw2 = w * qz2;
 
-  Mat4x4 mat = {
-    1.0  - qyqy2 - qzqz2, qxqy2 + qzqw2, qxqz2 - qyqw2 ,0,
-    qxqy2 - qzqw2,  1.0 - qxqx2 - qzqz2, qyqz2 + qxqw2 ,0,
-    qxqz2 + qyqw2, qyqz2 - qxqw2, 1.0  - qxqx2 - qyqy2,0,
-    0,0,0,1
+  Mat3x3 mat = {
+    1.0  - qyqy2 - qzqz2, qxqy2 + qzqw2, qxqz2 - qyqw2 ,
+    qxqy2 - qzqw2,  1.0 - qxqx2 - qzqz2, qyqz2 + qxqw2,
+    qxqz2 + qyqw2, qyqz2 - qxqw2, 1.0  - qxqx2 - qyqy2,
   };
 
   return mat;

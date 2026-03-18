@@ -28,8 +28,8 @@ CG_Entity *entity_create(Arena *arena, enum CG_EntityType _type){
   ent->localEulerAngles = Vec3Zero;
   ent->worldEulerAngles = Vec3Zero;
 
-  ent->worldRotation = math_quaternion_identity();
-  ent->localRotation = math_quaternion_identity();
+  ent->worldRotation = math_quaternion_create_identity();
+  ent->localRotation = math_quaternion_create_identity();
 
   ent->worldScale = Vec3One;
   ent->localScale = Vec3One;

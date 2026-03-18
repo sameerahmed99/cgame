@@ -200,9 +200,177 @@ void phys_set_contact_listener(phys_contact_listener listener){
 
 phys_Rigidbody *phys_create_body(phys_RigidbodyConfig config){
   phys_Rigidbody *rb = ARENA_PUSH_TYPE(Phys.tempRigidbodies, phys_Rigidbody);
-  
+  rb->colliders = NULL;
+  rb->mass = 0;
+  rb->density = 0;
+  rb->inertiaTensor = math_mat3x3_create_identity();
+  rb->velocity = Vec3Zero;
+  rb->rotation = math_quaternion_create_identity();
+
+  rb->force = Vec3Zero;
+  rb->torque = Vec3Zero;
+
+
   return rb;
 };
+
+
+
+void phys_rigidbody_recalculate_tensor(phys_Rigidbody *rb){
+
+
+  // @TODO
+  // support multiple colliders here
+  if(rb->colliders->next !=NULL){
+    printf("We don't support compound colliders yet, committing die\n");
+    ASSERT_NO_EVAL(false);
+  }
+  
+  // quick refresher: https://www.youtube.com/watch?v=SbTSATs-DBA
+  Mat3x3 tensor = math_mat3x3_create_identity();
+  Vec3 h = rb->colliders->halfExtent;
+  float m = rb->mass;
+  Vec3 c = rb->colliders->center;
+  Mat3x3 rot = rb->colliders->localRot;
+  float cubeVolume = h.x*h.y*h.z * 8;
+
+
+  float x2 =4* h.x  * h.x;
+  float y2 =4* h.y  * h.y;
+  float z2 =4* h.z  * h.z;
+
+  // point mass moment of inertia = I = m*r^2
+  // cuboid moment of ineritia = 1/12 * point mass moment of inertia
+  float x = m * (z2 + y2)/12.0f;
+  float y = m * (z2 + x2)/12.0f;
+  float z = m * (y2 + x2)/12.0f;
+
+  
+  tensor.m00 = x;
+  tensor.m11 = y;
+  tensor.m22 = z;
+
+
+  // now we need tensor in rigidbody's space as the collider can have rotation and position offset from the rb center
+
+  // write down all equations and write inertia of rb in terms of collider terms
+  // resulting in Inertia tensor body = colliderRotMat * collider's tensor matrix * colliderRotMatInversed
+
+  // ./code-img/rb-tensor-space-conversion.jpg
+
+
+
+
+  tensor = math_mat3x3_mul(rot, math_mat3x3_mul(tensor, math_mat3x3_transpose(rot)));
+  
+  // now that we got the rotation down, we need to consider the local position as well.
+  // enter parallel axis theorom
+
+
+  
+  //https://www.youtube.com/watch?v=WXLLh0l-9j8
+  float sqrDist = math_vec3_dot(c,c);
+  Mat3x3 sqrDistMat = math_mat3x3_create_identity();
+  sqrDistMat.m00 = sqrDist;
+  sqrDistMat.m11 = sqrDist;
+  sqrDistMat.m22 = sqrDist;
+
+
+  // a_i * a_j
+  Mat3x3 outerProduct = math_vec3_outer_product(c,c);
+  tensor = math_mat3x3_add(tensor, math_mat3x3_subtract(sqrDistMat, outerProduct));
+  tensor = math_mat3x3_scale(tensor, m);
+  
+
+
+
+
+
+  rb->inertiaTensor = tensor;
+}
+
+ phys_Collider *phys_attach_collider(phys_Rigidbody *to, phys_ColliderConfig colConfig){ 
+/*   // @TODO */
+/*   // for now we're just going to assume each body is just has one cuboid shaped collider. */
+/*   // but later, this function should check the kind of collider and calculate tensor accordingly */
+
+/*   if(colConfig.shape != COLLIDER_BOX){ */
+/*     print("Big boo boo, we only support box colliders currently\n"); */
+/*     ASSERT_NO_EVAL(false); */
+/*   } */
+/*   // quick refresher: https://www.youtube.com/watch?v=SbTSATs-DBA */
+/*   Mat3x3 tensor = math_mat3x3_create_identity(); */
+/*   Vec3 h = colConfig.halfExtent; */
+/*   float m = to->mass; */
+/*   float cubeVolume = h.x*h.y*h.z * 8; */
+
+
+/*   float x2 =4* h.x  * h.x; */
+/*   float y2 =4* h.y  * h.y; */
+/*   float z2 =4* h.z  * h.z; */
+
+/*   // point mass moment of inertia = I = m*r^2 */
+/*   // cuboid moment of ineritia = 1/12 * point mass moment of inertia */
+/*   float x = m * (z2 + y2)/12.0f; */
+/*   float y = m * (z2 + x2)/12.0f; */
+/*   float z = m * (y2 + x2)/12.0f; */
+
+  
+/*   tensor.m00 = x; */
+/*   tensor.m11 = y; */
+/*   tensor.m22 = z; */
+
+
+/*   // now we need tensor in rigidbody's space as the collider can have rotation and position offset from the rb center */
+
+/*   // write down all equations and write inertia of rb in terms of collider terms */
+/*   // resulting in Inertia tensor body = colliderRotMat * collider's tensor matrix * colliderRotMatInversed */
+
+/*   // ./code-img/rb-tensor-space-conversion.jpg */
+
+
+/*   Mat3x3 rot = colConfig.localRot; */
+/*   tensor = math_mat3x3_mul(rot, math_mat3x3_mul(tensor, math_mat3x3_transpose(rot))); */
+  
+/*   // now that we got the rotation down, we need to consider the local position as well. */
+/*   // enter parallel axis theorom */
+
+
+  
+/*   //https://www.youtube.com/watch?v=WXLLh0l-9j8 */
+/*   float sqrDist = math_vec3_dot(colConfig.localPos, colConfig.localPos); */
+/*   Mat3x3 sqrDistMat = math_mat3x3_create_identity(); */
+/*   srDistMat.m00 = sqrDist; */
+/*   srDistMat.m11 = sqrDist; */
+/*   srDistMat.m22 = sqrDist; */
+
+
+/*   // a_i * a_j */
+/*   Mat3x3 outerProduct = math_vec3_outer_product(colConfig.localPos, colConfig.localPos); */
+/*   tensor = math_mat3x3_add(tensor, math_mat3x3_subtract(sqrDistMat, outerProduct)); */
+/*   tensor = math_mat3x3_scale(tensor, m); */
+  
+
+
+
+  phys_Collider *col =ARENA_PUSH_TYPE(Phys.tempColliders, phys_Collider);;
+  col->shape = COLLIDER_BOX;
+  col->halfExtent = colConfig.halfExtent;
+  col->radius = 0;
+  col->center = colConfig.localPos;
+  col->localRot = colConfig.localRot;
+  to->colliders = col;
+
+
+
+
+  phys_rigidbody_recalculate_tensor(to);
+
+
+
+
+  return col;
+}
 
 b32 phys_delete_body()
 {
