@@ -200,17 +200,20 @@ void phys_set_contact_listener(phys_contact_listener listener){
 
 phys_Rigidbody *phys_create_body(phys_RigidbodyConfig config){
   phys_Rigidbody *rb = ARENA_PUSH_TYPE(Phys.tempRigidbodies, phys_Rigidbody);
-  rb->colliders = NULL;
   rb->mass = 0;
-  rb->density = 0;
-  rb->inertiaTensor = math_mat3x3_create_identity();
-  rb->velocity = Vec3Zero;
-  rb->rotation = math_quaternion_create_identity();
-
-  rb->force = Vec3Zero;
-  rb->torque = Vec3Zero;
-
-
+  rb->inverseMass = 0;
+  rb->inverseInertiaTensor = math_mat3x3_create_identity();
+  rb->localInverseInertiaTensor = math_mat3x3_create_identity();
+  rb->center = Vec3Zero;
+  rb->localCenter = Vec3Zero;
+  rb->position = Vec3Zero;
+  rb->rotation = math_mat3x3_create_identity();
+  rb->linearVelocity = Vec3Zero;
+  rb->angularVelocity = Vec3Zero;
+  rb->forceAccumulator = Vec3Zero;
+  rb->torqueAccumulator = Vec3Zero;
+  rb->isNew = true;
+  rb->colliders = NULL;
   return rb;
 };
 
@@ -227,28 +230,11 @@ void phys_rigidbody_recalculate_tensor(phys_Rigidbody *rb){
   }
   
   // quick refresher: https://www.youtube.com/watch?v=SbTSATs-DBA
-  Mat3x3 tensor = math_mat3x3_create_identity();
-  Vec3 h = rb->colliders->halfExtent;
-  float m = rb->mass;
-  Vec3 c = rb->colliders->center;
+  Mat3x3 tensor = rb->colliders->localInertiaTensor;
   Mat3x3 rot = rb->colliders->localRot;
-  float cubeVolume = h.x*h.y*h.z * 8;
+  Vec3 c = rb->colliders->localCenter;
+  float m = rb->colliders->mass;
 
-
-  float x2 =4* h.x  * h.x;
-  float y2 =4* h.y  * h.y;
-  float z2 =4* h.z  * h.z;
-
-  // point mass moment of inertia = I = m*r^2
-  // cuboid moment of ineritia = 1/12 * point mass moment of inertia
-  float x = m * (z2 + y2)/12.0f;
-  float y = m * (z2 + x2)/12.0f;
-  float z = m * (y2 + x2)/12.0f;
-
-  
-  tensor.m00 = x;
-  tensor.m11 = y;
-  tensor.m22 = z;
 
 
   // now we need tensor in rigidbody's space as the collider can have rotation and position offset from the rb center
@@ -283,13 +269,24 @@ void phys_rigidbody_recalculate_tensor(phys_Rigidbody *rb){
   
 
 
+  rb->localInverseInertiaTensor = math_mat3x3_transpose(tensor);
 
-
-
-  rb->inertiaTensor = tensor;
+  phys_rb_update_global_inertia_tensor(rb);
 }
+void phys_rb_update_global_inertia_tensor(phys_Rigidbody* rb){
+  Mat3x3 tensor = rb->localInverseInertiaTensor;
+  Mat3x3 rot = rb->rotation;
 
- phys_Collider *phys_attach_collider(phys_Rigidbody *to, phys_ColliderConfig colConfig){ 
+
+
+  // same way we convert local space inertia tensor of collider
+  // to rigidbody space in the add_collider function
+  tensor = math_mat3x3_mul(rot, math_mat3x3_mul(tensor, rb->inverseRotation));
+  rb->inverseInertiaTensor = tensor;
+}
+ phys_Collider *phys_rb_add_collider(phys_Rigidbody *to, phys_ColliderConfig colConfig){
+
+   
 /*   // @TODO */
 /*   // for now we're just going to assume each body is just has one cuboid shaped collider. */
 /*   // but later, this function should check the kind of collider and calculate tensor accordingly */
@@ -351,21 +348,79 @@ void phys_rigidbody_recalculate_tensor(phys_Rigidbody *rb){
 /*   tensor = math_mat3x3_scale(tensor, m); */
   
 
-
-
   phys_Collider *col =ARENA_PUSH_TYPE(Phys.tempColliders, phys_Collider);;
-  col->shape = COLLIDER_BOX;
-  col->halfExtent = colConfig.halfExtent;
-  col->radius = 0;
-  col->center = colConfig.localPos;
+
+  col->mass = colConfig.mass;
+  col->localInertiaTensor = math_mat3x3_create_identity();
+  col->localCenter = colConfig.localCenter;
   col->localRot = colConfig.localRot;
+  
+  col->shape = colConfig.shape;
+  col->surface = colConfig.surface;
+  col->radius = colConfig.radius;
+  col->halfExtent = colConfig.halfExtent;
+
+  col->prev = NULL;
+  col->next = NULL;
+  
+  if(to->colliders == NULL){
+    to->colliders = col;
+  }
+  else{
+  to->colliders->prev = col;
+  col->next = to->colliders;
   to->colliders = col;
+  }
+
+  phys_Collider *curCol = col;
+  float mass = 0;
+  while(curCol!=NULL){
+    mass+=curCol->mass;
+
+
+    // rb.localCenter will be average of all colliders
+    // weighted by their masses. We divide by mass below to normalize.
+    to->localCenter = math_vec3_add(math_vec3_scale(curCol->localCenter, curCol->mass),to->localCenter);
+
+
+    curCol = curCol->next;
+  }
+  to->mass = mass;
+  to->inverseMass = 1.0/to->mass;
+  to->localCenter = math_vec3_scale(to->localCenter, to->inverseMass);
+  
+  // for cube
+   // @TODO calculate inertia tensor per shape, this is just for cube
+  Mat3x3 tensor = math_mat3x3_create_identity();
+  Vec3 h = colConfig.halfExtent;
+  float m =colConfig.mass;
+  float cubeVolume = h.x*h.y*h.z * 8;
+
+
+  float x2 =4* h.x  * h.x;
+  float y2 =4* h.y  * h.y;
+  float z2 =4* h.z  * h.z;
+
+  // point mass moment of inertia = I = m*r^2
+  // cuboid moment of ineritia = 1/12 * point mass moment of inertia
+  float x = m * (z2 + y2)/12.0f;
+  float y = m * (z2 + x2)/12.0f;
+  float z = m * (y2 + x2)/12.0f;
+
+  
+  tensor.m00 = x;
+  tensor.m11 = y;
+  tensor.m22 = z;
+
+
+
+
+  col->localInertiaTensor = tensor;
 
 
 
 
   phys_rigidbody_recalculate_tensor(to);
-
 
 
 
@@ -378,8 +433,82 @@ b32 phys_delete_body()
 };
 
 void phys_step(){
-  for(int i=0;i<Phys.tempRigidbodies->numItems;i++){
+  i32 count = Phys.tempRigidbodies->pos / sizeof(phys_Rigidbody);
+  for(int i=0;i<count;i++){
     phys_Rigidbody *body = arena_get_at(Phys.tempRigidbodies, i, sizeof(phys_Rigidbody));
-    //    phys_rigidbody_apply_linear_force(body,Phys.gravity);
+    if(body->isNew){
+
+
+      body->isNew = false;
+    }
+    Vec3 g =math_vec3_scale( Phys.gravity, body->mass);
+    phys_rb_apply_force(body, g, body->center);
+
+
+    // actually apply forces
+
+    Vec3 linearVel = body->linearVelocity;
+    Vec3 accel = math_vec3_scale(body->forceAccumulator, body->inverseMass);
+    accel = math_vec3_scale(accel, Phys.timestep);
+    linearVel = math_vec3_add(linearVel, accel);
+    body->linearVelocity = linearVel;
+
+
+    Vec3 angularVel = body->angularVelocity;
+    Vec3 angularAccel = math_mul_vec3_mat3x3(body->torqueAccumulator, body->inverseInertiaTensor);
+    angularAccel = math_vec3_scale(angularAccel, Phys.timestep);
+    angularVel = math_vec3_add(angularVel, angularAccel);
+    body->angularVelocity = angularVel;
+
+    body->forceAccumulator = Vec3Zero;
+    body->torqueAccumulator = Vec3Zero;
+    body->center = math_vec3_add(body->center, math_vec3_scale(body->linearVelocity,Phys.timestep));
+    Vec3 axis = math_vec3_normalize(angularVel);
+    float degrees = Deg(math_vec3_magnitude(axis))*Phys.timestep;
+    Mat3x3 rotMat = math_mat3x3_create_rotation(degrees, axis);
+    body->rotation = math_mat3x3_mul(rotMat,body->rotation);
+    phys_rb_update_rotation(body);
+    phys_update_pos_from_global_center(body);
+    phys_rb_update_global_inertia_tensor(body);
   }
 };
+
+
+void phys_rb_apply_force(phys_Rigidbody *rb, Vec3 _force, Vec3 _at){
+  rb->forceAccumulator = math_vec3_add(rb->forceAccumulator, _force);
+
+
+  // the more off center the force is, the more torque it produces
+  // cross product when the worldCenterToPoint vector and force vector align is 0,0,0
+  Vec3 worldCenterToPoint = math_vec3_subtract(_at, rb->center);
+  rb->torqueAccumulator = math_vec3_add(rb->torqueAccumulator,math_vec3_cross(worldCenterToPoint, _force));
+}
+void phys_update_center_from_global_pos(phys_Rigidbody *rb){
+  Vec3 c = math_mul_vec3_mat3x3(rb->localCenter,rb->rotation);
+  c = math_vec3_add(rb->position, c);
+
+  rb->center = c;
+}
+
+void phys_rb_set_world_pos(phys_Rigidbody *rb, Vec3 pos){
+  rb->position = pos;
+  phys_update_center_from_global_pos(rb);
+}
+void phys_update_pos_from_global_center(phys_Rigidbody *rb){
+  Vec3 p = math_vec3_scale(rb->localCenter,-1);
+  p = math_mul_vec3_mat3x3(p,rb->rotation);
+  p = math_vec3_add(p, rb->center);
+
+  rb->position = p;
+}
+
+void phys_rb_update_rotation(phys_Rigidbody *rb){
+
+  // @TODO
+  // floating point errors will accumulate as we add or subtract rotations
+  // read:
+  // https://allenchou.net/2013/12/game-physics-motion-dynamics-implementations/
+  // see UpdateOrientation function
+  rb->inverseRotation = math_mat3x3_transpose(rb->rotation);
+  
+}

@@ -130,9 +130,10 @@ Mat3x3 math_mat3x3_transpose(Mat3x3 _mat);
 Mat3x3 math_mat3x3_add(Mat3x3 _a, Mat3x3 _b);
 Mat3x3 math_mat3x3_subtract(Mat3x3 _a, Mat3x3 _b);
 Mat3x3 math_mat3x3_scale(Mat3x3 mat, float scale);
+Mat3x3 math_mat3x3_create_rotation(float deg, Vec3 axis);
 b32 math_2Dline_intersection(Vec2 _subjectPointA, Vec2 _subjectPointB, Vec2 _edge2A, Vec2 _edge2B, Vec2 *_out);
 
-
+Vec3 math_mul_vec3_mat3x3(Vec3 _vec, Mat3x3 _mat);
 
 Vec3 math_vec4_to_vec3(Vec4 vec);
 Vec4 math_vec3_to_vec4(Vec3 vec, float wVal);

@@ -15,7 +15,7 @@ typedef struct Arena {
   u64 commitChunkSize;
   u64 pos;
   u64 commitPos;
-  u64 numItems;
+  //  u64 numItems;
   b32 singleType;
     
   ArenaFreeListNode* freeList;  

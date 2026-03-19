@@ -82,7 +82,7 @@ void* arena_push(Arena* _arena, u64 _size, b32 _doNotZero){
     memset(pos,0,_size);
   }
 
-  _arena->numItems++;
+  //  _arena->numItems++;
   return pos;
 }
 
@@ -91,12 +91,12 @@ void arena_free(Arena* _arena){
 }
 
 void arena_pop(Arena* _arena, u64 _howmuch){
-  if(_arena->numItems == 0){
+  /* if(_arena->numItems == 0){ */
 
-    printf("Arena already empty, can't pop\n");
-    return;
-  }
-  _arena->numItems--;
+  /*   printf("Arena already empty, can't pop\n"); */
+  /*   return; */
+  /* } */
+  /* _arena->numItems--; */
   u64 amount = Min(_arena->pos - ARENA_BASE_POS, _howmuch);
   _arena->pos-=amount;
 }
@@ -113,7 +113,8 @@ void arena_pop_till_pos(Arena* _arena, u64 _pos) {
 }
 
 void arena_clear(Arena* _arena){
-  arena_pop_till_pos(_arena, ARENA_BASE_POS);
+  //  _arena->numItems = 0;
+  _arena->pos = ARENA_BASE_POS;
 }
 
 

@@ -204,6 +204,7 @@ Vec3 math_vec3_subtract(Vec3 _a, Vec3 _b){
 
 Vec3 math_vec3_normalize(Vec3 _a){
   float mag = math_vec3_magnitude(_a);
+  if(mag ==0) return _a;
   float maginv = 1/mag;
 
   _a.x*=maginv;
@@ -363,6 +364,35 @@ Mat4x4 math_mat4x4_create_rotation(float deg, Vec3 axis) {
     return mat;
 }
 
+Mat3x3 math_mat3x3_create_rotation(float deg, Vec3 axis) {
+
+  float angleRad = Rad(deg);
+    axis = math_vec3_normalize(axis);
+    float c = cosf(angleRad);
+    float s = sinf(angleRad);
+    float t = 1 - c;
+
+    float x = axis.x, y = axis.y, z = axis.z;
+
+    Mat3x3 mat = math_mat3x3_create_identity();
+
+    mat.m00 = t*x*x + c;
+    mat.m01 = t*x*y - s*z;
+    mat.m02 = t*x*z + s*y;
+
+    mat.m10 = t*x*y + s*z;
+    mat.m11 = t*y*y + c;
+    mat.m12 = t*y*z - s*x;
+
+    mat.m20 = t*x*z - s*y;
+    mat.m21 = t*y*z + s*x;
+    mat.m22 = t*z*z + c;
+
+    return mat;
+}
+
+
+ 
 
 Mat4x4 math_mat4x4_create_translation(Vec3 _translation){
   Mat4x4 mat = math_mat4x4_create_identity();
@@ -460,6 +490,8 @@ Mat3x3 math_mat3x3_create_identity(){
   mat.m00 = 1;
   mat.m11 = 1;
   mat.m22 = 1;
+
+  return mat;
 }
 
 Mat3x3 math_mat3x3_mul(Mat3x3 _a, Mat3x3 _b){
@@ -562,6 +594,22 @@ Mat3x3 math_mat3x3_scale(Mat3x3 mat, float scale){
 
   return mat;
 }
+
+Vec3 math_mul_vec3_mat3x3(Vec3 _vec, Mat3x3 _mat){
+  Vec3 vec;
+  vec.x = _vec.x;
+  vec.y = _vec.y;
+  vec.z = _vec.z;
+
+
+  Vec3 res;
+
+  res.x = _mat.m00 * vec.x + _mat.m01 * vec.y + _mat.m02 * vec.z;
+  res.y = _mat.m10 * vec.x + _mat.m11 * vec.y + _mat.m12 * vec.z;
+  res.z = _mat.m20 * vec.x + _mat.m21 * vec.y + _mat.m22 * vec.z;
+  return res;
+}
+
 
 b32 math_2Dline_intersection(Vec2 _subjectPointA, Vec2 _subjectPointB, Vec2 _edge2A, Vec2 _edge2B, Vec2 *_out){
 

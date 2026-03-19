@@ -18,17 +18,20 @@ internal CG_GameState GameState;
 internal CG_Memory *TEMP_gameMemory;
 
 internal CG_Model* TestCubeModel;
+internal CG_Model* TestSceneModel;
 
 internal Arena* ArenaEntities;
 internal Arena* TEMP_ArenaAssets;
 internal Arena* ArenaRenderList;
 
-internal float Gravity = -9.81;
+internal Vec3 Gravity = {0,-0.981f, 0};
+
 internal float TimeSinceLastFixedUpdate = 0;
-internal float FixedTimeStep = 0.3;
+internal float FixedTimeStep = 0.02f;
 internal float PlayerBaseRadius = 10;
 internal CG_Entity* PlayerEntity;
 internal CG_Entity* CubeEntity;
+internal CG_Entity* SceneModelEntity;
 internal CG_Entity* FreeCam;
 internal CG_Entity* ActiveCam;
 internal float playerPosX, playerPosY;
@@ -60,8 +63,8 @@ CG_PlatformConfig cg_get_platform_config(){
    .ScreenHeight = 0,
    .RequestedScreenWidth = 1920,
    .RequestedScreenHeight = 1080,
-   .RenderResolutionWidth = 800,
-   .RenderResolutionHeight = 600,
+   .RenderResolutionWidth = 512,
+   .RenderResolutionHeight = 512,
    .BaseScreenWidth = 1280,
    .BaseScreenHeight = 720,
    .BasePixelsPerWorldUnit = 5
@@ -86,8 +89,8 @@ void create_player(){
  
 
   Vec3 pos = PlayerEntity->worldPos;
-  pos.y = -(float)PlatformConfig.ScreenHeight /2.0f;
-  pos.y /= PlatformConfig.ppu;
+  //  pos.y = -(float)PlatformConfig.ScreenHeight /2.0f;
+  //  pos.y /= PlatformConfig.ppu;
   entity_set_world_pos(PlayerEntity,pos);
 
 
@@ -95,13 +98,32 @@ void create_player(){
   entity_set_world_euler_angles(PlayerEntity,  angles);
 
   CubeEntity = entity_create(ArenaEntities, ENTITY_TYPE_STATIC);
+  Vec3 cubePos = {0,3,10};
+  entity_set_world_pos(CubeEntity, cubePos);
+  SceneModelEntity = entity_create(ArenaEntities, ENTITY_TYPE_STATIC);
 
   FreeCam = entity_create(ArenaEntities, ENTITY_TYPE_CAMERA);
   ActiveCam = FreeCam;
 
+  phys_RigidbodyConfig rbConf = {
 
-    
-  }
+  };
+  CubeEntity->rb=phys_create_body(rbConf);
+
+  phys_rb_set_world_pos(CubeEntity->rb, cubePos);
+
+  
+  phys_ColliderConfig colConf = {
+    .mass = 80,
+    .localCenter = {0,0,0},
+    .localRot = {0},
+    .shape = COLLIDER_BOX,
+    .radius = 0,
+    .halfExtent = {0.5f,0.5f,0.5f}
+  };
+  phys_rb_add_collider(CubeEntity->rb, colConf);
+  
+}
 
 
 
@@ -163,13 +185,25 @@ internal void cg_init(CG_OffscreenBuffer *offscreenBuffer){
 
   graphics_renderer_init(ArenaRenderList,DefaultTexture, &DefaultMaterial);
 
-   TestCubeModel=  model_loader_load_gltf("../assets/models/CGameTestScene_a.glb", true);
+   TestSceneModel=  model_loader_load_gltf("../assets/models/CGameTestScene_a.glb", true);
+   TestCubeModel=  model_loader_load_gltf("../assets/models/cube1x1.glb", true);
   //  TestCubeModel=  model_loader_load_gltf("../assets/models/suzanne.glb", true);
   //  TestCubeModel=  model_loader_load_gltf("../assets/models/torus.glb", true);
   //    TestCubeModel=  model_loader_load_gltf("../assets/models/pistol.glb",true);
   //TestCubeModel=  model_loader_load_gltf("../assets/models/cube1x1.glb",true);
-  
+
+
+
+
+  phys_init(FixedTimeStep);
+  phys_set_gravity(Gravity);
+   
   create_player();
+
+
+
+
+
 }
 
 
@@ -279,7 +313,8 @@ internal void write_square_wave_to_audio_buffer(uint8_t* _writeTo, uint32_t fram
   }
 void update_entities(float _dt){
 
-  for(int i=0;i<ArenaEntities->numItems;i++){
+  i32 count = ArenaEntities->pos/sizeof(CG_Entity);
+  for(int i=0;i<count;i++){
     CG_Entity* ent = (CG_Entity*)arena_get_at(ArenaEntities, i, sizeof(CG_Entity));
     if(ent->destroyed) continue;
 
@@ -335,7 +370,7 @@ void update_entities(float _dt){
 
 
     CG_Mesh tri = graphics_get_triangle_mesh();
-    Mat4x4 model = CubeEntity->worldMatrix;
+    //    Mat4x4 model = CubeEntity->worldMatrix;
 
 
     
@@ -352,7 +387,10 @@ void update_entities(float _dt){
 
     //       draw3d_mesh(TestCubeModel->meshes,model, camInverse, projection, TestCubeModel->materialPerMesh[0]);
 
-             graphics_renderer_submit_model(TestCubeModel,model, ActiveCam->viewMatrix, projection);
+             graphics_renderer_submit_model(TestCubeModel,CubeEntity->worldMatrix, ActiveCam->viewMatrix, projection);
+
+	     graphics_renderer_submit_model(TestSceneModel,SceneModelEntity->worldMatrix, ActiveCam->viewMatrix, projection);
+
 
     //	     CG_Mesh trimesh = graphics_get_triangle_mesh();
     //	     draw3d_mesh(&trimesh, model, ActiveCam->viewMatrix, projection, &DefaultMaterial);
@@ -365,62 +403,72 @@ void update_entities(float _dt){
 
 internal void cg_fixed_update(float _dt){
 
-  for(int i=0;i<ArenaEntities->numItems;i++){
+  i32 count = ArenaEntities->pos / sizeof(CG_Entity);
+  for(int i=0;i<count;i++){
     CG_Entity* ent = (CG_Entity*)arena_get_at(ArenaEntities, i, sizeof(CG_Entity));
     if(ent->destroyed) continue;
-      if(ent->type == ENTITY_TYPE_ASTEROID || ent->type == ENTITY_TYPE_PROJECTILE){
-	sync_collider(ent, true);
-      }
-      else{
-	sync_collider(ent, false);
-      }
+    if(ent->rb!=NULL){
 
-    if(ent->hasPhysics){
-
-      if(!ent->isStaticPhysBody){
-	ent->physPosPrev = ent->physPos;
-	ent->physPos.x+=ent->velocity.x*_dt;
-	ent->physPos.y+=ent->velocity.y*_dt;
-	ent->physPos.z+=ent->velocity.z*_dt;
-      }
+      entity_set_world_pos(ent, ent->rb->position);
     }
+    
+  /*     if(ent->type == ENTITY_TYPE_ASTEROID || ent->type == ENTITY_TYPE_PROJECTILE){ */
+  /* 	sync_collider(ent, true); */
+  /*     } */
+  /*     else{ */
+  /* 	sync_collider(ent, false); */
+  /*     } */
 
-    if(ent->hasCollider){
-      for(int j=0;j<ArenaEntities->numItems;j++){
-	CG_Entity* colEnt = (CG_Entity*)arena_get_at(ArenaEntities, j, sizeof(CG_Entity));
-	if(colEnt->destroyed) continue;
-	if(j == i) continue;
-	if(!colEnt->hasPhysics || !colEnt->hasCollider){
-	  continue;
-	}
-	b32 colliding = phys2D_are_colliding(colEnt->collider2D, ent->collider2D);
+  /*   if(ent->hasPhysics){ */
+
+  /*     if(!ent->isStaticPhysBody){ */
+  /* 	ent->physPosPrev = ent->physPos; */
+  /* 	ent->physPos.x+=ent->velocity.x*_dt; */
+  /* 	ent->physPos.y+=ent->velocity.y*_dt; */
+  /* 	ent->physPos.z+=ent->velocity.z*_dt; */
+  /*     } */
+  /*   } */
+
+  /*   if(ent->hasCollider){ */
+  /*     for(int j=0;j<ArenaEntities->numItems;j++){ */
+  /* 	CG_Entity* colEnt = (CG_Entity*)arena_get_at(ArenaEntities, j, sizeof(CG_Entity)); */
+  /* 	if(colEnt->destroyed) continue; */
+  /* 	if(j == i) continue; */
+  /* 	if(!colEnt->hasPhysics || !colEnt->hasCollider){ */
+  /* 	  continue; */
+  /* 	} */
+  /* 	b32 colliding = phys2D_are_colliding(colEnt->collider2D, ent->collider2D); */
 
 
 
-	if(colliding){
+  /* 	if(colliding){ */
 
-	  if(colEnt->type == ENTITY_TYPE_PROJECTILE || colEnt->type == ENTITY_TYPE_ASTEROID){
-	    colEnt->destroyed = true;
+  /* 	  if(colEnt->type == ENTITY_TYPE_PROJECTILE || colEnt->type == ENTITY_TYPE_ASTEROID){ */
+  /* 	    colEnt->destroyed = true; */
 
-	    arena_add_to_free_list(ArenaEntities, (void*)colEnt);
-	  }
+  /* 	    arena_add_to_free_list(ArenaEntities, (void*)colEnt); */
+  /* 	  } */
 
-	  if(ent->type == ENTITY_TYPE_PROJECTILE || ent->type == ENTITY_TYPE_ASTEROID){
-	    ent->destroyed = true;
+  /* 	  if(ent->type == ENTITY_TYPE_PROJECTILE || ent->type == ENTITY_TYPE_ASTEROID){ */
+  /* 	    ent->destroyed = true; */
 
-	    arena_add_to_free_list(ArenaEntities, (void*)ent);
-	  }
+  /* 	    arena_add_to_free_list(ArenaEntities, (void*)ent); */
+  /* 	  } */
 
-	  if(ent->destroyed){
-	    break;
-	  }
+  /* 	  if(ent->destroyed){ */
+  /* 	    break; */
+  /* 	  } */
 	  
-	}
-      }
-    }
+  /* 	} */
+  /*     } */
+  /*   } */
+  /* } */
+  
+  
   }
-}
 
+  phys_step();
+}
 void draw_sky(CG_OffscreenBuffer *_to, u32 _skyCol, u32 _sunCol, u32 _cloudCol)
 {
   u32 sunX = 75;
@@ -618,8 +666,6 @@ dbuffer[i] = 99999999999;
 
   }
   update_entities(_deltaTime);
-
-
   graphics_renderer_render_list();
 }
 void write_sound_test(){

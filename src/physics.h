@@ -53,43 +53,59 @@ typedef struct phys_Surface{
 
 struct phys_Collider;
 typedef struct phys_Collider {
+
+  float mass;
+  Mat3x3 localInertiaTensor;
+  Vec3 localCenter;
+  Mat3x3 localRot;
+  
   enum phys_ColliderShape shape;
   phys_Surface surface;
   float radius;
-  Vec3 center;
   Vec3 halfExtent;
-
-  Mat3x3 localRot;
 
   struct phys_Collider* next;
   struct phys_Collider* prev;
 } phys_Collider;
 
+typedef struct phys_ColliderConfig{
+
+  float mass;
+  Vec3 localCenter;
+  Mat3x3 localRot;
+  
+  enum phys_ColliderShape shape;
+  phys_Surface surface;
+  float radius;
+  Vec3 halfExtent;
+  
+} phys_ColliderConfig;
+
 
 typedef struct phys_Rigidbody{
-  phys_Collider *colliders;
   float mass;
-  float density;
-  Mat3x3 inertiaTensor;
+  float inverseMass;
+  Mat3x3 inverseInertiaTensor;
+  Mat3x3 localInverseInertiaTensor;
 
-  Vec3 velocity;
-  Quaternion rotation;
-  
-  Vec3 force;
-  Vec3 torque;
+
+  Vec3 center;
+  Vec3 localCenter;
+
+  Vec3 position;
+  Mat3x3 rotation;
+  Mat3x3 inverseRotation;
+  Vec3 linearVelocity;
+  Vec3 angularVelocity;
+  Vec3 forceAccumulator;
+  Vec3 torqueAccumulator;
+  b32 isNew;
+  phys_Collider *colliders;
 } phys_Rigidbody;
 
 typedef struct phys_RigidbodyConfig{
 
 } phys_RigidbodyConfig;
-
-typedef struct phys_ColliderConfig{
-  enum phys_ColliderShape shape;
-  Vec3 halfExtent;
-  float radius;
-  Vec3 localPos;
-  Mat3x3 localRot;
-} phys_ColliderConfig;
 
 
 typedef struct phys_ContactData{
@@ -120,8 +136,8 @@ typedef struct phys_Scene{
 
 
 void phys_init(float dt);
-void phys_set_iterations(u32 it);
 void phys_set_gravity(Vec3 g);
+void phys_set_iterations(u32 it);
 void phys_set_contact_listener(phys_contact_listener listener);
 
 phys_Rigidbody *phys_create_body(phys_RigidbodyConfig config);
@@ -129,4 +145,11 @@ b32 phys_delete_body();
 void phys_step();
 
 
+void phys_rb_apply_force(phys_Rigidbody* rb,Vec3 _force, Vec3 _at);
+void phys_update_center_from_global_pos(phys_Rigidbody *rb);
+void phys_update_pos_from_global_center(phys_Rigidbody *rb);
+phys_Collider *phys_rb_add_collider(phys_Rigidbody *to, phys_ColliderConfig colConfig);
+void phys_rb_update_global_inertia_tensor(phys_Rigidbody* rb);
+void phys_rb_update_rotation(phys_Rigidbody *rb);
+void phys_rb_set_world_pos(phys_Rigidbody *rb, Vec3 pos);
 #endif
