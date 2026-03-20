@@ -124,13 +124,16 @@ Mat4x4 math_mat4x4_mul(Mat4x4 _a, Mat4x4 _b);
 
 Mat4x4 math_mat4x4_create_perspective_projection(float _fovDegrees, b32 _vertical, float _widthPerHeight, float _nearPlaneDistance, float _farPlaneDistance);
 
+void math_mat3x3_print(Mat3x3 mat);
 Mat3x3 math_mat3x3_create_identity();
 Mat3x3 math_mat3x3_mul(Mat3x3 _a, Mat3x3 _b);
 Mat3x3 math_mat3x3_transpose(Mat3x3 _mat);
+Mat3x3 math_mat3x3_invert(Mat3x3 m);
 Mat3x3 math_mat3x3_add(Mat3x3 _a, Mat3x3 _b);
 Mat3x3 math_mat3x3_subtract(Mat3x3 _a, Mat3x3 _b);
 Mat3x3 math_mat3x3_scale(Mat3x3 mat, float scale);
 Mat3x3 math_mat3x3_create_rotation(float deg, Vec3 axis);
+Quaternion math_mat3x3_ortho_to_quaternion(Mat3x3 m);
 b32 math_2Dline_intersection(Vec2 _subjectPointA, Vec2 _subjectPointB, Vec2 _edge2A, Vec2 _edge2B, Vec2 *_out);
 
 Vec3 math_mul_vec3_mat3x3(Vec3 _vec, Mat3x3 _mat);
@@ -141,12 +144,14 @@ Vec4 math_vec3_to_vec4(Vec3 vec, float wVal);
 
 // Quaternion
 Quaternion math_quaternion_create(Vec3 axis, float _degrees);
+Quaternion math_quaternion_normalize(Quaternion q);
 Quaternion math_quaternion_create_identity();
 Quaternion math_quaternion_invert(Quaternion quat);
 Quaternion math_quaternion_multiply(Quaternion lhs, Quaternion rhs );
 Vec3 math_quaternion_rotate_vec3(Quaternion _q, Vec3 _vec);
 Vec3 math_quaternion_rotate_vec3_around_pivot(Quaternion _q, Vec3 _vec, Vec3 _pivot);
-Mat3x3 math_quaterion_to_mat3x3(Quaternion q);
+Mat3x3 math_quaternion_to_mat3x3(Quaternion q);
+
 void math_quaternion_to_axis_angle(Quaternion q, Vec3* axis, float* angle );
 
 #endif // 

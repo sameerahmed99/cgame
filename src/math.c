@@ -363,7 +363,12 @@ Mat4x4 math_mat4x4_create_rotation(float deg, Vec3 axis) {
 
     return mat;
 }
-
+void math_mat3x3_print(Mat3x3 mat){
+  
+  printf("0: %f, %f, %f\n", mat.m00, mat.m01, mat.m02);
+  printf("1: %f, %f, %f\n", mat.m10, mat.m11, mat.m12);
+  printf("2: %f, %f, %f\n", mat.m20, mat.m21, mat.m22);
+}
 Mat3x3 math_mat3x3_create_rotation(float deg, Vec3 axis) {
 
   float angleRad = Rad(deg);
@@ -539,6 +544,30 @@ Mat3x3 math_mat3x3_transpose(Mat3x3 _mat){
   
   return transposed;
 }
+Mat3x3 math_mat3x3_invert(Mat3x3 m)
+{
+	Vec3 tmp0, tmp1, tmp2;
+	float detinv;
+
+	Vec3 columnX = {m.m00, m.m10, m.m20};
+	Vec3 columnY = {m.m01, m.m11, m.m21};
+	Vec3 columnZ = {m.m02, m.m12, m.m22};
+
+	
+	tmp0 = math_vec3_cross( columnY, columnZ );
+	tmp1 = math_vec3_cross( columnZ, columnX );
+	tmp2 = math_vec3_cross( columnX, columnY );
+
+	detinv = 1.0f  / math_vec3_dot( columnZ, tmp2 );
+
+	Mat3x3 ret = {
+		tmp0.x * detinv, tmp1.x * detinv, tmp2.x * detinv,
+		tmp0.y * detinv, tmp1.y * detinv, tmp2.y * detinv,
+		tmp0.z * detinv, tmp1.z * detinv, tmp2.z * detinv
+	};
+	return ret;
+}
+
 Mat3x3 math_mat3x3_add(Mat3x3 _a, Mat3x3 _b){
   Mat3x3 mat;
 
@@ -741,33 +770,50 @@ Vec3 math_quaternion_rotate_vec3_around_pivot(Quaternion _q, Vec3 _vec, Vec3 _pi
 }
 
 
-Mat3x3 math_quaterion_to_mat3x3(Quaternion q) 
+Mat3x3 math_quaternion_to_mat3x3(Quaternion q) 
 {
-  float x = q.x;
-  float y = q.y;
-  float z = q.z;
-  float w= q.w;
 
+  float qX = q.x;
+  float qY = q.y;
+  float qZ = q.z;
+  float qW = q.w;
+
+  float sqX = qX * qX;
+  float sqY = qY * qY;
+  float sqZ = qZ * qZ;
+  float sqW = qW * qW;
+
+  float m00 = sqX - sqY - sqZ + sqW;
+  float m11 = -sqX + sqY - sqZ + sqW;
+  float m22 = -sqX - sqY + sqZ + sqW ;
+
+  float qXqY = qX * qY;
+  float qZqW = qZ * qW;
+  float m10 = 2 * (qXqY + qZqW);
+  float m01 = 2 * (qXqY - qZqW);
+
+  float qXqZ = qX * qZ;
+  float qYqW = qY * qW;
+  float m20 = 2 * (qXqZ - qYqW);
+  float m02 = 2 * (qXqZ + qYqW);
+
+  float qYqZ = qY * qZ;
+  float qXqW = qX * qW;
+  float m21 = 2 * (qYqZ + qXqW);
+  float m12 = 2 * (qYqZ - qXqW);
+
+  Mat3x3 mat;
+  mat.m00 = m00;
+  mat.m01 = m01;
+  mat.m02 = m02;
   
-  float qx2 = x + x;
-  float qy2 = y + y;
-  float qz2 = z + z;
-  float qxqx2 = x * qx2;
-  float qxqy2 = x * qy2;
-  float qxqz2 = x * qz2;
-  float qxqw2 = w * qx2;
-  float qyqy2 = y * qy2;
-  float qyqz2 = y * qz2;
-  float qyqw2 = w * qy2;
-  float qzqz2 = z * qz2;
-  float qzqw2 = w * qz2;
-
-  Mat3x3 mat = {
-    1.0  - qyqy2 - qzqz2, qxqy2 + qzqw2, qxqz2 - qyqw2 ,
-    qxqy2 - qzqw2,  1.0 - qxqx2 - qzqz2, qyqz2 + qxqw2,
-    qxqz2 + qyqw2, qyqz2 - qxqw2, 1.0  - qxqx2 - qyqy2,
-  };
-
+  mat.m10 = m10;
+  mat.m11 = m11;
+  mat.m12 = m12;
+  
+  mat.m20 = m20;
+  mat.m21 = m21;
+  mat.m22 = m22;
   return mat;
 }
 
@@ -795,4 +841,62 @@ void math_quaternion_to_axis_angle(Quaternion q, Vec3* axis, float* angle )
       Vec3 vec = {x * l, y * l, z * l};
       *axis=vec;
     }
+}
+
+Quaternion math_quaternion_normalize(Quaternion q){
+  float mag = q.x*q.x + q.y * q.y + q.z * q.z + q.w * q.w;
+  mag = sqrtf(mag);
+  if(mag == 0) return q;
+
+  q.x/=mag;
+  q.y/=mag;
+  q.z/=mag;
+  q.w/=mag;
+
+  return q;
+}
+Quaternion math_mat3x3_ortho_to_quaternion(Mat3x3 m)
+{
+    float trace = m.m00 + m.m11 + m.m22;
+
+    Quaternion q;
+
+    if (trace > 0.0f)
+    {
+        float s = sqrtf(trace + 1.0f) * 2.0f;
+
+        q.w = 0.25f * s;
+        q.x = (m.m21 - m.m12) / s;
+        q.y = (m.m02 - m.m20) / s;
+        q.z = (m.m10 - m.m01) / s;
+    }
+    else if (m.m00 > m.m11 && m.m00 > m.m22)
+    {
+        float s = sqrtf(1.0f + m.m00 - m.m11 - m.m22) * 2.0f;
+
+        q.w = (m.m21 - m.m12) / s;
+        q.x = 0.25f * s;
+        q.y = (m.m01 + m.m10) / s;
+        q.z = (m.m02 + m.m20) / s;
+    }
+    else if (m.m11 > m.m22)
+    {
+        float s = sqrtf(1.0f + m.m11 - m.m00 - m.m22) * 2.0f;
+
+        q.w = (m.m02 - m.m20) / s;
+        q.x = (m.m01 + m.m10) / s;
+        q.y = 0.25f * s;
+        q.z = (m.m12 + m.m21) / s;
+    }
+    else
+    {
+        float s = sqrtf(1.0f + m.m22 - m.m00 - m.m11) * 2.0f;
+
+        q.w = (m.m10 - m.m01) / s;
+        q.x = (m.m02 + m.m20) / s;
+        q.y = (m.m12 + m.m21) / s;
+        q.z = 0.25f * s;
+    }
+
+    return q;
 }

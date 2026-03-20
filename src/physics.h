@@ -93,6 +93,7 @@ typedef struct phys_Rigidbody{
   Vec3 localCenter;
 
   Vec3 position;
+  Quaternion rotationQuat;
   Mat3x3 rotation;
   Mat3x3 inverseRotation;
   Vec3 linearVelocity;
@@ -146,6 +147,7 @@ void phys_step();
 
 
 void phys_rb_apply_force(phys_Rigidbody* rb,Vec3 _force, Vec3 _at);
+void phys_rb_apply_torque(phys_Rigidbody* rb,Vec3 _torque);
 void phys_update_center_from_global_pos(phys_Rigidbody *rb);
 void phys_update_pos_from_global_center(phys_Rigidbody *rb);
 phys_Collider *phys_rb_add_collider(phys_Rigidbody *to, phys_ColliderConfig colConfig);

@@ -24,10 +24,10 @@ internal Arena* ArenaEntities;
 internal Arena* TEMP_ArenaAssets;
 internal Arena* ArenaRenderList;
 
-internal Vec3 Gravity = {0,-0.981f, 0};
+internal Vec3 Gravity = {0,0, 0};
 
 internal float TimeSinceLastFixedUpdate = 0;
-internal float FixedTimeStep = 0.02f;
+internal float FixedTimeStep = 0.05f;
 internal float PlayerBaseRadius = 10;
 internal CG_Entity* PlayerEntity;
 internal CG_Entity* CubeEntity;
@@ -61,8 +61,8 @@ CG_PlatformConfig cg_get_platform_config(){
    .AudioChannelsCount = 2,
    .ScreenWidth = 0,
    .ScreenHeight = 0,
-   .RequestedScreenWidth = 1920,
-   .RequestedScreenHeight = 1080,
+   .RequestedScreenWidth = 1920/2,
+   .RequestedScreenHeight = 1080/2,
    .RenderResolutionWidth = 512,
    .RenderResolutionHeight = 512,
    .BaseScreenWidth = 1280,
@@ -112,17 +112,21 @@ void create_player(){
 
   phys_rb_set_world_pos(CubeEntity->rb, cubePos);
 
-  
+
+ 
   phys_ColliderConfig colConf = {
-    .mass = 80,
+    .mass = 250,
     .localCenter = {0,0,0},
-    .localRot = {0},
+    .localRot = math_mat3x3_create_identity(),
     .shape = COLLIDER_BOX,
     .radius = 0,
     .halfExtent = {0.5f,0.5f,0.5f}
   };
   phys_rb_add_collider(CubeEntity->rb, colConf);
-  
+
+
+
+
 }
 
 
@@ -403,6 +407,15 @@ void update_entities(float _dt){
 
 internal void cg_fixed_update(float _dt){
 
+  /* { */
+  /*   Vec3 force = {0,520,0}; */
+  /*   Vec3 pos = CubeEntity->worldPos; */
+  /*   pos.x-=1.0f; */
+  /*   //  phys_rb_apply_force(CubeEntity->rb, force, pos); */
+
+  /*   Vec3 torque = {0,0,.05f}; */
+  /*   phys_rb_apply_torque(CubeEntity->rb, torque); */
+  /* } */
   i32 count = ArenaEntities->pos / sizeof(CG_Entity);
   for(int i=0;i<count;i++){
     CG_Entity* ent = (CG_Entity*)arena_get_at(ArenaEntities, i, sizeof(CG_Entity));
@@ -410,6 +423,7 @@ internal void cg_fixed_update(float _dt){
     if(ent->rb!=NULL){
 
       entity_set_world_pos(ent, ent->rb->position);
+      entity_set_world_rotation(ent, ent->rb->rotationQuat);
     }
     
   /*     if(ent->type == ENTITY_TYPE_ASTEROID || ent->type == ENTITY_TYPE_PROJECTILE){ */
@@ -548,7 +562,19 @@ dbuffer[i] = 99999999999;
       cg_lock_cursor();
     }
   }
+  if(k.space.IsPressed){
+  // test
 
+    {
+      Vec3 force = {0,520,0};
+      Vec3 pos = CubeEntity->worldPos;
+      pos.x-=1.0f;
+      //  phys_rb_apply_force(CubeEntity->rb, force, pos);
+
+      Vec3 torque = {0,600,1500};
+      phys_rb_apply_torque(CubeEntity->rb, torque);
+    }
+  }
 
   if(k.s.IsPressed){
 
@@ -612,9 +638,10 @@ dbuffer[i] = 99999999999;
     entity_set_world_pos(FreeCam, pos);
 
   }
-
-  CamYRot += MouseSens*GameInput.mouseDeltaX;
-  CamXRot += MouseSens*GameInput.mouseDeltaY;
+  if(!GameState.cursorVisible){
+    CamYRot += MouseSens*GameInput.mouseDeltaX;
+    CamXRot += MouseSens*GameInput.mouseDeltaY;
+  }
   
   Quaternion yaw = math_quaternion_create(Vec3Up, CamYRot);
   Quaternion pitch = math_quaternion_create(Vec3Right, CamXRot);

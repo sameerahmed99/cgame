@@ -248,7 +248,7 @@ void phys_rigidbody_recalculate_tensor(phys_Rigidbody *rb){
 
 
   tensor = math_mat3x3_mul(rot, math_mat3x3_mul(tensor, math_mat3x3_transpose(rot)));
-  
+
   // now that we got the rotation down, we need to consider the local position as well.
   // enter parallel axis theorom
 
@@ -269,7 +269,7 @@ void phys_rigidbody_recalculate_tensor(phys_Rigidbody *rb){
   
 
 
-  rb->localInverseInertiaTensor = math_mat3x3_transpose(tensor);
+  rb->localInverseInertiaTensor = math_mat3x3_invert(tensor);
 
   phys_rb_update_global_inertia_tensor(rb);
 }
@@ -458,15 +458,29 @@ void phys_step(){
     Vec3 angularAccel = math_mul_vec3_mat3x3(body->torqueAccumulator, body->inverseInertiaTensor);
     angularAccel = math_vec3_scale(angularAccel, Phys.timestep);
     angularVel = math_vec3_add(angularVel, angularAccel);
+
+
+
     body->angularVelocity = angularVel;
 
+    
     body->forceAccumulator = Vec3Zero;
     body->torqueAccumulator = Vec3Zero;
     body->center = math_vec3_add(body->center, math_vec3_scale(body->linearVelocity,Phys.timestep));
     Vec3 axis = math_vec3_normalize(angularVel);
-    float degrees = Deg(math_vec3_magnitude(axis))*Phys.timestep;
+
+
+    float degrees = Deg(math_vec3_magnitude(body->angularVelocity))*Phys.timestep;
+    //    printf("w: %f, %f, %f\n", FormatXYZ(body->angularVelocity));
+    //    printf("deg: %f\n", degrees);
+
+
     Mat3x3 rotMat = math_mat3x3_create_rotation(degrees, axis);
     body->rotation = math_mat3x3_mul(rotMat,body->rotation);
+    //       math_mat3x3_print(body->inverseInertiaTensor);
+
+   
+      
     phys_rb_update_rotation(body);
     phys_update_pos_from_global_center(body);
     phys_rb_update_global_inertia_tensor(body);
@@ -483,12 +497,16 @@ void phys_rb_apply_force(phys_Rigidbody *rb, Vec3 _force, Vec3 _at){
   Vec3 worldCenterToPoint = math_vec3_subtract(_at, rb->center);
   rb->torqueAccumulator = math_vec3_add(rb->torqueAccumulator,math_vec3_cross(worldCenterToPoint, _force));
 }
+void phys_rb_apply_torque(phys_Rigidbody* rb,Vec3 _torque){
+  rb->torqueAccumulator = math_vec3_add(rb->torqueAccumulator, _torque);
+}
 void phys_update_center_from_global_pos(phys_Rigidbody *rb){
   Vec3 c = math_mul_vec3_mat3x3(rb->localCenter,rb->rotation);
   c = math_vec3_add(rb->position, c);
 
   rb->center = c;
 }
+
 
 void phys_rb_set_world_pos(phys_Rigidbody *rb, Vec3 pos){
   rb->position = pos;
@@ -504,11 +522,15 @@ void phys_update_pos_from_global_center(phys_Rigidbody *rb){
 
 void phys_rb_update_rotation(phys_Rigidbody *rb){
 
-  // @TODO
-  // floating point errors will accumulate as we add or subtract rotations
+
   // read:
   // https://allenchou.net/2013/12/game-physics-motion-dynamics-implementations/
   // see UpdateOrientation function
+
+  Quaternion q = math_mat3x3_ortho_to_quaternion(rb->rotation);
+  q = math_quaternion_normalize(q);
+  rb->rotationQuat = q;
+  rb->rotation = math_quaternion_to_mat3x3(q);
   rb->inverseRotation = math_mat3x3_transpose(rb->rotation);
   
 }
