@@ -53,7 +53,12 @@ Vec2 math_vec2_create(float x, float y){
 
   return vec;
 }
-
+Vec2 math_vec2_subtract(Vec2 _a, Vec2 _b){
+  Vec2 vec;
+  vec.x = _a.x - _b.x;
+  vec.y = _a.y - _b.y;
+  return vec;
+}
 Vec2 math_vec2_inverse_lerp(Vec2 _a, Vec2 _b, float _t){
   Vec2 res;
   res.x = math_inverse_lerp(_a.x, _b.x, _t);

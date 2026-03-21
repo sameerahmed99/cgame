@@ -61,10 +61,10 @@ CG_PlatformConfig cg_get_platform_config(){
    .AudioChannelsCount = 2,
    .ScreenWidth = 0,
    .ScreenHeight = 0,
-   .RequestedScreenWidth = 1920/2,
-   .RequestedScreenHeight = 1080/2,
-   .RenderResolutionWidth = 512,
-   .RenderResolutionHeight = 512,
+   .RequestedScreenWidth = 1920,
+   .RequestedScreenHeight = 1080,
+   .RenderResolutionWidth = 800,
+   .RenderResolutionHeight = 600,
    .BaseScreenWidth = 1280,
    .BaseScreenHeight = 720,
    .BasePixelsPerWorldUnit = 5
@@ -512,7 +512,7 @@ dbuffer[i] = 99999999999;
 
 
 
-  u32 skyCol =cg_create_color_from_channels(32, 34, 38,0);
+  u32 skyCol =cg_create_color_from_channels(200, 200, 250,0);
   u32 sunCol = cg_create_color_from_channels(214, 203, 84,0);
   u32 cloudCol =cg_create_color_from_channels(100,100,100,0);
   u32 groundColor = cg_create_color_from_channels(57, 82, 56,0);

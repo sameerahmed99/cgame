@@ -46,7 +46,7 @@ typedef struct Mat4x4{
 typedef struct Mat3x3{
   float m00,m01,m02,
         m10,m11,m12,
-        m20,m21,m22
+    m20,m21,m22;
 } Mat3x3;
 
 
@@ -89,7 +89,7 @@ Vec3 math_vec3_rotate(Vec3 _vec,Vec3 _pivot,Vec3 _axis, float _degrees);
 Vec2 math_vec2_create(float x, float y);
 Vec2 math_vec2_lerp(Vec2 _a, Vec2 _b, float _t);
 Vec2 math_vec2_inverse_lerp(Vec2 _a, Vec2 _b, float _t);
-
+Vec2 math_vec2_subtract(Vec2 _a, Vec2 _b);
 Vec3 math_vec3_create(float x, float y, float z);
 Vec3 math_vec3_lerp(Vec3 _a, Vec3 _b, float _t);
 Vec3 math_vec3_inverse_lerp(Vec3 _a, Vec3 _b, float _t);
