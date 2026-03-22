@@ -189,7 +189,8 @@ internal void cg_init(CG_OffscreenBuffer *offscreenBuffer){
 
   graphics_renderer_init(ArenaRenderList,DefaultTexture, &DefaultMaterial);
 
-   TestSceneModel=  model_loader_load_gltf("../assets/models/CGameTestScene_a.glb", true);
+  //   TestSceneModel=  model_loader_load_gltf("../assets/models/CGameTestScene_a.glb", true);
+    TestSceneModel=  model_loader_load_gltf("../assets/models/CGameTestScene_TrainStation.glb", true);
    TestCubeModel=  model_loader_load_gltf("../assets/models/cube1x1.glb", true);
   //  TestCubeModel=  model_loader_load_gltf("../assets/models/suzanne.glb", true);
   //  TestCubeModel=  model_loader_load_gltf("../assets/models/torus.glb", true);
@@ -512,7 +513,7 @@ dbuffer[i] = 99999999999;
 
 
 
-  u32 skyCol =cg_create_color_from_channels(200, 200, 250,0);
+  u32 skyCol =cg_create_color_from_channels(50,50,50,0);
   u32 sunCol = cg_create_color_from_channels(214, 203, 84,0);
   u32 cloudCol =cg_create_color_from_channels(100,100,100,0);
   u32 groundColor = cg_create_color_from_channels(57, 82, 56,0);

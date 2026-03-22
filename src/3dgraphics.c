@@ -426,7 +426,7 @@ internal u32 clip_triangle(CG_Vertex _a, CG_Vertex _b, CG_Vertex _c, CG_Triangle
 
 void draw3d_mesh(CG_Mesh* _mesh,Mat4x4 _model, Mat4x4 _inversedCameraMatrix, Mat4x4 _projection, CG_Material* _material){
 
-  //  PLATFORM_BEGIN_FUNCTION_MEASUREMENT();
+
   CG_OffscreenBuffer *screenBuffer = cg_get_current_off_screen_buffer();
   for(int i=0;i<_mesh->numIndices;i+=3){
     Vec3 worldPos;
@@ -450,6 +450,20 @@ void draw3d_mesh(CG_Mesh* _mesh,Mat4x4 _model, Mat4x4 _inversedCameraMatrix, Mat
     
     Vec3 v1 = _mesh->vertices[i1].pos;
     Vec3 v2 = _mesh->vertices[i2].pos;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     Vec3 v3 = _mesh->vertices[i3].pos;
 
 
@@ -580,7 +594,7 @@ void draw3d_mesh(CG_Mesh* _mesh,Mat4x4 _model, Mat4x4 _inversedCameraMatrix, Mat
   
 
   }
-  //  PLATFORM_STOP_FUNCTION_MEASUREMENT();
+
 }
 
 
@@ -756,9 +770,10 @@ internal CG_Color graphics_sample_texture(CG_Texture *tex, float uvx, float uvy,
 
   float width = (float)tex->Width;
   float height = (float)tex->Height;
-  u32 coordinateX = (u32)(floor(uvx*width) *_tiling.x ) % tex->Width;
-  u32 coordinateY = (u32)(floor(uvy*height) * _tiling.y) %tex->Height;
+  u32 coordinateX = (u32)((uvx*width) *_tiling.x ) % tex->Width;
+  u32 coordinateY = (u32)((uvy*height) * _tiling.y) %tex->Height;
 
+  
   return tex->pixels[coordinateY * tex->Width + coordinateX];
 }
 // https://www.scratchapixel.com/lessons/3d-basic-rendering/rasterization-practical-implementation/rasterization-stage.html
@@ -776,21 +791,7 @@ void draw3d_triangle_rasterize(CG_Vertex a, CG_Vertex b, CG_Vertex c,CG_Material
 
   Vec4 lineCol = {0,0,125,0};
 
-  CG_OffscreenBuffer *screenBuffer = cg_get_current_off_screen_buffer();
-  CG_Buffer *depthBuffer = cg_get_current_depth_buffer();
-  
-  float minX = Min(a.pos.x, b.pos.x);
-  minX = Min(minX, c.pos.x);
 
-  float maxX = Max(a.pos.x, b.pos.x);
-  maxX = Max(maxX, c.pos.x);
-
-
-  float minY = Min(a.pos.y, b.pos.y);
-  minY = Min(minY, c.pos.y);
-
-  float maxY = Max(a.pos.y, b.pos.y);
-  maxY = Max(maxY, c.pos.y);
 
   Vec2 triA = {a.pos.x,a.pos.y};
   Vec2 triB = {b.pos.x, b.pos.y};
@@ -817,6 +818,28 @@ void draw3d_triangle_rasterize(CG_Vertex a, CG_Vertex b, CG_Vertex c,CG_Material
   /* maxY = Clamp(maxY ,0, screenBuffer->Height-1); */
   /* minY = Clamp(minY,0, screenBuffer->Height-1); */
 
+
+  // winding order is counter clockwise, it's facing away from cam
+  // so cull it
+  if(totalArea<0) return;
+
+  CG_OffscreenBuffer *screenBuffer = cg_get_current_off_screen_buffer();
+  CG_Buffer *depthBuffer = cg_get_current_depth_buffer();
+  
+
+  
+  float minX = Min(a.pos.x, b.pos.x);
+  minX = Min(minX, c.pos.x);
+
+  float maxX = Max(a.pos.x, b.pos.x);
+  maxX = Max(maxX, c.pos.x);
+
+
+  float minY = Min(a.pos.y, b.pos.y);
+  minY = Min(minY, c.pos.y);
+
+  float maxY = Max(a.pos.y, b.pos.y);
+  maxY = Max(maxY, c.pos.y);
   maxX = Clamp(ceilf(maxX),0, screenBuffer->Width-1);
   minX = Clamp(floorf(minX),0, screenBuffer->Width-1);
 
@@ -829,9 +852,7 @@ void draw3d_triangle_rasterize(CG_Vertex a, CG_Vertex b, CG_Vertex c,CG_Material
   float inverseDepthB = (1.0f/b.wVal);
   float inverseDepthC = (1.0f/c.wVal);
   float check = 0.0f;
-  // winding order is counter clockwise, it's facing away from cam
-  // so cull it
-  if(totalArea<check) return;
+  
   b32 renderDepth = cg_get_debug_settings().RenderDepthTexture;
   Vec2 a_ = triA;
   Vec2 b_ = triB;
@@ -851,6 +872,11 @@ void draw3d_triangle_rasterize(CG_Vertex a, CG_Vertex b, CG_Vertex c,CG_Material
   /* rc.y = round(c_.y); */
   
 
+
+  Vec2 edge0 = math_vec2_subtract(triC, triB);
+  Vec2 edge1 = math_vec2_subtract(triA, triC);
+  Vec2 edge2 = math_vec2_subtract(triB, triA);
+
   for(int y = minY; y <= maxY; y++){
 
     u32 rowCoordinate = y*(screenBuffer->Width);
@@ -860,12 +886,6 @@ void draw3d_triangle_rasterize(CG_Vertex a, CG_Vertex b, CG_Vertex c,CG_Material
     for(int x = minX; x <= maxX; x++){
       Vec2 pVec = {(float)x, (float)y};
 
-      /* if(x == 0 || y == 0){ */
-      /* 	printf("x, y\n", x, y); */
-      /* } */
-      /* float w0 = triangle_edge_function(rb,rc,pVec); */
-      /* float w1 = triangle_edge_function(rc, ra, pVec); */
-      /* float w2 = triangle_edge_function(ra, rb, pVec); */
 
       float w0 = triangle_edge_function(b_,c_,pVec);
       float w1 = triangle_edge_function(c_, a_, pVec);
@@ -874,11 +894,6 @@ void draw3d_triangle_rasterize(CG_Vertex a, CG_Vertex b, CG_Vertex c,CG_Material
 
 
 
-
-
-      Vec2 edge0 = math_vec2_subtract(triC, triB);
-      Vec2 edge1 = math_vec2_subtract(triA, triC);
-      Vec2 edge2 = math_vec2_subtract(triB, triA);
 
       b32 overlaps = true;
 
@@ -922,11 +937,21 @@ void draw3d_triangle_rasterize(CG_Vertex a, CG_Vertex b, CG_Vertex c,CG_Material
 	if(ndcDepth < storedDepth){
 
 
+	  float fogAmount =depth;
+	  fogAmount/=50.0f;
+	  fogAmount = Clamp01(fogAmount);
+	  Vec4 fogColor = {.3f,.3f,.4f,1.0f};
+
+
+
 	  /* Vec4 frag_color = lerp_vert_vec4(a.color, b.color, c.color, a.wVal, b.wVal, c.wVal,w1,w2,w3, depth); */
 
 
 	  Vec2 frag_tex_coord = lerp_vert_vec2(a.texCoord, b.texCoord, c.texCoord, a.wVal, b.wVal, c.wVal,nw0,nw1,nw2, depth);
+
 	  Vec4 frag_color = graphics_sample_texture(_material->texture, frag_tex_coord.x, frag_tex_coord.y, _material->textureTiling);
+
+	  frag_color = math_vec4_lerp(frag_color, fogColor, fogAmount);
 	
 	  depthRow[x] = ndcDepth;
 	  u8* p = (u8*) (row + x);
@@ -943,10 +968,10 @@ void draw3d_triangle_rasterize(CG_Vertex a, CG_Vertex b, CG_Vertex c,CG_Material
 	  /* p[3] = 0; */
 	
 	  /* if(renderDepth){ */
-	  /*   p[0] =Min(255,ndcDepth*255*ndcDepth*2*ndcDepth); */
-	  /*   p[1] =Min(255,ndcDepth*255*ndcDepth*2*ndcDepth); */
-	  /*   p[2] =Min(255,ndcDepth*255*ndcDepth*2*ndcDepth); */
-	  /*   p[3] =Min(255,ndcDepth*255*ndcDepth*2*ndcDepth); */
+	    /* p[0] =Min(255,255*ndcDepth*fogAmount); */
+	    /* p[1] =Min(255,255*ndcDepth*fogAmount); */
+	    /* p[2] =Min(255,255*ndcDepth*fogAmount); */
+	    /* p[3] =Min(255,255*ndcDepth*fogAmount); */
 	  /* } */
 
 	
@@ -978,6 +1003,7 @@ void graphics_renderer_init(Arena* _renderList,CG_Texture* _defaultTexture, CG_M
 }
 
 void graphics_renderer_render_list(){
+  PLATFORM_BEGIN_FUNCTION_MEASUREMENT();
   size_t entrySize = sizeof(CG_RenderItem);
   i32 count = Renderer.renderList->pos/(i32)entrySize;
   for(int i=0;i<count;i++){
@@ -985,6 +1011,7 @@ void graphics_renderer_render_list(){
     draw3d_mesh(e->mesh,e->modelMatrix, e->inversedCameraMatrix, e->projectionMatrix, e->material);    
   }
   arena_clear(Renderer.renderList);
+  //  PLATFORM_STOP_FUNCTION_MEASUREMENT();
 }
 
 void graphics_renderer_submit_mesh(CG_Mesh *mesh, CG_Material *material,Mat4x4 _modelMatrix, Mat4x4 _inversedCameraMatrix, Mat4x4 _projection){
