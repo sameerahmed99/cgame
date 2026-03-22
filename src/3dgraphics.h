@@ -6,13 +6,21 @@
 
 
 
+typedef struct CG_VertRasterData{
+  Vec3 screenPos;
+  float wVal;
+  Vec3 localNormal;
+  Vec3 worldNormal;
+  Vec2 localTexCoord;
+  CG_Color vertColor;
+} CG_VertRasterData;
 typedef struct CG_Vertex {
   Vec3 pos;
   float wVal;
   Vec3 normal;
   Vec2 texCoord;
   CG_Color color;
-  } CG_Vertex;
+} CG_Vertex;
 typedef struct CG_Material {
   CG_Color color;
   CG_Texture *texture;
@@ -62,7 +70,7 @@ CG_Mesh graphics_get_triangle_mesh();
 void draw3d_mesh(CG_Mesh* _mesh,Mat4x4 _model, Mat4x4 _inversedCameraMatrix, Mat4x4 _projection, CG_Material* _material);
 void draw3d_debug_vertices(CG_Vertex* verts, size_t _num, float _radius, Mat4x4 _model, Mat4x4 _inversedCameraMatrix, Mat4x4 _projection);
 
-void draw3d_triangle_rasterize(CG_Vertex a, CG_Vertex b, CG_Vertex c, CG_Material *_material);
+void draw3d_triangle_rasterize(CG_VertRasterData a, CG_VertRasterData b, CG_VertRasterData c, CG_Material *_material);
 
 
 // use winding order to auto calc normals

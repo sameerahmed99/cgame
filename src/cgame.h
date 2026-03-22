@@ -85,9 +85,16 @@ typedef struct CG_GameState{
   b32 cursorLocked;
 } CG_GameState;
 
+
 typedef struct CG_DebugSettings{
   b32 RenderDepthTexture;
+  b32 RenderNormals;
+  CG_Color lightColor;
+  CG_Color fogColor;
+  Vec3 lightDirection;
+  CG_Color ambientLightColor;
 } CG_DebugSettings;
+
 
 
 

@@ -585,8 +585,22 @@ void draw3d_mesh(CG_Mesh* _mesh,Mat4x4 _model, Mat4x4 _inversedCameraMatrix, Mat
       newTriangles[ct].c.pos = ss3;
 
 
+      // https://www.lighthouse3d.com/tutorials/glsl-12-tutorial/the-normal-matrix/
+      // instead of using rotation matrix, use tranpose of inverse rotation matrix to keep normals on scaled objects accurate
+      
+      Mat3x3 rotMat = math_mat4x4_to_mat3x3(_model);
+      Mat3x3 rotMatInversed = math_mat3x3_invert(rotMat);
+      Mat3x3 rotMatInversedTransposed = math_mat3x3_transpose(rotMatInversed);
+      Vec3 worldNormA = math_mul_vec3_mat3x3(newTriangles[ct].a.normal, rotMatInversedTransposed);
+      Vec3 worldNormB = math_mul_vec3_mat3x3(newTriangles[ct].b.normal, rotMatInversedTransposed);
+      Vec3 worldNormC = math_mul_vec3_mat3x3(newTriangles[ct].c.normal, rotMatInversedTransposed);
+      CG_VertRasterData ra = {.screenPos = ss1, .wVal = newTriangles[ct].a.wVal, .localNormal = newTriangles[ct].a.normal,worldNormA, .localTexCoord=newTriangles[ct].a.texCoord, .vertColor=newTriangles[ct].a.color};
+      
+      CG_VertRasterData rb = {.screenPos = ss2, .wVal = newTriangles[ct].b.wVal, .localNormal = newTriangles[ct].b.normal,worldNormB, .localTexCoord=newTriangles[ct].b.texCoord, .vertColor=newTriangles[ct].b.color};
 
-      draw3d_triangle_rasterize(newTriangles[ct].a, newTriangles[ct].b, newTriangles[ct].c,_material);
+      CG_VertRasterData rc = {.screenPos = ss3, .wVal = newTriangles[ct].c.wVal, .localNormal = newTriangles[ct].c.normal,worldNormC, .localTexCoord=newTriangles[ct].c.texCoord, .vertColor=newTriangles[ct].c.color};
+
+      draw3d_triangle_rasterize(ra,rb,rc,_material);
 
     }
 
@@ -777,7 +791,7 @@ internal CG_Color graphics_sample_texture(CG_Texture *tex, float uvx, float uvy,
   return tex->pixels[coordinateY * tex->Width + coordinateX];
 }
 // https://www.scratchapixel.com/lessons/3d-basic-rendering/rasterization-practical-implementation/rasterization-stage.html
-void draw3d_triangle_rasterize(CG_Vertex a, CG_Vertex b, CG_Vertex c,CG_Material *_material){
+void draw3d_triangle_rasterize(CG_VertRasterData a, CG_VertRasterData b, CG_VertRasterData c, CG_Material *_material){
 
 
   /* a.pos.x = round(a.pos.x); */
@@ -793,9 +807,9 @@ void draw3d_triangle_rasterize(CG_Vertex a, CG_Vertex b, CG_Vertex c,CG_Material
 
 
 
-  Vec2 triA = {a.pos.x,a.pos.y};
-  Vec2 triB = {b.pos.x, b.pos.y};
-  Vec2 triC = {c.pos.x, c.pos.y};
+  Vec2 triA = {a.screenPos.x,a.screenPos.y};
+  Vec2 triB = {b.screenPos.x, b.screenPos.y};
+  Vec2 triC = {c.screenPos.x, c.screenPos.y};
 
   /* triA.x=round(triA.x); */
   /* triA.y=round(triA.y); */
@@ -828,18 +842,18 @@ void draw3d_triangle_rasterize(CG_Vertex a, CG_Vertex b, CG_Vertex c,CG_Material
   
 
   
-  float minX = Min(a.pos.x, b.pos.x);
-  minX = Min(minX, c.pos.x);
+  float minX = Min(a.screenPos.x, b.screenPos.x);
+  minX = Min(minX, c.screenPos.x);
 
-  float maxX = Max(a.pos.x, b.pos.x);
-  maxX = Max(maxX, c.pos.x);
+  float maxX = Max(a.screenPos.x, b.screenPos.x);
+  maxX = Max(maxX, c.screenPos.x);
 
 
-  float minY = Min(a.pos.y, b.pos.y);
-  minY = Min(minY, c.pos.y);
+  float minY = Min(a.screenPos.y, b.screenPos.y);
+  minY = Min(minY, c.screenPos.y);
 
-  float maxY = Max(a.pos.y, b.pos.y);
-  maxY = Max(maxY, c.pos.y);
+  float maxY = Max(a.screenPos.y, b.screenPos.y);
+  maxY = Max(maxY, c.screenPos.y);
   maxX = Clamp(ceilf(maxX),0, screenBuffer->Width-1);
   minX = Clamp(floorf(minX),0, screenBuffer->Width-1);
 
@@ -854,11 +868,31 @@ void draw3d_triangle_rasterize(CG_Vertex a, CG_Vertex b, CG_Vertex c,CG_Material
   float check = 0.0f;
   
   b32 renderDepth = cg_get_debug_settings().RenderDepthTexture;
+  CG_Color lightCol = cg_get_debug_settings().lightColor;
+  CG_Color ambientCol = cg_get_debug_settings().ambientLightColor;
+  Vec3 lightDir = cg_get_debug_settings().lightDirection;
+  Vec4 fogColor =cg_get_debug_settings().fogColor;
   Vec2 a_ = triA;
   Vec2 b_ = triB;
   Vec2 c_ = triC;
 
 
+  CG_Color vLitCola = {1,1,1,1};
+  CG_Color vLitColb = {1,1,1,1};
+  CG_Color vLitColc = {1,1,1,1};
+  float nDota = math_vec3_dot(a.worldNormal, lightDir);
+  nDota*=-1;
+  float nDotb = math_vec3_dot(b.worldNormal, lightDir);
+  nDotb*=-1;
+  float nDotc = math_vec3_dot(c.worldNormal, lightDir);
+  nDotc*=-1;
+  nDota = Clamp01(nDota);
+  nDotb = Clamp01(nDotb);
+  nDotc = Clamp01(nDotc);
+  vLitCola = math_vec4_scale3(vLitCola, nDota);
+  vLitColb = math_vec4_scale3(vLitColb, nDotb);
+  vLitColc = math_vec4_scale3(vLitColc, nDotc);
+  
   /* Vec2 ra = a_; */
   /* Vec2 rb = b_; */
   /* Vec2 rc = c_; */
@@ -931,36 +965,75 @@ void draw3d_triangle_rasterize(CG_Vertex a, CG_Vertex b, CG_Vertex c,CG_Material
 	float storedDepth=depthRow[x];
 	float inverseDepth = inverseDepthA * nw0 + inverseDepthB*nw1 + inverseDepthC*nw2;
 	float depth = 1/inverseDepth;
-	float ndcDepth = a.pos.z*nw0 + b.pos.z*nw1 + c.pos.z*nw2;
+	float ndcDepth = a.screenPos.z*nw0 + b.screenPos.z*nw1 + c.screenPos.z*nw2;
 
+	float nDot = lerp_vert_float(nDota, nDotb, nDotc, a.wVal, b.wVal, c.wVal, nw0, nw1,nw2, depth);
 
 	if(ndcDepth < storedDepth){
 
 
 	  float fogAmount =depth;
-	  fogAmount/=50.0f;
+	  fogAmount/=60.0f;
 	  fogAmount = Clamp01(fogAmount);
-	  Vec4 fogColor = {.3f,.3f,.4f,1.0f};
+
 
 
 
 	  /* Vec4 frag_color = lerp_vert_vec4(a.color, b.color, c.color, a.wVal, b.wVal, c.wVal,w1,w2,w3, depth); */
 
 
-	  Vec2 frag_tex_coord = lerp_vert_vec2(a.texCoord, b.texCoord, c.texCoord, a.wVal, b.wVal, c.wVal,nw0,nw1,nw2, depth);
+	  Vec2 frag_tex_coord = lerp_vert_vec2(a.localTexCoord, b.localTexCoord, c.localTexCoord, a.wVal, b.wVal, c.wVal,nw0,nw1,nw2, depth);
 
 	  Vec4 frag_color = graphics_sample_texture(_material->texture, frag_tex_coord.x, frag_tex_coord.y, _material->textureTiling);
 
-	  frag_color = math_vec4_lerp(frag_color, fogColor, fogAmount);
-	
+
+	  Vec3 worldNormal = lerp_vert_vec3(a.worldNormal, b.worldNormal, c.worldNormal, a.wVal, b.wVal, c.wVal, nw0, nw1, nw2, depth);
+
+	  Vec4 litCol =  lerp_vert_vec4(vLitCola, vLitColb,vLitColc, a.wVal, b.wVal, c.wVal, nw0, nw1, nw2, depth);
+
+	  litCol.x*=lightCol.x;
+	  litCol.y*=lightCol.y;
+	  litCol.z*=lightCol.z;
+	  
+	  litCol.x=frag_color.x*litCol.x;
+	  litCol.y=frag_color.y*litCol.y;
+	  litCol.z=frag_color.z*litCol.z;
+
+	  //	  frag_color = math_vec4_lerp(frag_color, fogColor, fogAmount);
+
+	  litCol.x+= ambientCol.x*frag_color.x;
+	  litCol.y+= ambientCol.y*frag_color.y;
+	  litCol.z+= ambientCol.z*frag_color.z;
+
+	  litCol.x = Clamp01(litCol.x);
+	  litCol.y = Clamp01(litCol.y);
+	  litCol.z = Clamp01(litCol.z);
+	  litCol.w = Clamp01(litCol.w);
+
+	  litCol = math_vec4_lerp(litCol, fogColor, fogAmount);
+
 	  depthRow[x] = ndcDepth;
 	  u8* p = (u8*) (row + x);
 
 
-	  p[0] = frag_color.z*255;
-	  p[1] = frag_color.y*255;
-	  p[2] = frag_color.x*255;
-	  p[3] = frag_color.w*255;
+	  /* p[0] = frag_color.z*255; */
+	  /* p[1] = frag_color.y*255; */
+	  /* p[2] = frag_color.x*255; */
+	  /* p[3] = frag_color.w*255; */
+
+
+	  p[0] = litCol.z*255;
+	  p[1] = litCol.y*255;
+	  p[2] = litCol.x*255;
+	  p[3] = litCol.w*255;
+
+
+	  /* p[0] = Clamp01(worldNormal.z) * 255; */
+	  /* p[1] = Clamp01(worldNormal.y) * 255; */
+	  /* p[2] = Clamp01(worldNormal.x) * 255; */
+
+
+	  p[3] = 1 * 255;
 
 	  /* p[0] = nw0*255; */
 	  /* p[1] = nw1*255; */
@@ -987,9 +1060,9 @@ void draw3d_triangle_rasterize(CG_Vertex a, CG_Vertex b, CG_Vertex c,CG_Material
     }
   }
 
-  /* line_temp(a.pos.x,b.pos.x,a.pos.y,b.pos.y); */
-  /* line_temp(b.pos.x,c.pos.x,b.pos.y,c.pos.y); */
-  /* line_temp(c.pos.x,a.pos.x,c.pos.y,a.pos.y); */
+  /* line_temp(a.screenPos.x,b.screenPos.x,a.screenPos.y,b.screenPos.y); */
+  /* line_temp(b.screenPos.x,c.screenPos.x,b.screenPos.y,c.screenPos.y); */
+  /* line_temp(c.screenPos.x,a.screenPos.x,c.screenPos.y,a.screenPos.y); */
   
 }
 // use winding order to auto calc normals

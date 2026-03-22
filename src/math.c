@@ -146,6 +146,13 @@ Vec4 math_vec4_subtract(Vec4 _a, Vec4 _b){
   res.w = _a.w - _b.w;
   return res;
 }
+Vec4 math_vec4_scale3(Vec4 _vec, float _scale){
+
+  _vec.x*=_scale;
+  _vec.y*=_scale;
+  _vec.z*=_scale;
+  return _vec;
+}
 
 float math_vec3_sqr_dist(Vec3 _a, Vec3 _b){
   float x = _b.x - _a.x;
@@ -174,7 +181,24 @@ Vec3 math_vec3_rotate(Vec3 _vec,Vec3 _pivot,Vec3 _axis, float _degrees){
   return res;
 }
 
+Mat3x3 math_mat4x4_to_mat3x3(Mat4x4 mat4){
+  Mat3x3 mat3;
+  mat3.m00 = mat4.m00;
+  mat3.m01 = mat4.m01;
+  mat3.m02 = mat4.m02;
 
+  mat3.m10 = mat4.m10;
+  mat3.m11 = mat4.m11;
+  mat3.m12 = mat4.m12;
+
+
+  mat3.m20 = mat4.m20;
+  mat3.m21 = mat4.m21;
+  mat3.m22 = mat4.m22;
+
+
+  return mat3;
+}
 
 float math_vec3_dist(Vec3 _a, Vec3 _b){
   return sqrtf(math_vec3_sqr_dist(_a,_b));

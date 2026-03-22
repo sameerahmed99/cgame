@@ -185,6 +185,12 @@ static CG_Mesh *mesh_from_node(cgltf_node _node, b32 _convertFromBlenderCoordina
 
                     cgltf_accessor_read_float(atrib->data, k, &v.normal.x, 3);
 
+		    if(_convertFromBlenderCoordinates){
+		      Vec3 original = v.normal;
+		      v.normal.y = original.z;
+		      v.normal.z = original.y;
+		    }
+		    
                     vertices[vindex] = v;
                 }
             }

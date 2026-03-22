@@ -42,7 +42,7 @@ internal CG_Buffer *DepthBuffer;
 
 internal CG_DebugSettings DebugSettings;
 internal float NearPlaneDistance = 0.02;
-internal float FarPlaneDistance = 100;
+internal float FarPlaneDistance = 200;
 internal CG_Input GameInput;
 
 internal b32 MouseInputInit = false;
@@ -149,6 +149,23 @@ internal void cg_init(CG_OffscreenBuffer *offscreenBuffer){
 
   DebugSettings.RenderDepthTexture = false;
 
+
+  DebugSettings.lightDirection.x = 1.0f;
+  DebugSettings.lightDirection.y = -1.0f;
+  DebugSettings.lightDirection.z = 0.5f;
+
+
+  DebugSettings.lightDirection = math_vec3_normalize(DebugSettings.lightDirection);
+  Vec4 lightCol={38/255.0f, 62/255.0f, 92/255.0f,1.0f};  
+ DebugSettings.lightColor = lightCol;
+ 
+  Vec4 ambientLightCol={38/255.0f * 0.5f, 62/255.0f * 0.5f, 92/255.0f * 0.5f,1.0f};  
+  DebugSettings.ambientLightColor = ambientLightCol;
+
+  
+  Vec4 fogColor = {38/255.0f, 62/255.0f, 92/255.0f,1.0f};
+  DebugSettings.fogColor = fogColor;
+
   DepthBuffer = malloc(sizeof(CG_Buffer));
   DepthBuffer->Width = ScreenBuffer->Width;
   DepthBuffer->Height = ScreenBuffer->Height;
@@ -180,7 +197,8 @@ internal void cg_init(CG_OffscreenBuffer *offscreenBuffer){
 
   //  DefaultTexture = texture_load_from_file("../assets/textures/pistol-color.png", TEMP_ArenaAssets);
 
-      DefaultTexture = texture_load_from_file("../assets/textures/elias-wick-checker.png", TEMP_ArenaAssets);
+  //      DefaultTexture = texture_load_from_file("../assets/textures/elias-wick-checker.png", TEMP_ArenaAssets);
+        DefaultTexture = texture_load_from_file("../assets/textures/pallette.png", TEMP_ArenaAssets);
   //  DefaultTexture = texture_load_from_file("../assets/textures/pistol-color.png", TEMP_ArenaAssets);
   DefaultMaterial.color = Vec4One;
   DefaultMaterial.texture = DefaultTexture;
@@ -392,7 +410,7 @@ void update_entities(float _dt){
 
     //       draw3d_mesh(TestCubeModel->meshes,model, camInverse, projection, TestCubeModel->materialPerMesh[0]);
 
-             graphics_renderer_submit_model(TestCubeModel,CubeEntity->worldMatrix, ActiveCam->viewMatrix, projection);
+    //             graphics_renderer_submit_model(TestCubeModel,CubeEntity->worldMatrix, ActiveCam->viewMatrix, projection);
 
 	     graphics_renderer_submit_model(TestSceneModel,SceneModelEntity->worldMatrix, ActiveCam->viewMatrix, projection);
 
@@ -531,9 +549,11 @@ dbuffer[i] = 99999999999;
   float pspeed = playerSpeed;
   if(k.shift.IsPressed){
     pspeed = playerSprintSpeed;
+    camSpeed = CameraFastSpeed;
   }
   else if(k.alt.IsPressed){
     pspeed = playerWalkSpeed;
+    camSpeed = CameraSlowSpeed;
   }
   if(k.w.IsPressed){
     //    DebugSettings.RenderDepthTexture = !DebugSettings.RenderDepthTexture;

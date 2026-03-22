@@ -664,7 +664,7 @@ LRESULT Win32CallbackFunc(HWND _window, UINT _msgId, WPARAM param3, LPARAM param
     case VK_MENU:{
       win32_set_key_state(&GlobalInput.Keyboard.alt, wasDownedThisFrame, isDown, wasReleasedThisFrame);
     } break;
-    case VK_LSHIFT:{
+    case VK_SHIFT:{
       win32_set_key_state(&GlobalInput.Keyboard.shift, wasDownedThisFrame, isDown, wasReleasedThisFrame);
     } break;
     case VK_F4: {
