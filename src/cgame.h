@@ -5,7 +5,7 @@
 #include "platform.h"
 #include "./math.h"
 #include "./types.h"
-
+#include "./memory.h"
 
 
 // Importante not about Assert
@@ -34,8 +34,9 @@
 
 
 typedef struct CG_PlatformConfig{
-  uint64_t PersistantStorageSize;
-  uint64_t VolatileStorageSize;
+  uint64_t RequestedPersistentMemorySize;
+  uint64_t RequestedTempMemorySize;
+  
   float AudioBufferSizeInSeconds;
   uint32_t AudioBitDepth;
   uint32_t AudioSampleRate;
@@ -51,13 +52,19 @@ typedef struct CG_PlatformConfig{
 
   float BaseScreenWidth, BaseScreenHeight;
   float BasePixelsPerWorldUnit;
-
   float ppu;
 
 } CG_PlatformConfig;
 
 typedef struct CG_Memory{
 
+  void* PersistentMemory;
+  void* TempMemory;
+  
+  u64 PersistentMemorySize;
+  u64 TempMemorySize;
+
+  
   uint8_t* AudioBuffer;
   uint32_t AudioBufferCurrentWriteLengthFrames;
   uint32_t AudioBufferCurrentWritePositionFrames;
@@ -99,11 +106,11 @@ typedef struct CG_DebugSettings{
 
 
 CG_PlatformConfig cg_get_platform_config();
+CG_PlatformConfig cg_get_requested_platform_config();
 CG_OffscreenBuffer *cg_get_current_off_screen_buffer();
 CG_Buffer *cg_get_current_depth_buffer();
 
-float cg_get_current_near_plane_distance();
-float cg_get_current_far_plane_distance();
+
 
 CG_DebugSettings cg_get_debug_settings();
 
@@ -120,5 +127,9 @@ void cg_show_cursor();
 void cg_lock_cursor();
 void cg_unlock_cursor();
 CG_GameState cg_get_state();
+
+Arena* cg_get_entities();
+Arena* TEMP_cg_get_temp_assets_arena();
+
 #endif // CG_
 

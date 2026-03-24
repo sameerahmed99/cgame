@@ -12,13 +12,17 @@
 #include "model_loader.c"
 #include "texture.h"
 #include "texture.c"
+
+
+
+
 internal CG_PlatformConfig PlatformConfig;
 internal CG_GameState GameState;
 
 internal CG_Memory *TEMP_gameMemory;
 
-internal CG_Model* TestCubeModel;
-internal CG_Model* TestSceneModel;
+/* internal CG_Model* TestCubeModel; */
+/* internal CG_Model* TestSceneModel; */
 
 internal Arena* ArenaEntities;
 internal Arena* TEMP_ArenaAssets;
@@ -31,9 +35,9 @@ internal float FixedTimeStep = 0.05f;
 internal float PlayerBaseRadius = 10;
 internal CG_Entity* PlayerEntity;
 internal CG_Entity* CubeEntity;
-internal CG_Entity* SceneModelEntity;
-internal CG_Entity* FreeCam;
-internal CG_Entity* ActiveCam;
+//internal CG_Entity* SceneModelEntity;
+/* internal CG_Entity* FreeCam; */
+/* internal CG_Entity* ActiveCam; */
 internal float playerPosX, playerPosY;
 internal float MouseSens = .2f;
 
@@ -41,8 +45,8 @@ internal CG_OffscreenBuffer *ScreenBuffer;
 internal CG_Buffer *DepthBuffer;
 
 internal CG_DebugSettings DebugSettings;
-internal float NearPlaneDistance = 0.02;
-internal float FarPlaneDistance = 200;
+/* internal float NearPlaneDistance = 0.02; */
+/* internal float FarPlaneDistance = 200; */
 internal CG_Input GameInput;
 
 internal b32 MouseInputInit = false;
@@ -50,25 +54,35 @@ internal b32 MouseInputInit = false;
 internal CG_Material DefaultMaterial;
 internal CG_Texture *DefaultTexture;
 
-float CamXRot, CamYRot;
+/* float CamXRot, CamYRot; */
+
+
+// set active game here
+#include "test-games/road-crossing.c"
+//
 
 CG_PlatformConfig cg_get_platform_config(){
+  return PlatformConfig;
+}
+CG_PlatformConfig cg_get_requested_platform_config(){
   
-   CG_PlatformConfig config = {
-   .AudioBufferSizeInSeconds=.06f,
-   .AudioBitDepth = 24,
-   .AudioSampleRate = 48000,
-   .AudioChannelsCount = 2,
-   .ScreenWidth = 0,
-   .ScreenHeight = 0,
-   .RequestedScreenWidth = 1920,
-   .RequestedScreenHeight = 1080,
-   .RenderResolutionWidth = 800,
-   .RenderResolutionHeight = 600,
-   .BaseScreenWidth = 1280,
-   .BaseScreenHeight = 720,
-   .BasePixelsPerWorldUnit = 5
-   };
+  CG_PlatformConfig config = {
+    .RequestedPersistentMemorySize = Megabytes(64),
+    .RequestedTempMemorySize = Megabytes(64),
+    .AudioBufferSizeInSeconds=.06f,
+    .AudioBitDepth = 24,
+    .AudioSampleRate = 48000,
+    .AudioChannelsCount = 2,
+    .ScreenWidth = 0,
+    .ScreenHeight = 0,
+    .RequestedScreenWidth = 1920,
+    .RequestedScreenHeight = 1080,
+    .RenderResolutionWidth = 800,
+    .RenderResolutionHeight = 600,
+    .BaseScreenWidth = 1280,
+    .BaseScreenHeight = 720,
+    .BasePixelsPerWorldUnit = 5
+  };
 
  return config;
 }
@@ -100,10 +114,10 @@ void create_player(){
   CubeEntity = entity_create(ArenaEntities, ENTITY_TYPE_STATIC);
   Vec3 cubePos = {0,3,10};
   entity_set_world_pos(CubeEntity, cubePos);
-  SceneModelEntity = entity_create(ArenaEntities, ENTITY_TYPE_STATIC);
+  //  SceneModelEntity = entity_create(ArenaEntities, ENTITY_TYPE_STATIC);
 
-  FreeCam = entity_create(ArenaEntities, ENTITY_TYPE_CAMERA);
-  ActiveCam = FreeCam;
+  /* FreeCam = entity_create(ArenaEntities, ENTITY_TYPE_CAMERA); */
+  /* ActiveCam = FreeCam; */
 
   phys_RigidbodyConfig rbConf = {
 
@@ -156,7 +170,10 @@ internal void cg_init(CG_OffscreenBuffer *offscreenBuffer){
 
 
   DebugSettings.lightDirection = math_vec3_normalize(DebugSettings.lightDirection);
-  Vec4 lightCol={38/255.0f, 62/255.0f, 92/255.0f,1.0f};  
+  Vec4 lightCol={38/255.0f, 62/255.0f, 92/255.0f,1.0f};
+  lightCol.x*=1.5f;
+  lightCol.y*=1.5f;
+  lightCol.z*=1.5f;
  DebugSettings.lightColor = lightCol;
  
   Vec4 ambientLightCol={38/255.0f * 0.5f, 62/255.0f * 0.5f, 92/255.0f * 0.5f,1.0f};  
@@ -208,8 +225,8 @@ internal void cg_init(CG_OffscreenBuffer *offscreenBuffer){
   graphics_renderer_init(ArenaRenderList,DefaultTexture, &DefaultMaterial);
 
   //   TestSceneModel=  model_loader_load_gltf("../assets/models/CGameTestScene_a.glb", true);
-    TestSceneModel=  model_loader_load_gltf("../assets/models/CGameTestScene_TrainStation.glb", true);
-   TestCubeModel=  model_loader_load_gltf("../assets/models/cube1x1.glb", true);
+  //TestSceneModel=  model_loader_load_gltf("../assets/models/CGameTestScene_TrainStation.glb", true);
+  //   TestCubeModel=  model_loader_load_gltf("../assets/models/cube1x1.glb", true);
   //  TestCubeModel=  model_loader_load_gltf("../assets/models/suzanne.glb", true);
   //  TestCubeModel=  model_loader_load_gltf("../assets/models/torus.glb", true);
   //    TestCubeModel=  model_loader_load_gltf("../assets/models/pistol.glb",true);
@@ -221,12 +238,12 @@ internal void cg_init(CG_OffscreenBuffer *offscreenBuffer){
   phys_init(FixedTimeStep);
   phys_set_gravity(Gravity);
    
-  create_player();
+  //  create_player();
 
 
 
 
-
+  cg_active_game_init();
 }
 
 
@@ -262,15 +279,15 @@ internal float tempOffsetX, tempOffsetY;
 
 
 
-internal float speed = .25;
-internal float playerSpeed = 3;
-internal float playerWalkSpeed = .1;
-internal float playerSprintSpeed = 10;
-internal float playerRotationSpeed = 10;
+/* internal float speed = .25; */
+/* internal float playerSpeed = 3; */
+/* internal float playerWalkSpeed = .1; */
+/* internal float playerSprintSpeed = 10; */
+/* internal float playerRotationSpeed = 10; */
 
-internal float CameraSpeed = 3;
-internal float CameraSlowSpeed = .5;
-internal float CameraFastSpeed = 10;
+/* internal float CameraSpeed = 3; */
+/* internal float CameraSlowSpeed = .5; */
+/* internal float CameraFastSpeed = 10; */
 
 internal float SquareWaveFrequency = 100;
 
@@ -389,17 +406,17 @@ void update_entities(float _dt){
   }
 
   
-    float aspect = (float)PlatformConfig.ScreenWidth / (float)PlatformConfig.ScreenHeight;
+  //      float aspect = (float)PlatformConfig.ScreenWidth / (float)PlatformConfig.ScreenHeight;
 
 
-    CG_Mesh tri = graphics_get_triangle_mesh();
-    //    Mat4x4 model = CubeEntity->worldMatrix;
+      //       CG_Mesh tri = graphics_get_triangle_mesh();
+       //    Mat4x4 model = CubeEntity->worldMatrix;
 
 
     
 
 
-    Mat4x4 projection = math_mat4x4_create_perspective_projection(80, false, aspect, NearPlaneDistance, FarPlaneDistance);
+       //    Mat4x4 projection = math_mat4x4_create_perspective_projection(80, false, aspect, NearPlaneDistance, FarPlaneDistance);
 
     
     //    draw_debug_vertices(tri.vertices,3,mat , 5);
@@ -410,13 +427,13 @@ void update_entities(float _dt){
 
     //       draw3d_mesh(TestCubeModel->meshes,model, camInverse, projection, TestCubeModel->materialPerMesh[0]);
 
-    //             graphics_renderer_submit_model(TestCubeModel,CubeEntity->worldMatrix, ActiveCam->viewMatrix, projection);
+  //                graphics_renderer_submit_model(TestCubeModel,CubeEntity->worldMatrix, ActiveCam->viewMatrix, projection);
 
-	     graphics_renderer_submit_model(TestSceneModel,SceneModelEntity->worldMatrix, ActiveCam->viewMatrix, projection);
+  //	     graphics_renderer_submit_model(TestSceneModel,SceneModelEntity->worldMatrix, ActiveCam->viewMatrix, projection);
 
 
-    //	     CG_Mesh trimesh = graphics_get_triangle_mesh();
-    //	     draw3d_mesh(&trimesh, model, ActiveCam->viewMatrix, projection, &DefaultMaterial);
+    /* CG_Mesh trimesh = graphics_get_triangle_mesh(); */
+    /* draw3d_mesh(&trimesh, math_mat4x4_create_identity(), ActiveCam->viewMatrix,projection, &DefaultMaterial); */
 
 }
 
@@ -435,6 +452,9 @@ internal void cg_fixed_update(float _dt){
   /*   Vec3 torque = {0,0,.05f}; */
   /*   phys_rb_apply_torque(CubeEntity->rb, torque); */
   /* } */
+
+  cg_active_game_fixed_update(_dt);
+  
   i32 count = ArenaEntities->pos / sizeof(CG_Entity);
   for(int i=0;i<count;i++){
     CG_Entity* ent = (CG_Entity*)arena_get_at(ArenaEntities, i, sizeof(CG_Entity));
@@ -528,7 +548,7 @@ dbuffer[i] = 99999999999;
   }
 
 
-
+  cg_active_game_update(_deltaTime, GameInput);
 
 
   u32 skyCol =cg_create_color_from_channels(50,50,50,0);
@@ -542,31 +562,11 @@ dbuffer[i] = 99999999999;
   TEMP_gameMemory = _memory;
 
   
-  CG_GameState *state = (CG_GameState*)_memory;
+
   
   CG_KeyboardKeys k = _playerInput->Keyboard;
-  float camSpeed = CameraSpeed;
-  float pspeed = playerSpeed;
-  if(k.shift.IsPressed){
-    pspeed = playerSprintSpeed;
-    camSpeed = CameraFastSpeed;
-  }
-  else if(k.alt.IsPressed){
-    pspeed = playerWalkSpeed;
-    camSpeed = CameraSlowSpeed;
-  }
-  if(k.w.IsPressed){
-    //    DebugSettings.RenderDepthTexture = !DebugSettings.RenderDepthTexture;
 
-    Vec3 pos = FreeCam->worldPos;
-    Vec3 dir = FreeCam->forward;
 
-    Vec3 move = math_vec3_scale(dir, camSpeed *_deltaTime);
-
-    pos = math_vec3_add(pos, move);
-
-    entity_set_world_pos(FreeCam, pos);
-  }
   if(k.a.IsPressed){
 
   }
@@ -597,78 +597,8 @@ dbuffer[i] = 99999999999;
     }
   }
 
-  if(k.s.IsPressed){
-
-
-    Vec3 pos = FreeCam->worldPos;
-    Vec3 dir = FreeCam->forward;
-
-    Vec3 move = math_vec3_scale(dir, -camSpeed *_deltaTime);
-
-    pos = math_vec3_add(pos, move);
-
-    entity_set_world_pos(FreeCam, pos);
-  }
-
-  if(k.a.IsPressed){
-
-
-    Vec3 pos = FreeCam->worldPos;
-    Vec3 dir = FreeCam->right;
-
-    Vec3 move = math_vec3_scale(dir, -camSpeed *_deltaTime);
-
-    pos = math_vec3_add(pos, move);
-
-    entity_set_world_pos(FreeCam, pos);
-  }
-  if(k.d.IsPressed){
-
-
-    Vec3 pos = FreeCam->worldPos;
-    Vec3 dir = FreeCam->right;
-
-    Vec3 move = math_vec3_scale(dir, camSpeed *_deltaTime);
-
-    pos = math_vec3_add(pos, move);
-
-    entity_set_world_pos(FreeCam, pos);
-  }
-
-
-
-  if(k.q.IsPressed){
-    Vec3 pos = FreeCam->worldPos;
-    Vec3 dir = FreeCam->up;
-
-    Vec3 move = math_vec3_scale(dir, -camSpeed *_deltaTime);
-
-    pos = math_vec3_add(pos, move);
-
-    entity_set_world_pos(FreeCam, pos);
-
-  }
-  if(k.e.IsPressed){
-    Vec3 pos = FreeCam->worldPos;
-    Vec3 dir = FreeCam->up;
-
-    Vec3 move = math_vec3_scale(dir, camSpeed *_deltaTime);
-
-    pos = math_vec3_add(pos, move);
-
-    entity_set_world_pos(FreeCam, pos);
-
-  }
-  if(!GameState.cursorVisible){
-    CamYRot += MouseSens*GameInput.mouseDeltaX;
-    CamXRot += MouseSens*GameInput.mouseDeltaY;
-  }
   
-  Quaternion yaw = math_quaternion_create(Vec3Up, CamYRot);
-  Quaternion pitch = math_quaternion_create(Vec3Right, CamXRot);
-  Quaternion world = math_quaternion_multiply(yaw,pitch);
-
-  entity_set_world_rotation(FreeCam,world);
+  
   //    printf("Mouse delta: %f, %f\n", GameInput.mouseDeltaX, GameInput.mouseDeltaY);
   /* Vec3 euler = FreeCam->worldEulerAngles; */
   /* euler.y+=GameInput.mouseDeltaX * MouseSens; */
@@ -736,12 +666,7 @@ CG_Buffer *cg_get_current_depth_buffer(){
 CG_DebugSettings cg_get_debug_settings(){
   return DebugSettings;
 }
-float cg_get_current_near_plane_distance(){
-  return NearPlaneDistance;
-}
-float cg_get_current_far_plane_distance(){
-  return FarPlaneDistance;
-};
+
 void cg_toggle_cursor(){
   if(GameState.cursorVisible){
     cg_hide_cursor();
@@ -767,4 +692,10 @@ void cg_lock_cursor(){
 void cg_unlock_cursor(){
   GameState.cursorLocked = false;
   platform_unlock_cursor();
+}
+Arena* cg_get_entities(){
+  return ArenaEntities;
+}
+Arena* TEMP_cg_get_temp_assets_arena(){
+  return TEMP_ArenaAssets;
 }

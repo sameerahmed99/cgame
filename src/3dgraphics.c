@@ -289,7 +289,7 @@ u32 clip_against_plane(CG_Triangle _tri, Vec4 _plane, CG_Triangle *clippedA, CG_
     /* if(_plane.x !=0){ */
     /*   clip1.pos.x = fabsf(clip1.wVal) * (clip1.pos.x >= 0 ? 1.0f : -1.0f); */
     /*   clip2.pos.x = fabsf(clip2.wVal) * (clip2.pos.x >= 0 ? 1.0f : -1.0f); */
-    /* } */
+    /* } */ 
     /* else if(_plane.y !=0){ */
     /*   clip1.pos.y = fabsf(clip1.wVal) * (clip1.pos.y >= 0 ? 1.0f : -1.0f); */
     /*   clip2.pos.y = fabsf(clip2.wVal) * (clip2.pos.y >= 0 ? 1.0f : -1.0f); */

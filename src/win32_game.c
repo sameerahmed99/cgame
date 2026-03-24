@@ -66,7 +66,7 @@ global_variable WAVEFORMATEX AudioFormat;
 global_variable uint32_t WasapiNumTotalBufferFrames;
 global_variable uint32_t WasapiNumTotalBufferBytes;
 global_variable CG_Input GlobalInput;
-global_variable CG_PlatformConfig Win32PlatformConfig;
+global_variable CG_PlatformConfig Win32RequestedPlatformConfig;
 
 
 global_variable float GlobalDeltaTime;
@@ -394,7 +394,7 @@ HRESULT hr=  WasapiRenderClient->lpVtbl->GetBuffer(WasapiRenderClient, numFrames
  // printf("Sample rate:%d\n", AudioFormat.nSamplesPerSec);
 
  int bytesInOneChannel = AudioFormat.nBlockAlign/AudioFormat.nChannels;
- if(Win32PlatformConfig.AudioBitDepth == 24){
+ if(Win32RequestedPlatformConfig.AudioBitDepth == 24){
     // 24 bit max value
 
    for(int i=0;i<numFramesAvailable;i++){
@@ -688,7 +688,7 @@ LRESULT Win32CallbackFunc(HWND _window, UINT _msgId, WPARAM param3, LPARAM param
 }
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow) {
-  Win32PlatformConfig = cg_get_platform_config();
+  Win32RequestedPlatformConfig = cg_get_requested_platform_config();
   QueryPerformanceFrequency(&PerformanceQueryFrequency);
 
   WNDCLASSW windclass = {0};
@@ -712,8 +712,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 
                               // Size and position
                               CW_USEDEFAULT, CW_USEDEFAULT,
-			      Win32PlatformConfig.RequestedScreenWidth,
-			      Win32PlatformConfig.RequestedScreenHeight,
+			      Win32RequestedPlatformConfig.RequestedScreenWidth,
+			      Win32RequestedPlatformConfig.RequestedScreenHeight,
 
                               NULL,      // Parent window
                               NULL,      // Menu
@@ -774,11 +774,23 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 
 
   win32_init_com_api();
-  win32_init_wasapi(Win32PlatformConfig.AudioSampleRate, Win32PlatformConfig.AudioBitDepth, Win32PlatformConfig.AudioBufferSizeInSeconds, Win32PlatformConfig.AudioChannelsCount);
+  win32_init_wasapi(Win32RequestedPlatformConfig.AudioSampleRate, Win32RequestedPlatformConfig.AudioBitDepth, Win32RequestedPlatformConfig.AudioBufferSizeInSeconds, Win32RequestedPlatformConfig.AudioChannelsCount);
   //  win32_init_xaudio2(SAMPLE_RATE_DEFAULT, BIT_DEPTH,MAX_SOURCE_VOICES, &GlobalVoicePool);
   AppRunning = true;
 
 
+
+  u64 totalRequestedMemorySize = Win32RequestedPlatformConfig.RequestedTempMemorySize + Win32RequestedPlatformConfig.RequestedPersistentMemorySize;
+  
+  gameMemory.PersistentMemory = VirtualAlloc(baseAddress, totalRequestedMemorySize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+  
+ASSERT_NO_EVAL(gameMemory.PersistentMemory);
+  
+  gameMemory.TempMemory = (u8*)gameMemory.PersistentMemory + Win32RequestedPlatformConfig.RequestedPersistentMemorySize;
+
+
+  gameMemory.PersistentMemorySize = Win32RequestedPlatformConfig.RequestedPersistentMemorySize;
+  gameMemory.TempMemorySize = Win32RequestedPlatformConfig.RequestedTempMemorySize;
 
   gameMemory.AudioBufferCurrentWriteLengthFrames = 0;
   gameMemory.AudioBufferCurrentWritePositionFrames = 0;
@@ -794,10 +806,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 
   //  printf("persistant: %d, volatile: %d\n", (uint32_t)baseAddress, gameMemory.VolatileStorage);
 
-  Win32PlatformConfig.ScreenWidth = platform_get_client_screen_width();
-  Win32PlatformConfig.ScreenHeight = platform_get_client_screen_height();
+  Win32RequestedPlatformConfig.ScreenWidth = platform_get_client_screen_width();
+  Win32RequestedPlatformConfig.ScreenHeight = platform_get_client_screen_height();
   win32_update_window_rect(hwnd);
-    win32_resize_dib_section(&GlobalOffscreenBuffer, Win32PlatformConfig.RenderResolutionWidth, Win32PlatformConfig.RenderResolutionHeight);
+    win32_resize_dib_section(&GlobalOffscreenBuffer, Win32RequestedPlatformConfig.RenderResolutionWidth, Win32RequestedPlatformConfig.RenderResolutionHeight);
 
 
     CG_OffscreenBuffer buffer;
@@ -914,8 +926,8 @@ gameMemory.AudioBufferCurrentWritePositionFrames =
 
 
 // printf("Buffer write pos/padding/num write frames: %d/%d/%d\n", gameMemory.AudioBufferCurrentWritePositionFrames, wasapiNumFramesPadding, gameMemory.AudioBufferCurrentWriteLengthFrames);
- if(GlobalDeltaTime >= Win32PlatformConfig.AudioBufferSizeInSeconds){
-   printf("BIG MASSIVE FAT DANGEROUS BLACK HOLE LEVEL WARNING: Going to miss audio thing, dt: %f, audio buffer size seconds: %f\n", GlobalDeltaTime, Win32PlatformConfig.AudioBufferSizeInSeconds);
+ if(GlobalDeltaTime >= Win32RequestedPlatformConfig.AudioBufferSizeInSeconds){
+   printf("BIG MASSIVE FAT DANGEROUS BLACK HOLE LEVEL WARNING: Going to miss audio thing, dt: %f, audio buffer size seconds: %f\n", GlobalDeltaTime, Win32RequestedPlatformConfig.AudioBufferSizeInSeconds);
  }
     ReleaseDC(hwnd, DeviceContext);
    // temp_print_time_stamp(perfTimeStamp);
