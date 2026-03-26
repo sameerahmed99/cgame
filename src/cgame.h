@@ -117,7 +117,7 @@ CG_DebugSettings cg_get_debug_settings();
 internal void cg_init(CG_OffscreenBuffer *buffer);
 internal void cg_update(CG_Memory* _memory, CG_Input *_platformInput, float _deltaTime);
 internal uint32_t cg_create_color_from_channels(uint8_t r, uint8_t g, uint8_t b, u8 a);
-
+internal CG_Color cg_clamp_color(CG_Color color);
 void write_sound_test();
 
 void cg_toggle_cursor();

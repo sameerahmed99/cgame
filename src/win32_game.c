@@ -1012,17 +1012,33 @@ return  WindowWidth;
 u32 platform_get_client_screen_height(){
   return WindowHeight;
 }
-u32 platform_convert_color(u32 _rgba){
+u32 platform_convert_color(CG_Color _rgba){
   // win32 is little endian
   // R channel should be the least significant bit (right most 8 bits) and so on
-  u32 a = (_rgba) & 0xFF;
-  u32 b =  (_rgba >>8) & 0xFF;
-  u32 g =  (_rgba >>16) & 0xFF;
-  u32 r =  (_rgba >>24) & 0xFF;
+  _rgba = cg_clamp_color(_rgba);
+  u8 a = (u8)(_rgba.w*255) & 0xFF;
+  u8 b =  (u8)(_rgba.z*255) & 0xFF;
+  u8 g =  (u8)(_rgba.y*255) & 0xFF;
+  u8 r =  (u8)(_rgba.x*255) & 0xFF;
   uint32_t col = 0;
-  col = (a << 24) | (r<<16) | (g << 8) | b;
+  u8* colptr = (u8*)&col;
+  colptr[0] = b;
+  colptr[1] = g;
+  colptr[2] = r;
+  colptr[3] = a;
   return col;
 }
+
+CG_Color platform_convert_to_color(u32 _rgba){
+  u8* ptr = (u8*)&_rgba;
+  float r = ptr[3]/255.0f;
+  float g = ptr[2]/255.0f;
+  float b= ptr[1]/255.0f;
+  float a = ptr[0]/255.0f;
+  CG_Color col = {r,g,b,a};
+  return col;
+}
+
 
 LARGE_INTEGER PlatformMeasurementLast;
 void platform_begin_measurement()

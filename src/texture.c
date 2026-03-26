@@ -4,7 +4,8 @@
 #include "texture.h"
 #include "memory.h"
 
-
+internal CG_Texture *__WhiteTexture;
+internal b32 cg_texture_white_init = false;
 
 CG_Texture *texture_load_from_file(const char* _path, Arena *_arena){
   i32 x, y, n;
@@ -37,7 +38,7 @@ CG_Texture *texture_load_from_file(const char* _path, Arena *_arena){
     u8 b = pixel[2];
     u8 a = pixel[3];
     u32 col = cg_create_color_from_channels(r,g,b,a);
-    texture->pixels[i] = col;
+    texture->Pixels[i] = col;
     pixel+=4;
   }
   stbi_image_free(data);
@@ -53,19 +54,30 @@ u32 texture_get_size_in_bytes(CG_Texture* tex){
 CG_Color texture_read_pixel(CG_Texture* tex, int x, int y){
 
 
-  u32 col = tex->pixels[y*tex->Width + x];
-  u8 *p = (u8*)&col;
-  //rgba
-  u8 r = p[0];
-  u8 g = p[1];
-  u8 b = p[2];
-  u8 a = p[3];
+  u32 col = tex->Pixels[y*tex->Width + x];
 
-  CG_Color color = {r/255.0f, g/255.0f, b/255.0f, a/255.0f};
+  CG_Color color = platform_convert_to_color(col);
 
   /* color.x = 1; */
   /* color.y = .2f; */
   /* color.z = 0.2f; */
   /* color.w = 1; */
   return color;
+}
+CG_Texture *texture_get_white(){
+
+  if(!cg_texture_white_init){
+    u32 width = 8, height = 8;
+    u32 numPixels = width*height;
+    u32 sizeofpixels = numPixels*sizeof(u32);
+    __WhiteTexture = malloc(sizeof(CG_Texture)+sizeofpixels);
+    __WhiteTexture->Width =width;
+    __WhiteTexture->Height =height;
+    for(int i=0;i<numPixels;i++){
+      __WhiteTexture->Pixels[i] = 0xFFFFFFFF;
+    }
+
+    cg_texture_white_init = true;
+  }
+  return __WhiteTexture;
 }

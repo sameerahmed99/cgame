@@ -218,9 +218,10 @@ internal void cg_init(CG_OffscreenBuffer *offscreenBuffer){
 
   //  DefaultTexture = texture_load_from_file("../assets/textures/pistol-color.png", TEMP_ArenaAssets);
 
-        DefaultTexture = texture_load_from_file("../assets/textures/elias-wick-checker.png", TEMP_ArenaAssets);
-  //        DefaultTexture = texture_load_from_file("../assets/textures/pallette.png", TEMP_ArenaAssets);
-	//	DefaultTexture  = &WhiteTexture;
+  //  DefaultTexture = texture_load_from_file("../assets/textures/elias-wick-checker.png", TEMP_ArenaAssets);
+  //    DefaultTexture = texture_load_from_file("../assets/textures/white-16x16.png", TEMP_ArenaAssets);
+          DefaultTexture = texture_load_from_file("../assets/textures/pallette.png", TEMP_ArenaAssets);
+  //      DefaultTexture  = texture_get_white();
   //  DefaultTexture = texture_load_from_file("../assets/textures/pistol-color.png", TEMP_ArenaAssets);
   DefaultMaterial.color = Vec4One;
   DefaultMaterial.texture = DefaultTexture;
@@ -255,7 +256,13 @@ internal void cg_init(CG_OffscreenBuffer *offscreenBuffer){
 
 
 
-
+internal CG_Color cg_clamp_color(CG_Color color){
+  color.x = Clamp(color.x,0,1);
+  color.y = Clamp(color.y,0,1);
+  color.z = Clamp(color.z,0,1);
+  color.w = Clamp(color.w,0,1);
+  return color;
+}
 internal uint32_t cg_create_color_from_channels(uint8_t r, uint8_t g, uint8_t b, uint8_t a){
 
   // rgba

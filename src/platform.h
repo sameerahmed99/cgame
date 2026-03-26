@@ -52,8 +52,8 @@ void *platform_memory_reserve(u64 _size);
 b32 platform_memory_commit(void* _mem, u64 _size);
 b32 platform_memory_decommit(void* _mem, u64 _size);
 b32 platform_memory_free(void* _mem, u64 _size);
-u32 platform_convert_color(u32 _rgba);
-
+u32 platform_convert_color(CG_Color _rgba);
+CG_Color platform_convert_to_color(u32 _rgba);
 
 #if defined(__GNUC__) || defined(__MINGW32__) || defined (__MINGW64__)
 

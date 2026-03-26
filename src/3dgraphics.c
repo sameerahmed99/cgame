@@ -1004,10 +1004,7 @@ void draw3d_triangle_rasterize(CG_VertRasterData a, CG_VertRasterData b, CG_Vert
 	  litCol.y+= ambientCol.y*frag_color.y;
 	  litCol.z+= ambientCol.z*frag_color.z;
 
-	  litCol.x = Clamp01(litCol.x);
-	  litCol.y = Clamp01(litCol.y);
-	  litCol.z = Clamp01(litCol.z);
-	  litCol.w = Clamp01(litCol.w);
+	  litCol = cg_clamp_color(litCol);
 
 	  litCol = math_vec4_lerp(litCol, fogColor, fogAmount);
 
@@ -1021,10 +1018,15 @@ void draw3d_triangle_rasterize(CG_VertRasterData a, CG_VertRasterData b, CG_Vert
 	  /* p[3] = frag_color.w*255; */
 
 
-	  p[0] = litCol.z*255;
-	  p[1] = litCol.y*255;
-	  p[2] = litCol.x*255;
-	  p[3] = litCol.w*255;
+	  
+	  /* p[0] = litCol.z*255; */
+	  /* p[1] = litCol.y*255; */
+	  /* p[2] = litCol.w*255; */
+	  /* p[3] = litCol.z*255; */
+	  u32 col = platform_convert_color(litCol);
+
+	  u32* p32 = (u32*)p;
+	  p32[0] = col;
 
 
 	  /* p[0] = Clamp01(worldNormal.z) * 255; */
@@ -1032,7 +1034,7 @@ void draw3d_triangle_rasterize(CG_VertRasterData a, CG_VertRasterData b, CG_Vert
 	  /* p[2] = Clamp01(worldNormal.x) * 255; */
 
 
-	  p[3] = 1 * 255;
+	  //p[3] = 1 * 255;
 
 	  /* p[0] = nw0*255; */
 	  /* p[1] = nw1*255; */
