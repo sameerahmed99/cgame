@@ -172,13 +172,15 @@ internal void cg_init(CG_OffscreenBuffer *offscreenBuffer){
 
 
   DebugSettings.lightDirection = math_vec3_normalize(DebugSettings.lightDirection);
-  Vec4 lightCol={38/255.0f, 62/255.0f, 92/255.0f,1.0f};
-  lightCol.x*=1.5f;
-  lightCol.y*=1.5f;
-  lightCol.z*=1.5f;
+  /* Vec4 lightCol={38/255.0f, 62/255.0f, 92/255.0f,1.0f}; */
+  /* lightCol.x*=1.5f; */
+  /* lightCol.y*=1.5f; */
+  /* lightCol.z*=1.5f; */
+  Vec4 lightCol={1,1,1,1};
  DebugSettings.lightColor = lightCol;
  
-  Vec4 ambientLightCol={38/255.0f * 0.5f, 62/255.0f * 0.5f, 92/255.0f * 0.5f,1.0f};  
+ //  Vec4 ambientLightCol={38/255.0f * 0.5f, 62/255.0f * 0.5f, 92/255.0f * 0.5f,1.0f};
+ Vec4 ambientLightCol={1,1,1,1.0f};  
   DebugSettings.ambientLightColor = ambientLightCol;
 
   
@@ -216,8 +218,9 @@ internal void cg_init(CG_OffscreenBuffer *offscreenBuffer){
 
   //  DefaultTexture = texture_load_from_file("../assets/textures/pistol-color.png", TEMP_ArenaAssets);
 
-  //      DefaultTexture = texture_load_from_file("../assets/textures/elias-wick-checker.png", TEMP_ArenaAssets);
-        DefaultTexture = texture_load_from_file("../assets/textures/pallette.png", TEMP_ArenaAssets);
+        DefaultTexture = texture_load_from_file("../assets/textures/elias-wick-checker.png", TEMP_ArenaAssets);
+  //        DefaultTexture = texture_load_from_file("../assets/textures/pallette.png", TEMP_ArenaAssets);
+	//	DefaultTexture  = &WhiteTexture;
   //  DefaultTexture = texture_load_from_file("../assets/textures/pistol-color.png", TEMP_ArenaAssets);
   DefaultMaterial.color = Vec4One;
   DefaultMaterial.texture = DefaultTexture;

@@ -782,13 +782,12 @@ Vec4 lerp_vert_vec4(Vec4 _vala, Vec4 _valb, Vec4 _valc,float za, float zb, float
 
 internal CG_Color graphics_sample_texture(CG_Texture *tex, float uvx, float uvy, Vec2 _tiling){
 
+  // @TODO - Handle negative uvs
   float width = (float)tex->Width;
   float height = (float)tex->Height;
   u32 coordinateX = (u32)((uvx*width) *_tiling.x ) % tex->Width;
   u32 coordinateY = (u32)((uvy*height) * _tiling.y) %tex->Height;
-
-  
-  return tex->pixels[coordinateY * tex->Width + coordinateX];
+  return texture_read_pixel(tex, coordinateX, coordinateY);
 }
 // https://www.scratchapixel.com/lessons/3d-basic-rendering/rasterization-practical-implementation/rasterization-stage.html
 void draw3d_triangle_rasterize(CG_VertRasterData a, CG_VertRasterData b, CG_VertRasterData c, CG_Material *_material){
@@ -1076,7 +1075,7 @@ void graphics_renderer_init(Arena* _renderList,CG_Texture* _defaultTexture, CG_M
 }
 
 void graphics_renderer_render_list(){
-  PLATFORM_BEGIN_FUNCTION_MEASUREMENT();
+  //  PLATFORM_BEGIN_FUNCTION_MEASUREMENT();
   size_t entrySize = sizeof(CG_RenderItem);
   i32 count = Renderer.renderList->pos/(i32)entrySize;
   for(int i=0;i<count;i++){

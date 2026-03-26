@@ -23,6 +23,7 @@
 
 // mingw64 headers need this macro defined
 // if you want to use xaudio2 helper macros for calling functions from C instead of C++
+// if you go digging, look at the mingw64 headers instead of win32
 #define COBJMACROS
 #include <xaudio2.h>
 #include <audiosessiontypes.h>
@@ -1151,7 +1152,9 @@ int platform_recursively_read_files_in_directory(const char* _path, PlatformRecu
       char absolutePath[CG_WIN32_MAX_PATH_SIZE];
       GetFullPathNameA(relativePath, CG_WIN32_MAX_PATH_SIZE,absolutePath, NULL);
 
-      _callback(numAssets, relativePath, absolutePath);
+      if(_callback!=NULL){
+	      _callback(numAssets, relativePath, absolutePath);
+      }
       numAssets++;
     }
 

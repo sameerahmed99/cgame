@@ -4,6 +4,8 @@
 #include "types.h"
 
 
+#define CG_ASSET_BIN_MAGIC 0x4019FFCC
+
 typedef u64 CG_AssetId;
 
 enum CG_AssetType{
@@ -67,14 +69,18 @@ typedef struct CG_Assets{
   
 } CG_Assets;
 
+typedef struct CG_AssetPack{
+  CG_AssetPackHeader header;
+  CG_AssetTable table;
+  void* data;
+} CG_AssetPack;
 
-#define CG_ASSET_BIN_MAGIC 0x4019FFCC
 
 
 
 
 
-u32 asset_write_assets(const char *_rawAssetsDir, const char *_binFilePath);
+CG_AssetPack asset_write_assets(const char *_rawAssetsDir, const char *_binFilePath);
 
 
 #endif
