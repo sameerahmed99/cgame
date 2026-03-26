@@ -54,6 +54,8 @@ void cg_active_game_init(){
   Arena* ent=cg_get_entities();
   rg.FreeCam = entity_create(ent, ENTITY_TYPE_CAMERA);
   rg.ActiveCam = rg.FreeCam;
+  Vec3 camSpawnPos = {4,5.5f, -35};
+  entity_set_world_pos(rg.ActiveCam, camSpawnPos);
   rg.SceneModelEntity = entity_create(ArenaEntities, ENTITY_TYPE_STATIC);
   
   CG_PlatformConfig conf = cg_get_platform_config();

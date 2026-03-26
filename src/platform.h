@@ -86,4 +86,14 @@ void platform_lock_cursor();
 void platform_unlock_cursor();
 
 
+// int: index of current file (doesn't count directories, just number of files found so far -1)
+// const char*: relative path of file
+// const char*: absolute path of file
+
+
+typedef void (*PlatformRecursiveDirectoryIterationCallback)(int, const char*, const char*);
+
+
+// returns number of files found (doesn't count directories)
+int platform_recursively_read_files_in_directory(const char* _path, PlatformRecursiveDirectoryIterationCallback _callback);
 #endif //CG_PLATFORM_

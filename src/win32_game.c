@@ -1,4 +1,5 @@
 #include <windows.h>
+#include <fileapi.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <wingdi.h>
@@ -48,6 +49,7 @@
 
 #define MsToReftimeUnits(Value) (Value * 10000)
 #define SecToReftimeUnits(Value) (Value * 10000000)
+#define CG_WIN32_MAX_PATH_SIZE 256
 // const int TEMP_HNS_BUF_DURATION = SecToReftimeUnits(0.020);
 
 global_variable bool AppRunning;
@@ -1062,3 +1064,114 @@ void platform_lock_cursor(){
 void platform_unlock_cursor(){
   // no need to do anything, we check for lock every frame  
 }
+
+int platform_recursively_read_files_in_directory(const char* _path, PlatformRecursiveDirectoryIterationCallback _callback){
+
+  u32 numAssets = 0;
+  
+
+  WIN32_FIND_DATAA findData;
+  HANDLE hFind;
+
+  char currentFullPath[CG_WIN32_MAX_PATH_SIZE];
+
+  char relativePath[CG_WIN32_MAX_PATH_SIZE];
+
+
+
+  strcpy(relativePath, _path);
+  u32 len = strlen(relativePath);
+  u32 writePos = len;
+  if(relativePath[len-1]== '*'){
+    writePos = len-1;
+
+  }
+
+      
+  strcpy(relativePath+writePos, "/*");
+
+  /* char assetsDirWithStar[MAX_PATH_SIZE]; */
+  /* strcpy(assetsDirWithStar, AssetsDir); */
+  /* strcpy(assetsDirWithStar + strlen(assetsDirWithStar), "/\*"); */
+
+  
+  //printf("Search path: %s\n", relativePath);
+  hFind = FindFirstFileA(relativePath, &findData);
+  if(hFind == INVALID_HANDLE_VALUE){
+    printf("FindFirstFile failed, invalid handle. Dir: %s\n", _path);
+    return 0;
+  }
+  //  printf("%s\n", findData.cFileName);
+  
+  while(hFind!=INVALID_HANDLE_VALUE){
+    if(findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY){
+
+
+      b32 isDot = strcmp(findData.cFileName, ".")==0;
+      b32 isDotDot = strcmp(findData.cFileName, "..")==0;
+      b32 isRoot = strcmp(findData.cFileName, _path)==0;
+      //      printf("Dot, DotDot, Root: %d, %d, %d\n", isDot, isDotDot, isRoot);
+      if(!isDot && !isDotDot && !isRoot){
+	/* printf("Current Relative: %s\n",relativePath); */
+	/* printf("cFileName: %s\n",findData.cFileName); */
+
+	char nextPath[CG_WIN32_MAX_PATH_SIZE];
+	strcpy(nextPath,relativePath);
+
+	u32 writePos = strlen(relativePath)-1;
+	strcpy(nextPath + writePos, findData.cFileName);
+
+	//	printf("Next Path: %s\n", nextPath);
+	numAssets+=platform_recursively_read_files_in_directory(nextPath, _callback);
+  
+
+      }
+      
+
+      
+      
+
+
+      //      GetFullPathName(findData.cFileName, MAX_PATH_SIZE,currentFullPath, NULL);
+
+      /* strcpy(nextPath + strlen(nextPath),nextPattern); */
+
+     
+      
+     
+    }
+    else{
+
+
+      char relativePath[CG_WIN32_MAX_PATH_SIZE];
+      strcpy(relativePath, _path);
+      strcpy(relativePath + strlen(relativePath), "/");
+      strcpy(relativePath + strlen(relativePath), findData.cFileName);
+
+      char absolutePath[CG_WIN32_MAX_PATH_SIZE];
+      GetFullPathNameA(relativePath, CG_WIN32_MAX_PATH_SIZE,absolutePath, NULL);
+
+      _callback(numAssets, relativePath, absolutePath);
+      numAssets++;
+    }
+
+    if(FindNextFileA(hFind, &findData)){
+
+    } else{
+
+      return numAssets;
+    }
+    
+  }
+
+
+  
+
+
+  return numAssets;
+
+
+}
+
+
+ 

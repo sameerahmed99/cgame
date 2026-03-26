@@ -13,6 +13,8 @@
 #include "texture.h"
 #include "texture.c"
 
+#include "asset.h"
+#include "asset.c"
 
 
 
@@ -148,7 +150,7 @@ void create_player(){
 
 internal void cg_init(CG_OffscreenBuffer *offscreenBuffer){
 
-
+  asset_write_assets("../assets", "../build/assets.bin");
   cg_hide_cursor();
   cg_lock_cursor();
   
