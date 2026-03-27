@@ -16,7 +16,7 @@
 #include "asset.h"
 #include "asset.c"
 
-
+#include "xxhash.c"
 
 internal CG_PlatformConfig PlatformConfig;
 internal CG_GameState GameState;
@@ -79,8 +79,8 @@ CG_PlatformConfig cg_get_requested_platform_config(){
     .ScreenHeight = 0,
     .RequestedScreenWidth = 1920,
     .RequestedScreenHeight = 1080,
-    .RenderResolutionWidth = 800,
-    .RenderResolutionHeight = 600,
+    .RenderResolutionWidth = 500,
+    .RenderResolutionHeight = 500,
     .BaseScreenWidth = 1280,
     .BaseScreenHeight = 720,
     .BasePixelsPerWorldUnit = 5
@@ -176,11 +176,11 @@ internal void cg_init(CG_OffscreenBuffer *offscreenBuffer){
   /* lightCol.x*=1.5f; */
   /* lightCol.y*=1.5f; */
   /* lightCol.z*=1.5f; */
-  Vec4 lightCol={1,1,1,1};
+  Vec4 lightCol={1.0f,1.0f,1.0f,1};
  DebugSettings.lightColor = lightCol;
  
  //  Vec4 ambientLightCol={38/255.0f * 0.5f, 62/255.0f * 0.5f, 92/255.0f * 0.5f,1.0f};
- Vec4 ambientLightCol={1,1,1,1.0f};  
+ Vec4 ambientLightCol={0.65,0.65,0.65,1.0f};  
   DebugSettings.ambientLightColor = ambientLightCol;
 
   
@@ -374,14 +374,7 @@ void update_entities(float _dt){
 
 
 
-    if(ent->type ==  ENTITY_TYPE_GAME_BORDER){
-      Vec3 size = Vec3Zero;
-      size.x = ent->collider2D.width;
-      size.y = ent->collider2D.height;
 
-      //      printf("Pos: %f, %f, %f\n", FormatXYZ(ent->collider2D.a));
-      draw_rectangle_world(ScreenBuffer,PlatformConfig.ppu,ent->collider2D.p1 , size, ent->worldEulerAngles, ent->worldPos, cg_create_color_from_channels(50,50,50,0));
-    }
 
     if(false && ent->drawPhysicsDebugSphere){
 
@@ -534,7 +527,7 @@ internal void cg_fixed_update(float _dt){
 
   phys_step();
 }
-void draw_sky(CG_OffscreenBuffer *_to, u32 _skyCol, u32 _sunCol, u32 _cloudCol)
+void draw_sky(CG_OffscreenBuffer *_to, CG_Color _skyCol, CG_Color _sunCol, CG_Color _cloudCol)
 {
   u32 sunX = 75;
   u32 sunY = _to->Height - 75;
@@ -560,17 +553,14 @@ dbuffer[i] = 99999999999;
   }
 
 
+  CG_Color skyCol = {0,0,0,1};
+  
+  draw_sky(ScreenBuffer,skyCol, skyCol, skyCol);
   cg_active_game_update(_deltaTime, GameInput);
 
 
-  u32 skyCol =cg_create_color_from_channels(50,50,50,0);
-  u32 sunCol = cg_create_color_from_channels(214, 203, 84,0);
-  u32 cloudCol =cg_create_color_from_channels(100,100,100,0);
-  u32 groundColor = cg_create_color_from_channels(57, 82, 56,0);
-  u32 groundHeight = 140;
-  
-  draw_sky(ScreenBuffer,skyCol, sunCol, cloudCol);
-  //  draw_ground(_screenBuffer, groundColor, groundHeight);
+
+
   TEMP_gameMemory = _memory;
 
   

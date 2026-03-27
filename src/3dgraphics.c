@@ -634,7 +634,7 @@ void draw3d_debug_vertices(CG_Vertex* verts, size_t _num, float _radius, Mat4x4 
 
     point_to_all_spaces(verts[i].pos, _model, _inversedCameraMatrix, _projection, &worldPos, &eyeSpace, &clipSpace, &ndc, &posa);
 
-    u32 col = 0x00AA00;
+    CG_Color col = {0.1f,1.0f,0.1f,1.0f};
 
   
     draw_circle(screenBuffer, _radius,col,(i32)floor(posa.x), (i32)floor(posa.y),0,0,0);
@@ -730,10 +730,10 @@ float triangle_edge_function(Vec2 a, Vec2 b, Vec2 p){
 }
 
 
-internal void draw_screen_line_temp(Vec3 from, Vec3 to, Vec4 col){
+internal void draw_screen_line_temp(Vec3 from, Vec3 to, CG_Color col){
   CG_OffscreenBuffer *screenBuffer = cg_get_current_off_screen_buffer();
 
-u32 ucol=  cg_create_color_from_channels(col.x, col.y, col.z, col.w);
+
 
  float rot = atanf((to.y - from.y)/(to.x-from.x));
  Vec3 veca = {to.x, to.y,0};
@@ -741,7 +741,7 @@ u32 ucol=  cg_create_color_from_channels(col.x, col.y, col.z, col.w);
  float length = math_vec3_magnitude(math_vec3_subtract(vecb,veca));
  rot = Deg(rot);
  // printf("Length: %f\n", length);
- draw_rectangle(screenBuffer,  ucol, (int)from.x, (int)from.y, 5,length, rot, from.x, from.y);
+ draw_rectangle(screenBuffer,  col, (int)from.x, (int)from.y, 5,length, rot, from.x, from.y);
 }
 
 float lerp_vert_float(float _vala, float _valb, float _valc,float za, float zb, float zc, float areaA, float areaB, float areaC, float _currentDepth){
@@ -964,15 +964,21 @@ void draw3d_triangle_rasterize(CG_VertRasterData a, CG_VertRasterData b, CG_Vert
 	float storedDepth=depthRow[x];
 	float inverseDepth = inverseDepthA * nw0 + inverseDepthB*nw1 + inverseDepthC*nw2;
 	float depth = 1/inverseDepth;
-	float ndcDepth = a.screenPos.z*nw0 + b.screenPos.z*nw1 + c.screenPos.z*nw2;
+
+	// @NOTE ndcDepth, which is -1 to 1, when used for depth comparisons creates problems when looking at objects even just a few meters away, pixel holes start appearing. Might be because of the small -1 to 1 range, precision issues
+	
+	//	float ndcDepth = a.screenPos.z*nw0 + b.screenPos.z*nw1 + c.screenPos.z*nw2;
 
 	float nDot = lerp_vert_float(nDota, nDotb, nDotc, a.wVal, b.wVal, c.wVal, nw0, nw1,nw2, depth);
 
-	if(ndcDepth < storedDepth){
+	//	float wVal = lerp_vert_float(a.wVal, b.wVal, c.wVal, a.wVal, b.wVal, c.wVal, nw0, nw1,nw2, depth);
+	if(depth < storedDepth){
 
 
 	  float fogAmount =depth;
-	  fogAmount/=60.0f;
+	  fogAmount/=100.0f;
+
+
 	  fogAmount = Clamp01(fogAmount);
 
 
@@ -1008,7 +1014,7 @@ void draw3d_triangle_rasterize(CG_VertRasterData a, CG_VertRasterData b, CG_Vert
 
 	  litCol = math_vec4_lerp(litCol, fogColor, fogAmount);
 
-	  depthRow[x] = ndcDepth;
+	  depthRow[x] = depth;
 	  u8* p = (u8*) (row + x);
 
 

@@ -6,7 +6,7 @@
 
 internal CG_Texture *__WhiteTexture;
 internal b32 cg_texture_white_init = false;
-
+internal u32 cg_texture_bytes_per_pixel = 4;
 CG_Texture *texture_load_from_file(const char* _path, Arena *_arena){
   i32 x, y, n;
 
@@ -27,6 +27,7 @@ CG_Texture *texture_load_from_file(const char* _path, Arena *_arena){
 
   texture->Width = x;
   texture->Height = y;
+  texture->BytesPerPixel = cg_texture_bytes_per_pixel;
 
 
   u8 *pixel = data;
@@ -47,8 +48,11 @@ CG_Texture *texture_load_from_file(const char* _path, Arena *_arena){
 
 
 
-u32 texture_get_size_in_bytes(CG_Texture* tex){
-  return tex->Width * tex->Height * sizeof(u32);
+u32 texture_get_total_size_in_bytes(CG_Texture* tex){
+  return sizeof(tex);
+}
+u32 texture_get_pixel_data_size_in_bytes(CG_Texture* tex){
+  return tex->Width * tex->Height * sizeof(cg_texture_bytes_per_pixel);
 }
 
 CG_Color texture_read_pixel(CG_Texture* tex, int x, int y){
@@ -73,6 +77,7 @@ CG_Texture *texture_get_white(){
     __WhiteTexture = malloc(sizeof(CG_Texture)+sizeofpixels);
     __WhiteTexture->Width =width;
     __WhiteTexture->Height =height;
+    __WhiteTexture->BytesPerPixel = cg_texture_bytes_per_pixel;
     for(int i=0;i<numPixels;i++){
       __WhiteTexture->Pixels[i] = 0xFFFFFFFF;
     }

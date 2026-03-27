@@ -55,7 +55,7 @@ typedef struct CG_Entity{
 
   
   b32 drawPhysicsDebugSphere;
-  u32 debugSphereColorPhys;
+  CG_Color debugSphereColorPhys;
 
   
 
