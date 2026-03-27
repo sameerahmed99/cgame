@@ -40,20 +40,11 @@ typedef struct CG_Asset{
   
 } CG_Asset;
 
-typedef struct CG_AssetTable{
-  CG_AssetTableEntry entries[];
-} CG_AssetTable;
 
-typedef struct CG_Assets{
-  CG_AssetTable assetTable;
-  CG_Asset* loadedAssets;
-  void* binFileHandle;
-  
-} CG_Assets;
 
 typedef struct CG_AssetPack{
   CG_AssetPackHeader header;
-  CG_AssetTable* table;
+  CG_AssetTableEntry* entries;
   void* data;
 } CG_AssetPack;
 

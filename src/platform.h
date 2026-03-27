@@ -42,7 +42,7 @@ void platform_play_wave_file(char* path);
 
 void *platform_read_whole_file(char* path, size_t* _contentSize);
 void platform_free_file_memory(void* memory, size_t _size);
-void platform_write_or_overwrite_file(char* path, void* bytes, uint64_t size);
+b32 platform_write_or_overwrite_file(char* path, void* bytes, uint64_t size);
 
 u32 platform_get_client_screen_width();
 u32 platform_get_client_screen_height();

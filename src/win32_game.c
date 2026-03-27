@@ -982,12 +982,15 @@ void platform_free_file_memory(void *memory, size_t _amount) {
 
 
 //@Incomplete - size is not used here, we're not writing the bytes to the file
-void platform_write_or_overwrite_file(char *path, void *bytes, uint64_t size)
+b32 platform_write_or_overwrite_file(char *path, void *bytes, uint64_t size)
 {
 
 HANDLE hnd = CreateFileA(path, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, 0, NULL);
 
+ DWORD bytesWritten = 0;
+ BOOL error = WriteFile(hnd, bytes, size,&bytesWritten, NULL);
 
+ return !error;
 }
 
 
