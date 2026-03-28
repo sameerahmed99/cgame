@@ -1085,7 +1085,7 @@ void graphics_renderer_init(Arena* _renderList,CG_Texture* _defaultTexture, CG_M
 void graphics_renderer_render_list(){
   //  PLATFORM_BEGIN_FUNCTION_MEASUREMENT();
   size_t entrySize = sizeof(CG_RenderItem);
-  i32 count = Renderer.renderList->pos/(i32)entrySize;
+  u32 count = arena_get_num_items(Renderer.renderList, entrySize);
   for(int i=0;i<count;i++){
     CG_RenderItem *e = arena_get_at(Renderer.renderList, i, entrySize);
     draw3d_mesh(e->mesh,e->modelMatrix, e->inversedCameraMatrix, e->projectionMatrix, e->material);    

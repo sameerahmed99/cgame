@@ -156,7 +156,9 @@ internal void cg_init(CG_OffscreenBuffer *offscreenBuffer){
 
 
   CG_GameAssets = asset_read_pack("./assets.bin");
-  
+
+  CG_RuntimeAsset *testAsset = asset_use(&CG_GameAssets,"../assets/textures/pallette.png");
+
   cg_hide_cursor();
   cg_lock_cursor();
   
@@ -371,9 +373,10 @@ internal void write_square_wave_to_audio_buffer(uint8_t* _writeTo, uint32_t fram
   }
 void update_entities(float _dt){
 
-  i32 count = ArenaEntities->pos/sizeof(CG_Entity);
+  size_t sizeOfEntity = sizeof(CG_Entity);
+  u32 count = arena_get_num_items(ArenaEntities, sizeOfEntity);
   for(int i=0;i<count;i++){
-    CG_Entity* ent = (CG_Entity*)arena_get_at(ArenaEntities, i, sizeof(CG_Entity));
+    CG_Entity* ent = (CG_Entity*)arena_get_at(ArenaEntities, i, sizeOfEntity);
     if(ent->destroyed) continue;
 
 
@@ -466,9 +469,11 @@ internal void cg_fixed_update(float _dt){
 
   cg_active_game_fixed_update(_dt);
   
-  i32 count = ArenaEntities->pos / sizeof(CG_Entity);
+  size_t sizeOfEntity = sizeof(CG_Entity);
+  u32 count = arena_get_num_items(ArenaEntities, sizeOfEntity);
+  
   for(int i=0;i<count;i++){
-    CG_Entity* ent = (CG_Entity*)arena_get_at(ArenaEntities, i, sizeof(CG_Entity));
+    CG_Entity* ent = (CG_Entity*)arena_get_at(ArenaEntities, i, sizeOfEntity);
     if(ent->destroyed) continue;
     if(ent->rb!=NULL){
 

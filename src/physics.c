@@ -433,9 +433,10 @@ b32 phys_delete_body()
 };
 
 void phys_step(){
-  i32 count = Phys.tempRigidbodies->pos / sizeof(phys_Rigidbody);
+  size_t sizeOfRb= sizeof(phys_Rigidbody);
+  u32 count = arena_get_num_items(Phys.tempRigidbodies, sizeOfRb);
   for(int i=0;i<count;i++){
-    phys_Rigidbody *body = arena_get_at(Phys.tempRigidbodies, i, sizeof(phys_Rigidbody));
+    phys_Rigidbody *body = arena_get_at(Phys.tempRigidbodies, i, sizeOfRb);
     if(body->isNew){
 
 

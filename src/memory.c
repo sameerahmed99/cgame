@@ -106,6 +106,10 @@ void arena_add_to_free_list(Arena* _arena, void*_thing){
   node->next = _arena->freeList;
   _arena->freeList = node;
 }
+u32 arena_get_num_items(Arena* _arena, u64 _itemSize){
+  u32 count = (_arena->pos-ARENA_BASE_POS)/_itemSize;
+  return count;
+}
 void arena_pop_till_pos(Arena* _arena, u64 _pos) {
   u64 amount = _pos < _arena->pos ? _arena->pos - _pos : 0;
 

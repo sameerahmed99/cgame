@@ -51,7 +51,7 @@ void arena_clear(Arena* _arena);
 
 void arena_add_to_free_list(Arena* _arena, void*_thing);
 
-
+u32 arena_get_num_items(Arena* _arena, u64 _itemSize); 
 
 // @TODO
 // replacements for current arena allocator
