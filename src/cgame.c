@@ -22,7 +22,7 @@ internal CG_PlatformConfig PlatformConfig;
 internal CG_GameState GameState;
 
 internal CG_Memory *TEMP_gameMemory;
-
+internal CG_RuntimeAssets CG_GameAssets;
 /* internal CG_Model* TestCubeModel; */
 /* internal CG_Model* TestSceneModel; */
 
@@ -150,7 +150,13 @@ void create_player(){
 
 internal void cg_init(CG_OffscreenBuffer *offscreenBuffer){
 
-  asset_write_assets("../assets", "../build/assets.bin");
+
+  // if write assets argument passed
+  asset_write_assets("../assets", "./assets.bin");
+
+
+  CG_GameAssets = asset_read_pack("./assets.bin");
+  
   cg_hide_cursor();
   cg_lock_cursor();
   

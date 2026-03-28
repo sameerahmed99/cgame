@@ -942,8 +942,54 @@ gameMemory.AudioBufferCurrentWritePositionFrames =
 
 void platform_play_wave_file(char *path) { win32_play_wave_file(path); }
 
+void *platform_platform_open_file(char* _filePath, size_t *_outFileSize){
+  HANDLE hnd = CreateFileA(_filePath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+  if (hnd == INVALID_HANDLE_VALUE) {
+    return NULL;
+  }
+
+  LARGE_INTEGER fileSize;
+  if (GetFileSizeEx(hnd, &fileSize)) {
+    // ReadFile can read a maximum of sizeof(DWORD) bytes
+    // so fileSize.QuadPart should be less than that
+    ASSERT_NO_EVAL(fileSize.QuadPart <= 0xFFFFFFFF);
+    *_outFileSize = fileSize.QuadPart;
+  }
+  else{
+    printf("GetFileSizeEx error code: %lu\n", GetLastError());
+    ASSERT_NO_EVAL(false);
+  }
+  return hnd;
+}
+
+
+
+void *platform_read_part_of_opened_file(void* _openedFile, size_t _startPos, size_t _readAmount, size_t _totalFileSize){
+  HANDLE hnd = (HANDLE)_openedFile;
+  void *content = NULL;
+  if (hnd == INVALID_HANDLE_VALUE) {
+    return NULL;
+  }
+  b32 good = (_startPos + _readAmount) <= _totalFileSize;
+
+  ASSERT_NO_EVAL(good);
+
+  LARGE_INTEGER pos;
+  pos.QuadPart = _startPos;
+  good = SetFilePointerEx(hnd, pos, NULL, FILE_BEGIN);
+  ASSERT_NO_EVAL(good);
+
+
+  content = VirtualAlloc(NULL, _readAmount, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+  DWORD bytesRead=0;
+  if (ReadFile(hnd, content,_readAmount, &bytesRead, NULL) && (bytesRead == _readAmount)) {
+  } else {
+    platform_free_file_memory(content, bytesRead);
+    content = NULL;
+  }
+  return content;
+}
 void *platform_read_whole_file(char *path, size_t* _contentSize) {
-  printf(path);
   HANDLE hnd = CreateFileA(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
   void *content = NULL;
   *_contentSize = 0;
@@ -989,7 +1035,7 @@ HANDLE hnd = CreateFileA(path, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWA
 
  DWORD bytesWritten = 0;
  BOOL error = WriteFile(hnd, bytes, size,&bytesWritten, NULL);
-
+ CloseHandle(hnd);
  return !error;
 }
 

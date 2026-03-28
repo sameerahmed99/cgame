@@ -6,7 +6,8 @@
 #define CG_XXHASH_SEED 0
 #define CG_ASSET_PACK_MAX_DATA_SIZE Gigabytes(5)
 CG_AssetPack CG_Asset_CurrentPack;
-u32 CG_Asset_CurrentPackWritePos;
+u64 CG_Asset_CurrentWriteAssetIndex = 0;
+u64 CG_Asset_CurrentPackWritePos;
 Arena *CG_Asset_CurrentWorkingArena;
 
 
@@ -16,15 +17,10 @@ u64 asset_relative_path_to_hash(const char* string){
 }
 void asset_recursive_read_callback(int index, const char *_relativePath, const char *_absolutePath){
 
-
-
-  // no segfault this way, some memory corruption going on relating to the path strings
-  //  FILE* f = fopen("../assets/textures/pallette.png", "rb");
-    CG_Texture* tex = texture_load_from_file("../assets/textures/pallette.png", CG_Asset_CurrentWorkingArena);
-    return;
   char extension[16];
   u32 len = strlen(_relativePath);
   u64 hash = asset_relative_path_to_hash(_relativePath);
+  
   for(int i=len-1;i>=0;i--){
     if(_relativePath[i] == '.'){
       strcpy(extension, _relativePath + i);
@@ -32,20 +28,20 @@ void asset_recursive_read_callback(int index, const char *_relativePath, const c
     }
   }
 
-  if(strcmp(extension,".png")==0){
-
-       FILE* f = fopen("../assets/textures/pallette.png", "rb");
-    CG_Texture* tex = texture_load_from_file(_relativePath, CG_Asset_CurrentWorkingArena);
-    u32 pixelDataSize = texture_get_pixel_data_size_in_bytes(tex);
-    u32 totalWriteSize = 0;
-
+   if(strcmp(extension,".png")==0){
+     printf("Found .png: %s\n", _relativePath);
+        CG_Texture* tex = texture_load_from_file(_relativePath, CG_Asset_CurrentWorkingArena);
+    u64 pixelDataSize = texture_get_pixel_data_size_in_bytes(tex);
+    u64 totalWriteSize = 0;
 
     CG_TextureAssetBin texAsset;
+    u64 texAssetSize = sizeof(texAsset);
+
     texAsset.Width = tex->Width;
     texAsset.Height = tex->Height;
     texAsset.BytesPerPixel = tex->BytesPerPixel;
-    texAsset.PixelDataOffset = CG_Asset_CurrentPackWritePos+sizeof(CG_TextureAssetBin);
-    u32 texAssetSize = sizeof(texAsset);
+    texAsset.PixelDataOffset = CG_Asset_CurrentPackWritePos+texAssetSize;
+
     u8* dest = (u8*)&CG_Asset_CurrentPack.data[0];
     dest+=CG_Asset_CurrentPackWritePos;
     memcpy(dest, &texAsset, texAssetSize);
@@ -59,11 +55,10 @@ void asset_recursive_read_callback(int index, const char *_relativePath, const c
 
     totalWriteSize = texAssetSize + pixelDataSize;
     
-    CG_Asset_CurrentPack.entries[CG_Asset_CurrentPack.header.numAssets] = entry;
-    CG_Asset_CurrentPack.header.numAssets++;
+    CG_Asset_CurrentPack.entries[CG_Asset_CurrentWriteAssetIndex] = entry;
+    CG_Asset_CurrentWriteAssetIndex++;
+    
     CG_Asset_CurrentPackWritePos += totalWriteSize;
-
-
     CG_Asset_CurrentPack.header.dataSize+=totalWriteSize;
     
     arena_pop(CG_Asset_CurrentWorkingArena, texture_get_total_size_in_bytes(tex));
@@ -80,16 +75,16 @@ void asset_recursive_read_callback(int index, const char *_relativePath, const c
 
   }
 
-  printf("Found asset: %s\n", _relativePath); 
+  //  printf("Found asset: %s\n", _relativePath); 
   printf("Hash: %llu\n", hash);
 }
 
 
-void asset_write_pack_to_bin(const char* _targetPath, CG_AssetPack *_pack, u32 _packSize){
-  u8* bytes = malloc(_packSize);
-  u32 writePos = 0;
+void asset_write_pack_to_bin(const char* _targetPath, CG_AssetPack *_pack){
+  u8* bytes = malloc(_pack->header.totalPackSize);
+  u64 writePos = 0;
 
-  u32 writeSize = sizeof(_pack->header);
+  u64 writeSize = sizeof(_pack->header);
   memcpy(bytes, &_pack->header, writeSize);
   writePos+=writeSize;
 
@@ -101,12 +96,14 @@ void asset_write_pack_to_bin(const char* _targetPath, CG_AssetPack *_pack, u32 _
   memcpy(bytes+writePos, _pack->data, writeSize);
   writePos+=writeSize;
 
-  platform_write_or_overwrite_file(_targetPath, bytes, _packSize);
+  platform_write_or_overwrite_file(_targetPath, bytes, _pack->header.totalPackSize);
+
+  free(bytes);
 }
 
 
 
-CG_AssetPack asset_write_assets(const char *_rawAssetsDir, const char *_binFilePath){
+void asset_write_assets(const char *_rawAssetsDir, const char *_binFilePath){
 
   if(CG_Asset_CurrentWorkingArena!=NULL){
     arena_clear(CG_Asset_CurrentWorkingArena);
@@ -128,6 +125,8 @@ int numAssets = platform_recursively_read_files_in_directory(_rawAssetsDir, NULL
  pack.entries = malloc(tableTotalSize);
  pack.data = malloc(CG_ASSET_PACK_MAX_DATA_SIZE);
 
+ ASSERT_NO_EVAL(pack.entries);
+ ASSERT_NO_EVAL(pack.data);
 
 
  
@@ -142,37 +141,23 @@ platform_recursively_read_files_in_directory(_rawAssetsDir, asset_recursive_read
 
 
  
- u32 totalPackSize = pack.header.dataSize + headerSize + tableTotalSize; 
- asset_write_pack_to_bin(_binFilePath,&CG_Asset_CurrentPack,totalPackSize);
- return CG_Asset_CurrentPack;
+ u64 totalPackSize = CG_Asset_CurrentPack.header.dataSize + headerSize + tableTotalSize;
+ CG_Asset_CurrentPack.header.totalPackSize = totalPackSize;
+ asset_write_pack_to_bin(_binFilePath,&CG_Asset_CurrentPack);
+
+
+ free(pack.entries);
+ free(pack.data);
 }
-
-
-/* int main(int argc, char** argv){ */
-
-/*   printf("Starting asset writer\n"); */
-/*   //  printf("Num args: %d\n", argc); */
-/*   if(argc !=3) { */
-/*     printf("Please pass path where binary file should be written to using -b <path>\n"); */
-/*     return 1; */
-/*   }; */
-
-/*   /\* printf("Args:\n"); *\/ */
-/*   /\* for(int i=0;i<argc;i++){ *\/ */
-/*   /\*   printf("%d: %s\n",i, argv[i]); *\/ */
-/*   /\* } *\/ */
+CG_RuntimeAssets asset_read_pack(const char *_packPath){
+  CG_RuntimeAssets ass = {0};
+  size_t fileSize = 0;
+  size_t headerSize = sizeof(CG_AssetPackHeader);
+  void *file = platform_platform_open_file(_packPath, &fileSize);
+  void *data = platform_read_part_of_opened_file(file, 0,headerSize, fileSize);
   
-/*   if(strcmp(argv[1],"-b")){ */
-/*     printf("Incorrect arguments, following args are required: -b <path>\n"); */
-/*     return 1; */
-/*   } */
-
-/*   char* path = argv[2]; */
-
-/*   printf("Finding assets...\n"); */
-/*   u32 numAssets = count_assets(AssetsDir); */
-/*   printf("Number of assets found: %d\n", numAssets); */
-
-/*   printf("Writing assets bin to %s..\n", path); */
-/*   return 0; */
-/* } */
+  CG_AssetPackHeader* header = data;
+  ASSERT_NO_EVAL(header->magic == CG_ASSET_BIN_MAGIC);
+  printf("Magic: %lu, Version %lu, NumAssets %lu, tableOffset %lu, dataOffset %lu, dataSize %lu, totalPackSize: %lu\n", header->magic, header->version, header->numAssets, header->tableOffset, header->dataOffset, header->dataSize, header->totalPackSize);
+  return ass;
+}

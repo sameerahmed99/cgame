@@ -17,9 +17,10 @@ typedef struct CG_AssetPackHeader{
   u32 magic;
   u32 version;
   u32 numAssets;
-  u32 tableOffset;
-  u32 dataOffset;
-  u32 dataSize;
+  u64 tableOffset;
+  u64 dataOffset;
+  u64 dataSize;
+  u64 totalPackSize;
 }  CG_AssetPackHeader;
 
 
@@ -31,14 +32,13 @@ typedef struct CG_AssetTableEntry{
 
 
 
-typedef struct CG_Asset{
+typedef struct CG_RuntimeAsset{
   CG_AssetId id;
   enum CG_AssetType type;
   u32 numUsers;
   void* data;
   u32 numBytes;
-  
-} CG_Asset;
+} CG_RuntimeAsset;
 
 
 
@@ -48,7 +48,11 @@ typedef struct CG_AssetPack{
   void* data;
 } CG_AssetPack;
 
-
+typedef struct CG_RuntimeAssets {
+  u32 numAssets;
+  CG_RuntimeAsset* loadedAssets;
+  CG_AssetTableEntry* packEntries;
+} CG_RuntimeAssets;
 
 typedef struct CG_TextureAssetBin{
   u32 Width;
@@ -60,7 +64,7 @@ typedef struct CG_TextureAssetBin{
 
 
 
-CG_AssetPack asset_write_assets(const char *_rawAssetsDir, const char *_binFilePath);
-
+void asset_write_assets(const char *_rawAssetsDir, const char *_binFilePath);
+CG_RuntimeAssets asset_read_pack(const char *_packPath);
 
 #endif
