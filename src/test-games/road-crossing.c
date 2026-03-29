@@ -13,6 +13,7 @@ typedef struct RoadGame{
   CG_Input Input;
   float CamXRot, CamYRot;
   CG_Entity* SceneModelEntity;
+  CG_RuntimeAssets *Assets;
 } RoadGame;
 
 
@@ -45,6 +46,7 @@ RG_Level RG_Level1 = {
 // rg = road game
 RoadGame rg = {0};
 void cg_active_game_init(){
+  rg.Assets = cg_get_assets();
   rg.NearPlaneDistance = 0.02;
   rg.FarPlaneDistance = 200;
   rg.CameraSpeed = 3;

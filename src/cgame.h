@@ -6,7 +6,7 @@
 #include "./math.h"
 #include "./types.h"
 #include "./memory.h"
-
+#include "asset.h"
 
 // Importante not about Assert
 // you shouldn't call functions or compute things in the paramter if you expect to use the result later
@@ -130,6 +130,9 @@ CG_GameState cg_get_state();
 
 Arena* cg_get_entities();
 Arena* TEMP_cg_get_temp_assets_arena();
+
+CG_RuntimeAssets *cg_get_assets();
+
 
 #endif // CG_
 

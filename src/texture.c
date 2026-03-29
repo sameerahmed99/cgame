@@ -18,13 +18,14 @@ CG_Texture *texture_load_from_file(const char* _path, Arena *_arena){
   u32 numPixels = x*y;  
   CG_Texture *texture;
   texture = (CG_Texture*)arena_push(_arena, sizeof(*texture) + imageSizeBytes, false);
-  
+  u8* pixelsStart = (u8*)texture + sizeof(*texture);
+  texture->Pixels = (u32*)pixelsStart;
   u8* data=  (u8*)(stbi_load(_path, &x, &y, &n, 4));
 
   
   //  ASSERT_NO_EVAL(data!=NULL);  
 
-
+  texture->id = CG_ASSET_UNINITIALIZED_ID;
   texture->Width = x;
   texture->Height = y;
   texture->BytesPerPixel = cg_texture_bytes_per_pixel;
@@ -49,10 +50,10 @@ CG_Texture *texture_load_from_file(const char* _path, Arena *_arena){
 
 
 u32 texture_get_total_size_in_bytes(CG_Texture* tex){
-  return sizeof(tex);
+  return sizeof(*tex) + sizeof(tex->Pixels[0])*tex->Width*tex->Height;
 }
 u32 texture_get_pixel_data_size_in_bytes(CG_Texture* tex){
-  return tex->Width * tex->Height * sizeof(cg_texture_bytes_per_pixel);
+  return tex->Width * tex->Height * sizeof(tex->Pixels[0]);
 }
 
 CG_Color texture_read_pixel(CG_Texture* tex, int x, int y){

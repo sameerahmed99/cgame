@@ -102,6 +102,7 @@ void arena_pop(Arena* _arena, u64 _howmuch){
 }
 
 void arena_add_to_free_list(Arena* _arena, void*_thing){
+  ASSERT_NO_EVAL(_arena->singleType);
   ArenaFreeListNode* node = (ArenaFreeListNode*) _thing;
   node->next = _arena->freeList;
   _arena->freeList = node;

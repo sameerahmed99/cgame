@@ -148,16 +148,17 @@ void create_player(){
 
 
 
+
 internal void cg_init(CG_OffscreenBuffer *offscreenBuffer){
 
 
-  // if write assets argument passed
+  // @TODO, only if write assets argument passed
   asset_write_assets("../assets", "./assets.bin");
+
 
 
   CG_GameAssets = asset_read_pack("./assets.bin");
 
-  CG_RuntimeAsset *testAsset = asset_use(&CG_GameAssets,"../assets/textures/pallette.png");
 
   cg_hide_cursor();
   cg_lock_cursor();
@@ -711,4 +712,7 @@ Arena* cg_get_entities(){
 }
 Arena* TEMP_cg_get_temp_assets_arena(){
   return TEMP_ArenaAssets;
+}
+CG_RuntimeAssets *cg_get_assets(){
+  return &CG_GameAssets;
 }

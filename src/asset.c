@@ -7,7 +7,7 @@
 #define CG_ASSET_PACK_MAX_DATA_SIZE Gigabytes(5)
 CG_AssetPack CG_Asset_CurrentPack;
 u64 CG_Asset_CurrentWriteAssetIndex = 0;
-u64 CG_Asset_CurrentPackWritePos;
+u64 CG_Asset_CurrentPackWritePosFromDataPointer;
 Arena *CG_Asset_CurrentWorkingArena;
 
 
@@ -28,33 +28,33 @@ void asset_recursive_read_callback(int index, const char *_relativePath, const c
     }
   }
 
-   if(strcmp(extension,".png")==0){
-     printf("Found .png: %s, hash: %llu\n", _relativePath, hash);
-        CG_Texture* tex = texture_load_from_file(_relativePath, CG_Asset_CurrentWorkingArena);
+  if(strcmp(extension,".png")==0){
+    printf("Found .png: %s, hash: %llu\n", _relativePath, hash);
+    CG_Texture* tex = texture_load_from_file(_relativePath, CG_Asset_CurrentWorkingArena);
     u64 pixelDataSize = texture_get_pixel_data_size_in_bytes(tex);
     u64 totalWriteSize = 0;
 
-    CG_TextureAssetBin texAsset;
-    u64 texAssetSize = sizeof(texAsset);
-    totalWriteSize = texAssetSize + pixelDataSize;
+    u64 texAssetSize = sizeof(*tex);
+    totalWriteSize = texture_get_total_size_in_bytes(tex);
     
-    texAsset.Width = tex->Width;
-    texAsset.Height = tex->Height;
-    texAsset.BytesPerPixel = tex->BytesPerPixel;
-    texAsset.PixelDataRelativeOffset = texAssetSize;
+    /* texAsset.Width = tex->Width; */
+    /* texAsset.Height = tex->Height; */
+    /* texAsset.BytesPerPixel = tex->BytesPerPixel; */
+    /* texAsset.PixelDataRelativeOffset = texAssetSize; */
 
-    u8* dest = (u8*)&CG_Asset_CurrentPack.data[0];
-    dest+=CG_Asset_CurrentPackWritePos;
-    memcpy(dest, &texAsset, texAssetSize);
+    u8* dest = (u8*)CG_Asset_CurrentPack.data;
+    dest+=CG_Asset_CurrentPackWritePosFromDataPointer;
+    memcpy(dest, tex, texAssetSize);
     dest+=texAssetSize;
     memcpy(dest, tex->Pixels, pixelDataSize);
 
-
+    CG_Texture *TEST = (CG_Texture*)( (u8*)CG_Asset_CurrentPack.data + CG_Asset_CurrentPackWritePosFromDataPointer);
+    
     
     CG_AssetTableEntry entry;
     entry.id = hash;
     entry.type = CG_ASSET_TYPE_TEXTURE;
-    entry.offset = CG_Asset_CurrentPackWritePos;
+    entry.offset = CG_Asset_CurrentPackWritePosFromDataPointer + CG_Asset_CurrentPack.header.dataOffset;
     entry.dataSize = totalWriteSize;
 
 
@@ -62,7 +62,7 @@ void asset_recursive_read_callback(int index, const char *_relativePath, const c
     CG_Asset_CurrentPack.entries[CG_Asset_CurrentWriteAssetIndex] = entry;
     CG_Asset_CurrentWriteAssetIndex++;
     
-    CG_Asset_CurrentPackWritePos += totalWriteSize;
+    CG_Asset_CurrentPackWritePosFromDataPointer += totalWriteSize;
     CG_Asset_CurrentPack.header.dataSize+=totalWriteSize;
     
     arena_pop(CG_Asset_CurrentWorkingArena, texture_get_total_size_in_bytes(tex));
@@ -91,14 +91,18 @@ void asset_write_pack_to_bin(const char* _targetPath, CG_AssetPack *_pack){
 
   u64 writeSize = sizeof(_pack->header);
   memcpy(bytes, &_pack->header, writeSize);
+  CG_AssetPackHeader* header = (CG_AssetPackHeader*)bytes;
   writePos+=writeSize;
 
   writeSize=_pack->header.numAssets*sizeof(CG_AssetTableEntry);
-  memcpy(bytes+writePos, &_pack->entries[0],writeSize);
+  memcpy(bytes+writePos, _pack->entries,writeSize);
   writePos+=writeSize;
 
   writeSize = _pack->header.dataSize;
   memcpy(bytes+writePos, _pack->data, writeSize);
+
+  u8* dataPointer = bytes + writePos;
+  CG_Texture* tex = (CG_Texture*) dataPointer;
   writePos+=writeSize;
 
   platform_write_or_overwrite_file(_targetPath, bytes, _pack->header.totalPackSize);
@@ -127,7 +131,7 @@ int numAssets = platform_recursively_read_files_in_directory(_rawAssetsDir, NULL
  pack.header.version = 0;
  pack.header.numAssets = numAssets;
  pack.header.tableOffset = headerSize;
- pack.header.dataOffset = sizeof(pack);
+ pack.header.dataOffset = headerSize + tableTotalSize;
  pack.header.dataSize = 0;
 
  //@TEMP_ALLOC_USED
@@ -141,7 +145,7 @@ int numAssets = platform_recursively_read_files_in_directory(_rawAssetsDir, NULL
 
  
  CG_Asset_CurrentPack = pack;
- CG_Asset_CurrentPackWritePos = pack.header.dataOffset;
+ CG_Asset_CurrentPackWritePosFromDataPointer = 0;
 
 
    //@TODO if assets start becoming too large to hold all of them in memory at the same time
@@ -194,33 +198,72 @@ CG_RuntimeAssets asset_read_pack(const char *_packPath){
   return ass;
 }
 
-CG_RuntimeAsset *asset_use(CG_RuntimeAssets *_assets, const char* _stringPath){
-  u64 hash = asset_relative_path_to_hash(_stringPath);
-u64 testHash = asset_relative_path_to_hash("../assets/textures/pallette.png");
+
+CG_Texture *asset_load_texture(CG_RuntimeAssets *_assets, const char* _path){
+  CG_RuntimeAsset *asset = asset_load(_assets, _path, CG_ASSET_TYPE_TEXTURE,false);
+  CG_Texture *texture = (CG_Texture*)asset->data;
+  texture->id = asset->id;
+  u8* pixelsLocation = (u8*)texture + sizeof(CG_Texture);
+  texture->Pixels = (u32*)pixelsLocation;
+
+  return texture;
+}
+
+b32 asset_unload(CG_RuntimeAssets *_assets, CG_AssetId id){
+  u64 s =  sizeof(CG_RuntimeAsset);
+  for(int i=0;i<arena_get_num_items(_assets->loadedAssets, s);i++){
+    CG_RuntimeAsset *asset = arena_get_at(_assets->loadedAssets,i,s);
+    if(asset->id == id){
+      // @TEMP_FREE_USED
+      platform_free_file_memory(asset->data, asset->dataSize);
+
+      //@TEMP_FREE_USED
+      arena_add_to_free_list(_assets->loadedAssets, asset);
+      return true;
+    }
+  }
+  return false;
+}
+CG_RuntimeAsset *asset_load_from_id(CG_RuntimeAssets *_assets, CG_AssetId _id, enum CG_AssetType _type, b32 _returnRegardlessOfType){
+  u64 hash = _id;
   u64 s =  sizeof(CG_RuntimeAsset);
   for(int i=0;i<arena_get_num_items(_assets->loadedAssets, s);i++){
     CG_RuntimeAsset *asset = arena_get_at(_assets->loadedAssets,i,s);
     if(asset->id == hash){
-      asset->numUsers++;
-      return asset;
+      if(_returnRegardlessOfType || _type == asset->type){
+	return asset;
+      }
+      printf("Asset found but type mismatched\n");
+      return NULL;
     }
   }
 
   
   for(int i=0;i<_assets->numAssets;i++){
     if(_assets->packEntries[i].id == hash){
-      CG_AssetTableEntry en = _assets->packEntries[i];
-      CG_RuntimeAsset *asset = ARENA_PUSH_TYPE(_assets->loadedAssets, CG_RuntimeAsset);
+      if(_returnRegardlessOfType || _type == _assets->packEntries[i].type){
+	CG_AssetTableEntry en = _assets->packEntries[i];
 
-      asset->id =en.id;
-      asset->type = en.type;
-      asset->dataSize = en.dataSize;
-      asset->data = platform_read_part_of_opened_file(_assets->binHandle,en.offset,en.dataSize, _assets->binFileSize);
+	//@TEMP_ALLOC_USED
+	CG_RuntimeAsset *asset = ARENA_PUSH_TYPE(_assets->loadedAssets, CG_RuntimeAsset);
 
-      asset->numUsers++;
-      return asset;
+	asset->id =en.id;
+	asset->type = en.type;
+	asset->dataSize = en.dataSize;
+	asset->data = platform_read_part_of_opened_file(_assets->binHandle,en.offset,en.dataSize, _assets->binFileSize);
+
+	return asset;
+      }
+      printf("Asset found but type mismatched\n");
+      return NULL;
+
+
     }
   }
 
   return NULL;
+}
+CG_RuntimeAsset *asset_load(CG_RuntimeAssets *_assets, const char* _stringPath, enum CG_AssetType _type, b32 _returnRegardlessOfType){
+  u64 hash = asset_relative_path_to_hash(_stringPath);
+  return asset_load_from_id(_assets, hash, _type, _returnRegardlessOfType);
 }

@@ -7,6 +7,8 @@
 
 typedef u64 CG_AssetId;
 
+const CG_AssetId CG_ASSET_UNINITIALIZED_ID = 0xFFFFFFFFFFFFFFFF;
+
 enum CG_AssetType{
   CG_ASSET_TYPE_TEXTURE,
   CG_ASSET_TYPE_MODEL,
@@ -36,7 +38,6 @@ typedef struct CG_AssetTableEntry{
 typedef struct CG_RuntimeAsset{
   CG_AssetId id;
   enum CG_AssetType type;
-  u32 numUsers;
   size_t dataSize;
   void *data;
 } CG_RuntimeAsset;
@@ -57,18 +58,21 @@ typedef struct CG_RuntimeAssets {
   size_t binFileSize;
 } CG_RuntimeAssets;
 
-typedef struct CG_TextureAssetBin{
-  u32 Width;
-  u32 Height;
-  u32 BytesPerPixel;
-  u64 PixelDataRelativeOffset;
-} CG_TextureAssetBin;
-
 
 
 
 void asset_write_assets(const char *_rawAssetsDir, const char *_binFilePath);
 CG_RuntimeAssets asset_read_pack(const char *_packPath);
+
+
+CG_RuntimeAsset *asset_load_from_id(CG_RuntimeAssets *_assets, CG_AssetId _id, enum CG_AssetType _type, b32 _returnRegardlessOfType);
+CG_RuntimeAsset *asset_load(CG_RuntimeAssets *_assets, const char* _stringPath, enum CG_AssetType _type, b32 _returnRegardlessOfType);
+
+
+
+struct CG_Texture;
+struct CG_Texture *asset_load_texture(CG_RuntimeAssets *_assets, const char* _path);
+
 
 #endif
 

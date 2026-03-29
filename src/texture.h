@@ -1,12 +1,16 @@
 #ifndef _CG_TEXTURE
 #define _CG_TEXTURE
+#include "asset.h"
+
 
 typedef struct CG_Texture{
+  CG_AssetId id;
   size_t Width;
   size_t Height;
   size_t BytesPerPixel;
-  u32 Pixels[];
+  u32 *Pixels;
 }CG_Texture;
+
 
 
 
