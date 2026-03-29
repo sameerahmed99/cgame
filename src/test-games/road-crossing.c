@@ -4,7 +4,10 @@ typedef struct RoadGame{
   Mat4x4 ProjectionMatrix;
   float NearPlaneDistance;
   float FarPlaneDistance;
-  CG_Model* SceneModel;
+  CG_Model* TrainModel;
+  CG_Model* RailwayTrackModel;
+  CG_Model* TerrainModel;
+  CG_Model* BridgeModel;
   CG_Entity* ActiveCam;
   CG_Entity* FreeCam;
   float CameraSpeed;
@@ -12,7 +15,10 @@ typedef struct RoadGame{
   float CameraFastSpeed;
   CG_Input Input;
   float CamXRot, CamYRot;
-  CG_Entity* SceneModelEntity;
+  CG_Entity* TrainEntity;
+  CG_Entity* RailwayTrackEntity;
+  CG_Entity* TerrainEntity;
+  CG_Entity* BridgeEntity;
   CG_RuntimeAssets *Assets;
 } RoadGame;
 
@@ -58,12 +64,34 @@ void cg_active_game_init(){
   rg.ActiveCam = rg.FreeCam;
   Vec3 camSpawnPos = {4,5.5f, -35};
   entity_set_world_pos(rg.ActiveCam, camSpawnPos);
-  rg.SceneModelEntity = entity_create(ArenaEntities, ENTITY_TYPE_STATIC);
+
+  // ENTITIES
+  rg.TrainEntity = entity_create(ArenaEntities, ENTITY_TYPE_STATIC);
+  rg.RailwayTrackEntity = entity_create(ArenaEntities, ENTITY_TYPE_STATIC);
+  rg.TerrainEntity = entity_create(ArenaEntities, ENTITY_TYPE_STATIC);
+  rg.BridgeEntity = entity_create(ArenaEntities, ENTITY_TYPE_STATIC);
   
   CG_PlatformConfig conf = cg_get_platform_config();
   float aspect = (float)conf.ScreenWidth / (float)conf.ScreenHeight;
   rg.ProjectionMatrix=   math_mat4x4_create_perspective_projection(80, false, aspect, rg.NearPlaneDistance, rg.FarPlaneDistance);
-  rg.SceneModel=  model_loader_load_gltf("../assets/models/CGameTestScene_TrainStation.glb", true);
+
+  // MODELS
+  rg.TrainModel=  model_loader_load_gltf("../assets/prop_packs/railway_bridge_prop_pack/train_cab.glb", true);
+
+  rg.RailwayTrackModel=  model_loader_load_gltf("../assets/prop_packs/railway_bridge_prop_pack/railway_track.glb", true);
+
+  rg.TerrainModel=  model_loader_load_gltf("../assets/prop_packs/railway_bridge_prop_pack/terrain.glb", true);
+  rg.BridgeModel=  model_loader_load_gltf("../assets/prop_packs/railway_bridge_prop_pack/bridge.glb", true);
+
+
+  // TEXTURES
+  rg.TrainModel->materialPerMesh[0]->texture =   asset_load_texture(rg.Assets,"../assets/prop_packs/railway_bridge_prop_pack/train_cab_color.png");
+  rg.RailwayTrackModel->materialPerMesh[0]->texture =   asset_load_texture(rg.Assets,"../assets/prop_packs/railway_bridge_prop_pack/dirt_rail_road.png");
+
+  rg.TerrainModel->materialPerMesh[0]->texture =   asset_load_texture(rg.Assets,"../assets/prop_packs/railway_bridge_prop_pack/grass_terrain.png");
+
+  rg.BridgeModel->materialPerMesh[0]->texture =   asset_load_texture(rg.Assets,"../assets/prop_packs/railway_bridge_prop_pack/bridge.png");
+									  
 
 }
 
@@ -173,7 +201,13 @@ void cg_active_game_update(float dt, CG_Input input){
   rg_update_free_cam(input,dt);
   
   
-  graphics_renderer_submit_model(rg.SceneModel,rg.SceneModelEntity->worldMatrix, rg.ActiveCam->viewMatrix, rg.ProjectionMatrix);    
+  graphics_renderer_submit_model(rg.TrainModel,rg.TrainEntity->worldMatrix, rg.ActiveCam->viewMatrix, rg.ProjectionMatrix);
+
+  graphics_renderer_submit_model(rg.RailwayTrackModel,rg.RailwayTrackEntity->worldMatrix, rg.ActiveCam->viewMatrix, rg.ProjectionMatrix);
+
+  graphics_renderer_submit_model(rg.TerrainModel,rg.TerrainEntity->worldMatrix, rg.ActiveCam->viewMatrix, rg.ProjectionMatrix);
+
+  graphics_renderer_submit_model(rg.BridgeModel,rg.BridgeEntity->worldMatrix, rg.ActiveCam->viewMatrix, rg.ProjectionMatrix);    
 }
 void cg_active_game_fixed_update(float dt){
   

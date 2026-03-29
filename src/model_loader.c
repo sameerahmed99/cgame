@@ -33,12 +33,18 @@ CG_Model *model_loader_load_gltf(const char *_path, b32 _convertFromBlenderCoord
         meshes = malloc(sizeof(CG_Mesh) * data->meshes_count);
         model->meshes = meshes;
         model->numMeshes = data->meshes_count;
-	
-	model->materialPerMesh = malloc(sizeof(CG_Material) * data->meshes_count);
+
+
+	//@TEMP_ALLOC_USED
+	model->materialPerMesh = malloc(sizeof(CG_Material*) * data->meshes_count);
 
 	// @TODO decide on a proper mesh/model format and set materials accordingly
 	for(int m=0;m<data->meshes_count;m++){
-	  model->materialPerMesh[m] = Renderer.defaultMaterial;
+	  //@TEMP_ALLOC_USED
+	  CG_Material* mat =malloc(sizeof(CG_Material));
+	  *mat   = *Renderer.defaultMaterial;
+
+	  model->materialPerMesh[m] = mat;
 	}
         int meshIndex = 0;
         printf("Model loaded, meshes: %d\n", data->meshes_count);

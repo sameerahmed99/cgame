@@ -79,8 +79,8 @@ CG_PlatformConfig cg_get_requested_platform_config(){
     .ScreenHeight = 0,
     .RequestedScreenWidth = 1920,
     .RequestedScreenHeight = 1080,
-    .RenderResolutionWidth = 500,
-    .RenderResolutionHeight = 500,
+    .RenderResolutionWidth = 700,
+    .RenderResolutionHeight = 700,
     .BaseScreenWidth = 1280,
     .BaseScreenHeight = 720,
     .BasePixelsPerWorldUnit = 5
@@ -227,9 +227,10 @@ internal void cg_init(CG_OffscreenBuffer *offscreenBuffer){
 
   //  DefaultTexture = texture_load_from_file("../assets/textures/pistol-color.png", TEMP_ArenaAssets);
 
-  //  DefaultTexture = texture_load_from_file("../assets/textures/elias-wick-checker.png", TEMP_ArenaAssets);
+  DefaultTexture = texture_load_from_file("../assets/textures/elias-wick-checker.png", TEMP_ArenaAssets);
   //    DefaultTexture = texture_load_from_file("../assets/textures/white-16x16.png", TEMP_ArenaAssets);
-          DefaultTexture = texture_load_from_file("../assets/textures/pallette.png", TEMP_ArenaAssets);
+  //          DefaultTexture = texture_load_from_file("../assets/textures/pallette.png", TEMP_ArenaAssets);
+  //	  DefaultTexture = texture_load_from_file("../assets/prop_packs/railway_bridge_prop_pack/train_cab_color.png", TEMP_ArenaAssets);
   //      DefaultTexture  = texture_get_white();
   //  DefaultTexture = texture_load_from_file("../assets/textures/pistol-color.png", TEMP_ArenaAssets);
   DefaultMaterial.color = Vec4One;
@@ -565,7 +566,10 @@ dbuffer[i] = 99999999999;
   }
 
 
-  CG_Color skyCol = {0,0,0,1};
+  CG_Color skyCol = {57, 84, 97,1};
+  skyCol.x/=255.0f;
+  skyCol.y/=255.0f;
+  skyCol.z/=255.0f;
   
   draw_sky(ScreenBuffer,skyCol, skyCol, skyCol);
   cg_active_game_update(_deltaTime, GameInput);
