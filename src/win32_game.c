@@ -1070,6 +1070,7 @@ u32 platform_get_client_screen_height(){
 u32 platform_convert_color(CG_Color _rgba){
   // win32 is little endian
   // R channel should be the least significant bit (right most 8 bits) and so on
+
   _rgba = cg_clamp_color(_rgba);
   u8 a = (u8)(_rgba.w*255) & 0xFF;
   u8 b =  (u8)(_rgba.z*255) & 0xFF;

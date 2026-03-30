@@ -1,3 +1,7 @@
-1. Remove random malloc and free calls, use platform calls or use arena or other appropriate allocators more thoughtfully 
+1. Re-work texture sampling and CG_Color so that the platform color conversion doesn't happen at the rasterization stage. Conversion should happen at the texture loading stage or only when pixels are updated.
 
-1. Create rule for overlapping triangle edges such that no two triangles try to color the same pixel
+2. Font rendering
+
+3. Use pre-allocated game memory instead of mallocs and arenas everywhere, search for @TEMP_ALLOC_USED and @TEMP_FREE_USED
+
+4. Create rule for overlapping triangle edges such that no two triangles try to color the same pixel

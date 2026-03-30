@@ -79,8 +79,8 @@ CG_PlatformConfig cg_get_requested_platform_config(){
     .ScreenHeight = 0,
     .RequestedScreenWidth = 1920,
     .RequestedScreenHeight = 1080,
-    .RenderResolutionWidth = 700,
-    .RenderResolutionHeight = 700,
+    .RenderResolutionWidth = 800,
+    .RenderResolutionHeight = 600,
     .BaseScreenWidth = 1280,
     .BaseScreenHeight = 720,
     .BasePixelsPerWorldUnit = 5
@@ -193,7 +193,10 @@ internal void cg_init(CG_OffscreenBuffer *offscreenBuffer){
   DebugSettings.ambientLightColor = ambientLightCol;
 
   
-  Vec4 fogColor = {38/255.0f, 62/255.0f, 92/255.0f,1.0f};
+  CG_Color fogColor = {193, 211, 230,1.0f};
+  fogColor.x/=255.0f;
+  fogColor.y/=255.0f;
+  fogColor.z/=255.0f;
   DebugSettings.fogColor = fogColor;
 
   DepthBuffer = malloc(sizeof(CG_Buffer));
@@ -566,11 +569,7 @@ dbuffer[i] = 99999999999;
   }
 
 
-  CG_Color skyCol = {57, 84, 97,1};
-  skyCol.x/=255.0f;
-  skyCol.y/=255.0f;
-  skyCol.z/=255.0f;
-  
+  CG_Color skyCol = DebugSettings.fogColor;
   draw_sky(ScreenBuffer,skyCol, skyCol, skyCol);
   cg_active_game_update(_deltaTime, GameInput);
 

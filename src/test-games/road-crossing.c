@@ -8,17 +8,26 @@ typedef struct RoadGame{
   CG_Model* RailwayTrackModel;
   CG_Model* TerrainModel;
   CG_Model* BridgeModel;
-  CG_Entity* ActiveCam;
-  CG_Entity* FreeCam;
+  CG_Model* WaterModel;
+  CG_Model* AppleTreesModel;
+  
+
   float CameraSpeed;
   float CameraSlowSpeed;
   float CameraFastSpeed;
   CG_Input Input;
   float CamXRot, CamYRot;
+
+  CG_Entity* ActiveCam;
+  CG_Entity* FreeCam;
+  
   CG_Entity* TrainEntity;
   CG_Entity* RailwayTrackEntity;
   CG_Entity* TerrainEntity;
   CG_Entity* BridgeEntity;
+  CG_Entity* WaterEntity;
+  CG_Entity* AppleTreesEntity;
+  
   CG_RuntimeAssets *Assets;
 } RoadGame;
 
@@ -70,6 +79,8 @@ void cg_active_game_init(){
   rg.RailwayTrackEntity = entity_create(ArenaEntities, ENTITY_TYPE_STATIC);
   rg.TerrainEntity = entity_create(ArenaEntities, ENTITY_TYPE_STATIC);
   rg.BridgeEntity = entity_create(ArenaEntities, ENTITY_TYPE_STATIC);
+  rg.WaterEntity = entity_create(ArenaEntities, ENTITY_TYPE_STATIC);
+  rg.AppleTreesEntity = entity_create(ArenaEntities, ENTITY_TYPE_STATIC);
   
   CG_PlatformConfig conf = cg_get_platform_config();
   float aspect = (float)conf.ScreenWidth / (float)conf.ScreenHeight;
@@ -82,16 +93,16 @@ void cg_active_game_init(){
 
   rg.TerrainModel=  model_loader_load_gltf("../assets/prop_packs/railway_bridge_prop_pack/terrain.glb", true);
   rg.BridgeModel=  model_loader_load_gltf("../assets/prop_packs/railway_bridge_prop_pack/bridge.glb", true);
+  rg.WaterModel=  model_loader_load_gltf("../assets/prop_packs/railway_bridge_prop_pack/water.glb", true);
+  rg.AppleTreesModel=  model_loader_load_gltf("../assets/prop_packs/railway_bridge_prop_pack/apple_trees.glb", true);
 
 
   // TEXTURES
   rg.TrainModel->materialPerMesh[0]->texture =   asset_load_texture(rg.Assets,"../assets/prop_packs/railway_bridge_prop_pack/train_cab_color.png");
   rg.RailwayTrackModel->materialPerMesh[0]->texture =   asset_load_texture(rg.Assets,"../assets/prop_packs/railway_bridge_prop_pack/dirt_rail_road.png");
-
   rg.TerrainModel->materialPerMesh[0]->texture =   asset_load_texture(rg.Assets,"../assets/prop_packs/railway_bridge_prop_pack/grass_terrain.png");
-
   rg.BridgeModel->materialPerMesh[0]->texture =   asset_load_texture(rg.Assets,"../assets/prop_packs/railway_bridge_prop_pack/bridge.png");
-									  
+  rg.WaterModel->materialPerMesh[0]->texture =   asset_load_texture(rg.Assets,"../assets/prop_packs/railway_bridge_prop_pack/water.png");					        rg.AppleTreesModel->materialPerMesh[0]->texture =   asset_load_texture(rg.Assets,"../assets/prop_packs/railway_bridge_prop_pack/apple_tree_color.png");						  
 
 }
 
@@ -207,7 +218,11 @@ void cg_active_game_update(float dt, CG_Input input){
 
   graphics_renderer_submit_model(rg.TerrainModel,rg.TerrainEntity->worldMatrix, rg.ActiveCam->viewMatrix, rg.ProjectionMatrix);
 
-  graphics_renderer_submit_model(rg.BridgeModel,rg.BridgeEntity->worldMatrix, rg.ActiveCam->viewMatrix, rg.ProjectionMatrix);    
+  graphics_renderer_submit_model(rg.BridgeModel,rg.BridgeEntity->worldMatrix, rg.ActiveCam->viewMatrix, rg.ProjectionMatrix);
+
+  graphics_renderer_submit_model(rg.WaterModel,rg.WaterEntity->worldMatrix, rg.ActiveCam->viewMatrix, rg.ProjectionMatrix);
+
+  graphics_renderer_submit_model(rg.AppleTreesModel,rg.AppleTreesEntity->worldMatrix, rg.ActiveCam->viewMatrix, rg.ProjectionMatrix);    
 }
 void cg_active_game_fixed_update(float dt){
   

@@ -780,13 +780,11 @@ Vec4 lerp_vert_vec4(Vec4 _vala, Vec4 _valb, Vec4 _valc,float za, float zb, float
 }
 
 
-internal CG_Color graphics_sample_texture(CG_Texture *tex, float uvx, float uvy, Vec2 _tiling){
+internal CG_Color graphics_sample_texture(CG_Texture *tex, float uvx, float uvy, Vec2 _tiling, float width, float height){
 
   // @TODO - Handle negative uvs
-  float width = (float)tex->Width;
-  float height = (float)tex->Height;
-  u32 coordinateX = (u32)((uvx*width) *_tiling.x ) % tex->Width;
-  u32 coordinateY = (u32)((uvy*height) * _tiling.y) %tex->Height;
+  u32 coordinateX = (u32)((uvx*width) *_tiling.x ) % (u32)width;
+  u32 coordinateY = (u32)((uvy*height) * _tiling.y) % (u32)height;
   return texture_read_pixel(tex, coordinateX, coordinateY);
 }
 // https://www.scratchapixel.com/lessons/3d-basic-rendering/rasterization-practical-implementation/rasterization-stage.html
@@ -909,7 +907,10 @@ void draw3d_triangle_rasterize(CG_VertRasterData a, CG_VertRasterData b, CG_Vert
   Vec2 edge0 = math_vec2_subtract(triC, triB);
   Vec2 edge1 = math_vec2_subtract(triA, triC);
   Vec2 edge2 = math_vec2_subtract(triB, triA);
-
+  CG_Texture* texture=_material->texture;
+  float texFloatWidth = (float)texture->Width;
+  float texFloatHeight = (float)texture->Height;
+  Vec2 tiling = _material->textureTiling;
   for(int y = minY; y <= maxY; y++){
 
     u32 rowCoordinate = y*(screenBuffer->Width);
@@ -976,7 +977,7 @@ void draw3d_triangle_rasterize(CG_VertRasterData a, CG_VertRasterData b, CG_Vert
 
 
 	  float fogAmount =depth;
-	  fogAmount/=100.0f;
+	  fogAmount/=180.0f;
 
 
 	  fogAmount = Clamp01(fogAmount);
@@ -989,8 +990,8 @@ void draw3d_triangle_rasterize(CG_VertRasterData a, CG_VertRasterData b, CG_Vert
 
 	  Vec2 frag_tex_coord = lerp_vert_vec2(a.localTexCoord, b.localTexCoord, c.localTexCoord, a.wVal, b.wVal, c.wVal,nw0,nw1,nw2, depth);
 
-	  Vec4 frag_color = graphics_sample_texture(_material->texture, frag_tex_coord.x, frag_tex_coord.y, _material->textureTiling);
-
+	  Vec4 frag_color = graphics_sample_texture(texture, frag_tex_coord.x, frag_tex_coord.y, tiling, texFloatWidth, texFloatHeight);
+	  //	  Vec4 frag_color = {0.5f,0.5f,0.5f,1.0f}
 
 	  Vec3 worldNormal = lerp_vert_vec3(a.worldNormal, b.worldNormal, c.worldNormal, a.wVal, b.wVal, c.wVal, nw0, nw1, nw2, depth);
 
@@ -1114,4 +1115,5 @@ void graphics_renderer_submit_model(CG_Model* model,Mat4x4 _modelMatrix, Mat4x4 
     graphics_renderer_submit_mesh(&model->meshes[i], model->materialPerMesh[i],_modelMatrix,  _inversedCameraMatrix, _projection);
   }
 }
+
 
