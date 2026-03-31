@@ -39,6 +39,9 @@
 
 
 
+
+#define CG_PLATFORM_MAX_PATH_SIZE 256
+
 #include "cgame.c"
 
 
@@ -50,7 +53,7 @@
 
 #define MsToReftimeUnits(Value) (Value * 10000)
 #define SecToReftimeUnits(Value) (Value * 10000000)
-#define CG_WIN32_MAX_PATH_SIZE 256
+
 // const int TEMP_HNS_BUF_DURATION = SecToReftimeUnits(0.020);
 
 global_variable bool AppRunning;
@@ -1146,9 +1149,9 @@ int platform_recursively_read_files_in_directory(const char* _path, PlatformRecu
   WIN32_FIND_DATAA findData;
   HANDLE hFind;
 
-  char currentFullPath[CG_WIN32_MAX_PATH_SIZE];
+  char currentFullPath[CG_PLATFORM_MAX_PATH_SIZE];
 
-  char relativePath[CG_WIN32_MAX_PATH_SIZE];
+  char relativePath[CG_PLATFORM_MAX_PATH_SIZE];
 
 
 
@@ -1188,7 +1191,7 @@ int platform_recursively_read_files_in_directory(const char* _path, PlatformRecu
 	/* printf("Current Relative: %s\n",relativePath); */
 	/* printf("cFileName: %s\n",findData.cFileName); */
 
-	char nextPath[CG_WIN32_MAX_PATH_SIZE];
+	char nextPath[CG_PLATFORM_MAX_PATH_SIZE];
 	strcpy(nextPath,relativePath);
 
 	u32 writePos = strlen(relativePath)-1;
@@ -1216,13 +1219,13 @@ int platform_recursively_read_files_in_directory(const char* _path, PlatformRecu
     else{
 
 
-      char relativePath[CG_WIN32_MAX_PATH_SIZE];
+      char relativePath[CG_PLATFORM_MAX_PATH_SIZE];
       strcpy(relativePath, _path);
       strcpy(relativePath + strlen(relativePath), "/");
       strcpy(relativePath + strlen(relativePath), findData.cFileName);
 
-      char absolutePath[CG_WIN32_MAX_PATH_SIZE];
-      GetFullPathNameA(relativePath, CG_WIN32_MAX_PATH_SIZE,absolutePath, NULL);
+      char absolutePath[CG_PLATFORM_MAX_PATH_SIZE];
+      GetFullPathNameA(relativePath, CG_PLATFORM_MAX_PATH_SIZE,absolutePath, NULL);
 
       if(_callback!=NULL){
 	      _callback(numAssets, relativePath, absolutePath);
@@ -1249,4 +1252,4 @@ int platform_recursively_read_files_in_directory(const char* _path, PlatformRecu
 }
 
 
- 
+

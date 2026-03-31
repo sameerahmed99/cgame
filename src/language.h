@@ -2,8 +2,9 @@
 #define _CG_LANGUAGE
 
 enum CG_Language{
-CG_LANGUAGE_ENGLISh
-}
+  CG_LANGUAGE_UNRECOGNIZED,
+  CG_LANGUAGE_ENGLISH
+};
 
 
 #endif

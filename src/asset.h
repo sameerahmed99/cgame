@@ -4,7 +4,7 @@
 
 
 #define CG_ASSET_BIN_MAGIC 0x4019FFCC
-
+#define CG_ASSID(v) (asset_relative_path_to_hash((v)))
 typedef u64 CG_AssetId;
 
 const CG_AssetId CG_ASSET_UNINITIALIZED_ID = 0xFFFFFFFFFFFFFFFF;
@@ -12,7 +12,8 @@ const CG_AssetId CG_ASSET_UNINITIALIZED_ID = 0xFFFFFFFFFFFFFFFF;
 enum CG_AssetType{
   CG_ASSET_TYPE_TEXTURE,
   CG_ASSET_TYPE_MODEL,
-  CG_ASSET_TYPE_AUDIO
+  CG_ASSET_TYPE_AUDIO,
+  CG_ASSET_TYPE_FONT
 };
 
 typedef struct CG_AssetPackHeader{
@@ -59,7 +60,7 @@ typedef struct CG_RuntimeAssets {
 } CG_RuntimeAssets;
 
 
-
+CG_AssetId asset_relative_path_to_hash(const char* string);
 
 void asset_write_assets(const char *_rawAssetsDir, const char *_binFilePath);
 CG_RuntimeAssets asset_read_pack(const char *_packPath);
@@ -71,8 +72,10 @@ CG_RuntimeAsset *asset_load(CG_RuntimeAssets *_assets, const char* _stringPath, 
 
 
 struct CG_Texture;
-struct CG_Texture *asset_load_texture(CG_RuntimeAssets *_assets, const char* _path);
+struct CG_Texture *asset_load_texture(CG_RuntimeAssets *_assets, CG_AssetId id);
 
+struct CG_Font;
+struct CG_Font *asset_load_font(CG_RuntimeAssets *_assets, CG_AssetId id);
 
 #endif
 

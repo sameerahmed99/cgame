@@ -5,18 +5,24 @@
 #include "language.h"
 #include "memory.h"
 #include "math.h"
-
+#define CG_MAX_FONT_NAME_CHARS 64
 struct CG_Texture;
+
 typedef struct CG_Font{
+  char name[CG_MAX_FONT_NAME_CHARS];
   CG_AssetId assetId;
   u32 numGlyphs;
-  float glyphBoxSizePixels;
+  u32 glyphBoxSizePixels;
   enum CG_Language language;
-  struct CG_Texture *bitmap;
+  CG_AssetId textureAssetId;
+  struct CG_Texture *texture;
 }CG_Font;
 
 
 
-CG_Font* font_load_from_file(const char* _filePath, Arena* _arena);
-void font_draw(CG_Font* _font, float _sizeInPixels, Vec2 _position, CG_Color _color);
+CG_Font* font_load_from_cg_font_file(const char* _filePath, b32 _loadTexture);
+void font_free_cg_font(CG_Font* font);
+void font_draw(CG_Font* _font,char *text,float _fontSizeInPixels, Vec2 _centerPosScreenSpace, CG_Color _color, float _letterSpacingRelativeToSize);
+
+float font_get_text_width(char *text,float _fontSizeInPixels, float _letterSpacingRelativeToSize);
 #endif

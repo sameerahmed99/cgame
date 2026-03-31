@@ -96,13 +96,20 @@ void cg_active_game_init(){
   rg.WaterModel=  model_loader_load_gltf("../assets/prop_packs/railway_bridge_prop_pack/water.glb", true);
   rg.AppleTreesModel=  model_loader_load_gltf("../assets/prop_packs/railway_bridge_prop_pack/apple_trees.glb", true);
 
+  CG_Font* testFont = asset_load_font(rg.Assets, CG_ASSID("fonts/default/default.cgfont"));
 
   // TEXTURES
-  rg.TrainModel->materialPerMesh[0]->texture =   asset_load_texture(rg.Assets,"../assets/prop_packs/railway_bridge_prop_pack/train_cab_color.png");
-  rg.RailwayTrackModel->materialPerMesh[0]->texture =   asset_load_texture(rg.Assets,"../assets/prop_packs/railway_bridge_prop_pack/dirt_rail_road.png");
-  rg.TerrainModel->materialPerMesh[0]->texture =   asset_load_texture(rg.Assets,"../assets/prop_packs/railway_bridge_prop_pack/grass_terrain.png");
-  rg.BridgeModel->materialPerMesh[0]->texture =   asset_load_texture(rg.Assets,"../assets/prop_packs/railway_bridge_prop_pack/bridge.png");
-  rg.WaterModel->materialPerMesh[0]->texture =   asset_load_texture(rg.Assets,"../assets/prop_packs/railway_bridge_prop_pack/water.png");					        rg.AppleTreesModel->materialPerMesh[0]->texture =   asset_load_texture(rg.Assets,"../assets/prop_packs/railway_bridge_prop_pack/apple_tree_color.png");						  
+  rg.TrainModel->materialPerMesh[0]->texture =   asset_load_texture(rg.Assets,CG_ASSID("prop_packs/railway_bridge_prop_pack/train_cab_color.png"));
+  
+rg.RailwayTrackModel->materialPerMesh[0]->texture =   asset_load_texture(rg.Assets,CG_ASSID("prop_packs/railway_bridge_prop_pack/dirt_rail_road.png"));
+  
+rg.TerrainModel->materialPerMesh[0]->texture =   asset_load_texture(rg.Assets,CG_ASSID("prop_packs/railway_bridge_prop_pack/grass_terrain.png"));
+  
+rg.BridgeModel->materialPerMesh[0]->texture =   asset_load_texture(rg.Assets,CG_ASSID("prop_packs/railway_bridge_prop_pack/bridge.png"));
+
+  rg.WaterModel->materialPerMesh[0]->texture =   asset_load_texture(rg.Assets,CG_ASSID("prop_packs/railway_bridge_prop_pack/water.png"));
+
+  rg.AppleTreesModel->materialPerMesh[0]->texture =   asset_load_texture(rg.Assets,CG_ASSID("prop_packs/railway_bridge_prop_pack/apple_tree_color.png"));				     
 
 }
 

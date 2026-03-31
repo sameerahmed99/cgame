@@ -87,7 +87,7 @@ void platform_hide_cursor();
 void platform_lock_cursor();
 void platform_unlock_cursor();
 
-
+u32 platform_get_max_file_path_size();
 // int: index of current file (doesn't count directories, just number of files found so far -1)
 // const char*: relative path of file
 // const char*: absolute path of file

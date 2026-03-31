@@ -8,10 +8,11 @@
 CG_AssetPack CG_Asset_CurrentPack;
 u64 CG_Asset_CurrentWriteAssetIndex = 0;
 u64 CG_Asset_CurrentPackWritePosFromDataPointer;
+const char* CG_Asset_CurrentPackWriteRootDir;
 Arena *CG_Asset_CurrentWorkingArena;
 
 
-u64 asset_relative_path_to_hash(const char* string){
+CG_AssetId asset_relative_path_to_hash(const char* string){
  size_t length = (string == NULL) ? 0 : strlen(string);
   return XXH64(string, length, CG_XXHASH_SEED);
 }
@@ -19,7 +20,18 @@ void asset_recursive_read_callback(int index, const char *_relativePath, const c
 
   char extension[16];
   u32 len = strlen(_relativePath);
-  u64 hash = asset_relative_path_to_hash(_relativePath);
+
+  char relativePathWithoutRoot[CG_PLATFORM_MAX_PATH_SIZE];
+
+  // the -1 in pathLen and the +1 in the copy position are to get rid of the /
+  // so that instead of /fonts/... we get fonts/...
+  u32 pathLen=strlen(_relativePath) - strlen(CG_Asset_CurrentPackWriteRootDir)-1;
+  memcpy(relativePathWithoutRoot, _relativePath+strlen(CG_Asset_CurrentPackWriteRootDir)+1,pathLen);
+
+  relativePathWithoutRoot[pathLen]='\0';
+
+
+  u64 hash = asset_relative_path_to_hash(relativePathWithoutRoot);
   
   for(int i=len-1;i>=0;i--){
     if(_relativePath[i] == '.'){
@@ -29,8 +41,8 @@ void asset_recursive_read_callback(int index, const char *_relativePath, const c
   }
 
   if(strcmp(extension,".png")==0){
-    printf("Found .png: %s, hash: %llu\n", _relativePath, hash);
     CG_Texture* tex = texture_load_from_file(_relativePath, CG_Asset_CurrentWorkingArena);
+    tex->id = hash;
     u64 pixelDataSize = texture_get_pixel_data_size_in_bytes(tex);
     u64 totalWriteSize = 0;
 
@@ -48,7 +60,7 @@ void asset_recursive_read_callback(int index, const char *_relativePath, const c
     dest+=texAssetSize;
     memcpy(dest, tex->Pixels, pixelDataSize);
 
-    CG_Texture *TEST = (CG_Texture*)( (u8*)CG_Asset_CurrentPack.data + CG_Asset_CurrentPackWritePosFromDataPointer);
+
     
     
     CG_AssetTableEntry entry;
@@ -67,20 +79,43 @@ void asset_recursive_read_callback(int index, const char *_relativePath, const c
     
     arena_pop(CG_Asset_CurrentWorkingArena, texture_get_total_size_in_bytes(tex));
 
-    ASSERT_NO_EVAL(CG_Asset_CurrentPack.header.dataSize <= CG_ASSET_PACK_MAX_DATA_SIZE);
+  
   }
-  else if(extension == ".glb"){
+  else if(strcmp(extension,".glb") == 0){
 
   }
-  else if(extension == ".wav"){
+  else if(strcmp(extension,".wav") == 0){
 
   }
-  else if(extension == ".ttf"){
+  else if(strcmp(extension,".cgfont")==0){
+    CG_Font* font = font_load_from_cg_font_file(_relativePath,false);
+    font->assetId = hash;
+    u64 totalWriteSize = sizeof(*font);
+    u8* dest = (u8*)CG_Asset_CurrentPack.data;
+    dest+=CG_Asset_CurrentPackWritePosFromDataPointer;
+    memcpy(dest, font, totalWriteSize);
+    
+    CG_AssetTableEntry entry;
+    entry.id = hash;
+    entry.type = CG_ASSET_TYPE_FONT;
+    entry.offset = CG_Asset_CurrentPackWritePosFromDataPointer + CG_Asset_CurrentPack.header.dataOffset;
+    entry.dataSize = totalWriteSize;
+
+
+    CG_Asset_CurrentPack.entries[CG_Asset_CurrentWriteAssetIndex] = entry;
+    CG_Asset_CurrentWriteAssetIndex++;
+    
+    CG_Asset_CurrentPackWritePosFromDataPointer += totalWriteSize;
+    CG_Asset_CurrentPack.header.dataSize+=totalWriteSize;
+
+    font_free_cg_font(font);
 
   }
 
   //  printf("Found asset: %s\n", _relativePath); 
    //  printf("Hash: %u\n", hash);
+
+  ASSERT_NO_EVAL(CG_Asset_CurrentPack.header.dataSize <= CG_ASSET_PACK_MAX_DATA_SIZE);
 }
 
 
@@ -122,6 +157,8 @@ void asset_write_assets(const char *_rawAssetsDir, const char *_binFilePath){
     //@TEMP_ALLOC_USED
     CG_Asset_CurrentWorkingArena = arena_create(Gigabytes(4), Megabytes(500), false);
   }
+
+  CG_Asset_CurrentPackWriteRootDir = _rawAssetsDir;
 int numAssets = platform_recursively_read_files_in_directory(_rawAssetsDir, NULL);
  CG_AssetPack pack = {0};
 
@@ -199,15 +236,24 @@ CG_RuntimeAssets asset_read_pack(const char *_packPath){
 }
 
 
-CG_Texture *asset_load_texture(CG_RuntimeAssets *_assets, const char* _path){
-  CG_RuntimeAsset *asset = asset_load(_assets, _path, CG_ASSET_TYPE_TEXTURE,false);
+
+CG_Texture *asset_load_texture(CG_RuntimeAssets *_assets, CG_AssetId id){
+  CG_RuntimeAsset *asset=  asset_load_from_id(_assets, id, CG_ASSET_TYPE_TEXTURE,false);
   CG_Texture *texture = (CG_Texture*)asset->data;
-  texture->id = asset->id;
   u8* pixelsLocation = (u8*)texture + sizeof(CG_Texture);
   texture->Pixels = (u32*)pixelsLocation;
-
   return texture;
 }
+
+
+CG_Font *asset_load_font(CG_RuntimeAssets *_assets, CG_AssetId id){
+  CG_RuntimeAsset *asset = asset_load_from_id(_assets, id, CG_ASSET_TYPE_FONT,false);
+  CG_Font *font = (CG_Font*)asset->data;
+  font->texture = asset_load_texture(_assets, font->textureAssetId);
+
+  return font;
+}
+
 
 b32 asset_unload(CG_RuntimeAssets *_assets, CG_AssetId id){
   u64 s =  sizeof(CG_RuntimeAsset);

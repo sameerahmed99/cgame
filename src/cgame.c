@@ -12,7 +12,8 @@
 #include "model_loader.c"
 #include "texture.h"
 #include "texture.c"
-
+#include "font.h"
+#include "font.c"
 #include "asset.h"
 #include "asset.c"
 
@@ -153,9 +154,9 @@ internal void cg_init(CG_OffscreenBuffer *offscreenBuffer){
 
 
   // @TODO, only if write assets argument passed
-  asset_write_assets("../assets", "./assets.bin");
+  asset_write_assets(cg_get_raw_assets_dir_relative(), "./assets.bin");
 
-
+  //  font_load_from_cg_font_file("../assets/fonts/default/default.cgfont",false);
 
   CG_GameAssets = asset_read_pack("./assets.bin");
 
@@ -718,4 +719,7 @@ Arena* TEMP_cg_get_temp_assets_arena(){
 }
 CG_RuntimeAssets *cg_get_assets(){
   return &CG_GameAssets;
+}
+const char* cg_get_raw_assets_dir_relative(){
+  return "../assets";
 }

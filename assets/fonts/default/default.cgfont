@@ -1,0 +1,5 @@
+name CGame Default Font
+glyph_count 36
+glyph_box_size 24
+language english
+texture fonts/default/default.png

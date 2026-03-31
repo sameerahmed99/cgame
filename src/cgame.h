@@ -128,6 +128,8 @@ void cg_lock_cursor();
 void cg_unlock_cursor();
 CG_GameState cg_get_state();
 
+const char* cg_get_raw_assets_dir_relative();
+
 Arena* cg_get_entities();
 Arena* TEMP_cg_get_temp_assets_arena();
 
