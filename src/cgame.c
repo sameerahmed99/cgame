@@ -78,6 +78,8 @@ CG_PlatformConfig cg_get_requested_platform_config(){
     .AudioChannelsCount = 2,
     .ScreenWidth = 0,
     .ScreenHeight = 0,
+    .HalfScreenWidth=0,
+    .HalfScreenHeight=0,
     .RequestedScreenWidth = 1920,
     .RequestedScreenHeight = 1080,
     .RenderResolutionWidth = 800,
@@ -171,6 +173,8 @@ internal void cg_init(CG_OffscreenBuffer *offscreenBuffer){
   PlatformConfig = cg_get_platform_config();
   PlatformConfig.ScreenWidth = platform_get_client_screen_width();
   PlatformConfig.ScreenHeight = platform_get_client_screen_height();
+  PlatformConfig.HalfScreenWidth = platform_get_client_screen_width()/2.0f;
+  PlatformConfig.HalfScreenHeight = platform_get_client_screen_height()/2.0f;
 
 
   DebugSettings.RenderDepthTexture = false;

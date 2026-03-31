@@ -49,6 +49,8 @@ typedef struct CG_PlatformConfig{
   u32 RenderResolutionHeight;
   uint32_t ScreenWidth;
   uint32_t ScreenHeight;
+  float HalfScreenWidth;
+  float HalfScreenHeight;
 
   float BaseScreenWidth, BaseScreenHeight;
   float BasePixelsPerWorldUnit;

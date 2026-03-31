@@ -1117,3 +1117,30 @@ void graphics_renderer_submit_model(CG_Model* model,Mat4x4 _modelMatrix, Mat4x4 
 }
 
 
+Vec2 graphics_screen_to_buffer_coordinates(Vec2 screen){
+  Vec2 pos  = {graphics_screen_x_to_buffer_x(screen.x), graphics_screen_y_to_buffer_y(screen.y)};
+  return pos;
+}
+float graphics_screen_x_to_buffer_x(float x){
+  CG_OffscreenBuffer *screenBuffer = cg_get_current_off_screen_buffer();
+  CG_PlatformConfig config = cg_get_platform_config();
+
+  float sw = config.ScreenWidth;
+  float bw = screenBuffer->Width;
+  float widthRatio = bw/sw;
+  float x = screen.x * widthRatio;
+
+
+  return x;
+
+}
+float graphics_screen_y_to_buffer_y(float y){
+  CG_OffscreenBuffer *screenBuffer = cg_get_current_off_screen_buffer();
+  CG_PlatformConfig config = cg_get_platform_config();
+
+  float sh = config.ScreenHeight;
+  float bh = screenBuffer->Height;
+  float heightRatio = bh/sh;
+  float y = screen.y * heightRatio;
+  return y;
+}

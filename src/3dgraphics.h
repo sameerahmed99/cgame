@@ -80,4 +80,8 @@ void mesh_recalculate_normals(CG_Mesh *_mesh);
 void graphics_renderer_init(Arena* _renderListArena,CG_Texture* _defaultTexture, CG_Material *_defaultMaterial);
 
 void graphics_renderer_render_list();
+
+Vec2 graphics_screen_to_buffer_coordinates(Vec2 screen);
+float graphics_screen_x_to_buffer_x(float x);
+float graphics_screen_y_to_buffer_y(float y);
 #endif

@@ -5,6 +5,7 @@
 #include "language.h"
 #include "memory.h"
 #include "math.h"
+
 #define CG_MAX_FONT_NAME_CHARS 64
 struct CG_Texture;
 
