@@ -7,6 +7,7 @@
 #include "memory.c"
 #include "entity.c"
 #include "physics.c"
+#include "3dgraphics.h"
 #include "3dgraphics.c"
 #include "model_loader.h"
 #include "model_loader.c"
@@ -83,8 +84,8 @@ CG_PlatformConfig cg_get_requested_platform_config(){
     .HalfScreenHeight=0,
     .RequestedScreenWidth = 1920,
     .RequestedScreenHeight = 1080,
-    .RenderResolutionWidth = 800,
-    .RenderResolutionHeight = 600,
+    .RenderResolutionWidth = 400,
+    .RenderResolutionHeight = 400,
     .BaseScreenWidth = 1280,
     .BaseScreenHeight = 720,
     .BasePixelsPerWorldUnit = 5

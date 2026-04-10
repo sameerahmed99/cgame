@@ -1,9 +1,9 @@
 #ifndef _CG_3D_GRAPHICS
-#define _CG_3D_GRAPIHCS
+#define _CG_3D_GRAPHICS
 #include "math.h"
 #include "types.h"
 #include "texture.h"
-
+#include "font.h"
 
 
 typedef struct CG_VertRasterData{
@@ -14,6 +14,7 @@ typedef struct CG_VertRasterData{
   Vec2 localTexCoord;
   CG_Color vertColor;
 } CG_VertRasterData;
+
 
 typedef struct CG_TextRenderData{
   CG_Font* font;
@@ -87,8 +88,8 @@ void graphics_submit_text(CG_Font* _font,char *text,float _fontSizeInPixels, Vec
 // use winding order to auto calc normals
 void mesh_recalculate_normals(CG_Mesh *_mesh);
 
-
-void graphics_renderer_init(Arena* _renderListArena,CG_Texture* _defaultTexture, CG_Material *_defaultMaterial);
+void graphics_render_text(CG_TextRenderData *_data);
+void graphics_renderer_init(Arena* _renderList,Arena *_textRenderList,CG_Texture* _defaultTexture, CG_Material *_defaultMaterial);
 
 void graphics_renderer_render_list();
 
@@ -98,7 +99,7 @@ float graphics_screen_y_to_buffer_y(float y);
 
 // text stuff
 
-void graphics_submit_text(CG_Font* _font,char *text,float _fontSizeInPixels, Vec2 _posRelativeToScreenCenterInPixels, CG_Color _color, float _letterSpacingRelativeToSize);
+void graphics_submit_text( CG_Font* _font,char *text,float _fontSizeInPixels, Vec2 _posRelativeToScreenCenterInPixels, CG_Color _color, float _letterSpacingRelativeToSize);
 
 float graphics_get_text_width(char *text,float _fontSizeInPixels, float _letterSpacingRelativeToSize);
 

@@ -119,7 +119,7 @@ void font_draw(CG_Font* _font,char *text,float _fontSizeInPixels, Vec2 _posRelat
   
   left = graphics_screen_x_to_buffer_x(left);
   right = graphics_screen_x_to_buffer_x(right);
-  Vec2 centerBufferPos = graphics_screen_to_buffer_coordinates(_posRelativeToScreenInPixels);
+  Vec2 centerBufferPos = graphics_screen_to_buffer_coordinates(_posRelativeToScreenCenterInPixels);
   
   // draw/submit
 }

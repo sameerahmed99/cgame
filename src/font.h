@@ -23,5 +23,5 @@ typedef struct CG_Font{
 
 CG_Font* font_load_from_cg_font_file(const char* _filePath, b32 _loadTexture);
 void font_free_cg_font(CG_Font* font);
-
+float font_get_text_width(char *text,float _fontSizeInPixels, float _letterSpacingRelativeToSize);
 #endif

@@ -1,7 +1,7 @@
 #include "3dgraphics.h"
 #include "cgame.h"
 #include "draw.h"
-
+#include "font.h"
 
 const u32 TEMP_MAX_TRIS = 16;
 
@@ -1131,31 +1131,31 @@ Vec2 graphics_screen_to_buffer_coordinates(Vec2 screen){
   Vec2 pos  = {graphics_screen_x_to_buffer_x(screen.x), graphics_screen_y_to_buffer_y(screen.y)};
   return pos;
 }
-float graphics_screen_x_to_buffer_x(float x){
+float graphics_screen_x_to_buffer_x(float _x){
   CG_OffscreenBuffer *screenBuffer = cg_get_current_off_screen_buffer();
   CG_PlatformConfig config = cg_get_platform_config();
 
   float sw = config.ScreenWidth;
   float bw = screenBuffer->Width;
   float widthRatio = bw/sw;
-  float x = screen.x * widthRatio;
+  float x = _x * widthRatio;
 
 
   return x;
 
 }
-float graphics_screen_y_to_buffer_y(float y){
+float graphics_screen_y_to_buffer_y(float _y){
   CG_OffscreenBuffer *screenBuffer = cg_get_current_off_screen_buffer();
   CG_PlatformConfig config = cg_get_platform_config();
 
   float sh = config.ScreenHeight;
   float bh = screenBuffer->Height;
   float heightRatio = bh/sh;
-  float y = screen.y * heightRatio;
+  float y = _y * heightRatio;
   return y;
 }
 
-void graphics_submit_text(CG_Font* _font,char *text,float _fontSizeInPixels, Vec2 _posRelativeToScreenCenterInPixels, CG_Color _color, float _letterSpacingRelativeToSize){
+void graphics_submit_text(CG_Font* _font,char *_text,float _fontSizeInPixels, Vec2 _posRelativeToScreenCenterInPixels, CG_Color _color, float _letterSpacingRelativeToSize){
   CG_TextRenderData data;
   data.font = _font;
   data.text = _text;
@@ -1173,25 +1173,25 @@ void graphics_submit_text(CG_Font* _font,char *text,float _fontSizeInPixels, Vec
   *p = data;
   
 }
-void graphics_render_text(CG_TextRenderData _data){
+void graphics_render_text(CG_TextRenderData *_data){
   
   CG_OffscreenBuffer *screenBuffer = cg_get_current_off_screen_buffer();
   CG_PlatformConfig config = cg_get_platform_config();
 
 
-  CG_Texture* t = _data.font->texture;
-  float scale = _data.fontSizeInPixels  / _data.font->glyphBoxSizePixels;
+  CG_Texture* t = _data->font->texture;
+  float scale = _data->fontSizeInPixels  / _data->font->glyphBoxSizePixels;
 
-  float width = font_get_text_width(text, _data.fontSizeInPixels, _data.letterSpacingRelativeToSize);
-  float height = _data.fontSizeInPixels;
+  float width = font_get_text_width(_data->text, _data->fontSizeInPixels, _data->letterSpacingRelativeToSize);
+  float height = _data->fontSizeInPixels;
 
   
 
 
-  float left = _data.posRelativeToScreenCenterInPixels.x-width/2.0f;
-  float right = _data.posRelativeToScreenCenterInPixels.x+width/2.0f;
-  float top = _data.posRelativeToScreenCenterInPixels.y+height/2.0f;
-  float bottom = _data.posRelativeToScreenCenterInPixels.y-height/2.0f;
+  float left = _data->posRelativeToScreenCenterInPixels.x-width/2.0f;
+  float right = _data->posRelativeToScreenCenterInPixels.x+width/2.0f;
+  float top = _data->posRelativeToScreenCenterInPixels.y+height/2.0f;
+  float bottom = _data->posRelativeToScreenCenterInPixels.y-height/2.0f;
     
   
 
@@ -1213,25 +1213,25 @@ void graphics_render_text(CG_TextRenderData _data){
   /* Vec2 centerBufferPos = graphics_screen_to_buffer_coordinates(_posRelativeToScreenInPixels); */
 
 
-  u32 numChars = strlen(_data.text);
+  u32 numChars = strlen(_data->text);
 
-  float spacing = data.letterSpacingRelativeToSize * data.fontSizeInPixels;
+  float spacing = _data->letterSpacingRelativeToSize * _data->fontSizeInPixels;
   for(int c=0;c<numChars;c++){
     float startX = left + c * spacing;
     float startY = bottom;
-    for(int y=0;y<data.fontSizeInPixels;y++){
-      for(int x=0;x<data.fontSizeInPixels;x++){
+    for(int y=0;y<_data->fontSizeInPixels;y++){
+      for(int x=0;x<_data->fontSizeInPixels;x++){
 	//@last
       }
     }
     
   }
 
-  for(int y=minY;y<maxY;y++){
-    for(int x=minX;x<maxX;x++){
-     float sampleX = 
-    }
-  }
+  /* for(int y=minY;y<maxY;y++){ */
+  /*   for(int x=minX;x<maxX;x++){ */
+  /*    float sampleX =  */
+  /*   } */
+  /* } */
 }
 
 
