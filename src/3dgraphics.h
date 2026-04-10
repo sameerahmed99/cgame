@@ -14,6 +14,16 @@ typedef struct CG_VertRasterData{
   Vec2 localTexCoord;
   CG_Color vertColor;
 } CG_VertRasterData;
+
+typedef struct CG_TextRenderData{
+  CG_Font* font;
+  char *text;
+  float fontSizeInPixels;
+  Vec2 posRelativeToScreenCenterInPixels;
+  CG_Color color;
+  float letterSpacingRelativeToSize;
+} CG_TextRenderData;
+
 typedef struct CG_Vertex {
   Vec3 pos;
   float wVal;
@@ -59,6 +69,7 @@ typedef struct CG_Renderer{
   CG_Material *defaultMaterial;
   CG_Texture *defaultTexture;
   Arena* renderList;
+  Arena* textRenderList;
 } CG_Renderer;
 extern CG_Renderer Renderer;
 
@@ -72,7 +83,7 @@ void draw3d_debug_vertices(CG_Vertex* verts, size_t _num, float _radius, Mat4x4 
 
 void draw3d_triangle_rasterize(CG_VertRasterData a, CG_VertRasterData b, CG_VertRasterData c, CG_Material *_material);
 
-
+void graphics_submit_text(CG_Font* _font,char *text,float _fontSizeInPixels, Vec2 _posRelativeToScreenCenterInPixels, CG_Color _color, float _letterSpacingRelativeToSize);
 // use winding order to auto calc normals
 void mesh_recalculate_normals(CG_Mesh *_mesh);
 
@@ -84,4 +95,11 @@ void graphics_renderer_render_list();
 Vec2 graphics_screen_to_buffer_coordinates(Vec2 screen);
 float graphics_screen_x_to_buffer_x(float x);
 float graphics_screen_y_to_buffer_y(float y);
+
+// text stuff
+
+void graphics_submit_text(CG_Font* _font,char *text,float _fontSizeInPixels, Vec2 _posRelativeToScreenCenterInPixels, CG_Color _color, float _letterSpacingRelativeToSize);
+
+float graphics_get_text_width(char *text,float _fontSizeInPixels, float _letterSpacingRelativeToSize);
+
 #endif

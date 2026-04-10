@@ -1077,10 +1077,11 @@ void draw3d_triangle_rasterize(CG_VertRasterData a, CG_VertRasterData b, CG_Vert
 void mesh_recalculate_normals(CG_Mesh *_mesh){
 
 }
-void graphics_renderer_init(Arena* _renderList,CG_Texture* _defaultTexture, CG_Material *_defaultMaterial){
+void graphics_renderer_init(Arena* _renderList,Arena *_textRenderList,CG_Texture* _defaultTexture, CG_Material *_defaultMaterial){
   Renderer.defaultTexture = _defaultTexture;
   Renderer.defaultMaterial = _defaultMaterial;
   Renderer.renderList = _renderList;
+  Renderer.textRenderList = _textRenderList;
 }
 
 void graphics_renderer_render_list(){
@@ -1092,6 +1093,15 @@ void graphics_renderer_render_list(){
     draw3d_mesh(e->mesh,e->modelMatrix, e->inversedCameraMatrix, e->projectionMatrix, e->material);    
   }
   arena_clear(Renderer.renderList);
+
+  entrySize = sizeof(CG_TextRenderData);
+  count = arena_get_num_items(Renderer.textRenderList, entrySize);
+  for(int i=0;i<count;i++){
+    CG_TextRenderData *d= arena_get_at(Renderer.textRenderList, i, entrySize);
+    graphics_render_text(d);
+  }
+  arena_clear(Renderer.textRenderList);
+
   //  PLATFORM_STOP_FUNCTION_MEASUREMENT();
 }
 
@@ -1143,4 +1153,94 @@ float graphics_screen_y_to_buffer_y(float y){
   float heightRatio = bh/sh;
   float y = screen.y * heightRatio;
   return y;
+}
+
+void graphics_submit_text(CG_Font* _font,char *text,float _fontSizeInPixels, Vec2 _posRelativeToScreenCenterInPixels, CG_Color _color, float _letterSpacingRelativeToSize){
+  CG_TextRenderData data;
+  data.font = _font;
+  data.text = _text;
+  data.fontSizeInPixels = _fontSizeInPixels;
+  data.posRelativeToScreenCenterInPixels = _posRelativeToScreenCenterInPixels;
+  data.color = _color;
+  data.letterSpacingRelativeToSize = _letterSpacingRelativeToSize;
+
+
+
+  CG_TextRenderData* p=  (CG_TextRenderData*)arena_push(Renderer.textRenderList, sizeof(data), false);
+  ASSERT_NO_EVAL(p);
+
+
+  *p = data;
+  
+}
+void graphics_render_text(CG_TextRenderData _data){
+  
+  CG_OffscreenBuffer *screenBuffer = cg_get_current_off_screen_buffer();
+  CG_PlatformConfig config = cg_get_platform_config();
+
+
+  CG_Texture* t = _data.font->texture;
+  float scale = _data.fontSizeInPixels  / _data.font->glyphBoxSizePixels;
+
+  float width = font_get_text_width(text, _data.fontSizeInPixels, _data.letterSpacingRelativeToSize);
+  float height = _data.fontSizeInPixels;
+
+  
+
+
+  float left = _data.posRelativeToScreenCenterInPixels.x-width/2.0f;
+  float right = _data.posRelativeToScreenCenterInPixels.x+width/2.0f;
+  float top = _data.posRelativeToScreenCenterInPixels.y+height/2.0f;
+  float bottom = _data.posRelativeToScreenCenterInPixels.y-height/2.0f;
+    
+  
+
+  // convert to 0,0 at bottom left
+  left+=config.HalfScreenWidth;
+  right+=config.HalfScreenWidth;
+  top+=config.HalfScreenHeight;
+  bottom+=config.HalfScreenHeight;
+  
+  float minX = Min(0, left);
+  float maxX = Max(config.ScreenWidth, right);
+
+  float minY = Min(0, bottom);
+  float maxY = Max(config.ScreenHeight, top);
+
+  
+  /* left = graphics_screen_x_to_buffer_x(left); */
+  /* right = graphics_screen_x_to_buffer_x(right); */
+  /* Vec2 centerBufferPos = graphics_screen_to_buffer_coordinates(_posRelativeToScreenInPixels); */
+
+
+  u32 numChars = strlen(_data.text);
+
+  float spacing = data.letterSpacingRelativeToSize * data.fontSizeInPixels;
+  for(int c=0;c<numChars;c++){
+    float startX = left + c * spacing;
+    float startY = bottom;
+    for(int y=0;y<data.fontSizeInPixels;y++){
+      for(int x=0;x<data.fontSizeInPixels;x++){
+	//@last
+      }
+    }
+    
+  }
+
+  for(int y=minY;y<maxY;y++){
+    for(int x=minX;x<maxX;x++){
+     float sampleX = 
+    }
+  }
+}
+
+
+float graphics_get_text_width(char *text,float _fontSizeInPixels, float _letterSpacingRelativeToSize){
+
+
+  float widthPerGlyph =_fontSizeInPixels*_letterSpacingRelativeToSize;
+  float totalWidth = widthPerGlyph * strlen(text);
+
+
+  return totalWidth;
 }

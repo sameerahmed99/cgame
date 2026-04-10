@@ -30,6 +30,7 @@ internal CG_RuntimeAssets CG_GameAssets;
 internal Arena* ArenaEntities;
 internal Arena* TEMP_ArenaAssets;
 internal Arena* ArenaRenderList;
+internal Arena* ArenaTextRenderList;
 
 internal Vec3 Gravity = {0,0, 0};
 
@@ -227,6 +228,7 @@ internal void cg_init(CG_OffscreenBuffer *offscreenBuffer){
   ArenaEntities = arena_create(Gigabytes(4), Megabytes(4), true);
   TEMP_ArenaAssets = arena_create(Gigabytes(1), Megabytes(32), false);
   ArenaRenderList = arena_create(Gigabytes(1), Megabytes(32), false);
+  ArenaTextRenderList = arena_create(Gigabytes(1), Megabytes(32), false);
 
 
   printf("platform ppu: %f\n", PlatformConfig.ppu);
@@ -246,7 +248,7 @@ internal void cg_init(CG_OffscreenBuffer *offscreenBuffer){
   DefaultMaterial.textureTiling.x = 1;
   DefaultMaterial.textureTiling.y = 1;
 
-  graphics_renderer_init(ArenaRenderList,DefaultTexture, &DefaultMaterial);
+  graphics_renderer_init(ArenaRenderList,ArenaTextRenderList, DefaultTexture, &DefaultMaterial);
 
   //   TestSceneModel=  model_loader_load_gltf("../assets/models/CGameTestScene_a.glb", true);
   //TestSceneModel=  model_loader_load_gltf("../assets/models/CGameTestScene_TrainStation.glb", true);
