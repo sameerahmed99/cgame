@@ -117,9 +117,9 @@ void font_draw(CG_Font* _font,char *text,float _fontSizeInPixels, Vec2 _posRelat
   float minX = Min(0, left);
   float maxX = Max(config.ScreenWidth, right);
   
-  left = graphics_screen_x_to_buffer_x(left);
-  right = graphics_screen_x_to_buffer_x(right);
-  Vec2 centerBufferPos = graphics_screen_to_buffer_coordinates(_posRelativeToScreenCenterInPixels);
+  left = graphics_screen_res_x_to_buffer_x(left);
+  right = graphics_screen_res_x_to_buffer_x(right);
+  Vec2 centerBufferPos = graphics_screen_res_to_buffer_coordinates(_posRelativeToScreenCenterInPixels);
   
   // draw/submit
 }

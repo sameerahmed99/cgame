@@ -93,9 +93,13 @@ void graphics_renderer_init(Arena* _renderList,Arena *_textRenderList,CG_Texture
 
 void graphics_renderer_render_list();
 
-Vec2 graphics_screen_to_buffer_coordinates(Vec2 screen);
-float graphics_screen_x_to_buffer_x(float x);
-float graphics_screen_y_to_buffer_y(float y);
+Vec2 graphics_screen_res_to_buffer_coordinates(Vec2 screen);
+float graphics_screen_res_x_to_buffer_x(float x);
+float graphics_screen_res_y_to_buffer_y(float y);
+
+
+Vec2 graphics_center_coords_to_screen(Vec2 center);
+
 
 // text stuff
 

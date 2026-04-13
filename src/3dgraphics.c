@@ -1127,11 +1127,11 @@ void graphics_renderer_submit_model(CG_Model* model,Mat4x4 _modelMatrix, Mat4x4 
 }
 
 
-Vec2 graphics_screen_to_buffer_coordinates(Vec2 screen){
-  Vec2 pos  = {graphics_screen_x_to_buffer_x(screen.x), graphics_screen_y_to_buffer_y(screen.y)};
+Vec2 graphics_screen_res_to_buffer_coordinates(Vec2 screen){
+  Vec2 pos  = {graphics_screen_res_x_to_buffer_x(screen.x), graphics_screen_res_y_to_buffer_y(screen.y)};
   return pos;
 }
-float graphics_screen_x_to_buffer_x(float _x){
+float graphics_screen_res_x_to_buffer_x(float _x){
   CG_OffscreenBuffer *screenBuffer = cg_get_current_off_screen_buffer();
   CG_PlatformConfig config = cg_get_platform_config();
 
@@ -1144,7 +1144,7 @@ float graphics_screen_x_to_buffer_x(float _x){
   return x;
 
 }
-float graphics_screen_y_to_buffer_y(float _y){
+float graphics_screen_res_y_to_buffer_y(float _y){
   CG_OffscreenBuffer *screenBuffer = cg_get_current_off_screen_buffer();
   CG_PlatformConfig config = cg_get_platform_config();
 
@@ -1174,7 +1174,6 @@ void graphics_submit_text(CG_Font* _font,char *_text,float _fontSizeInPixels, Ve
   
 }
 void graphics_render_text(CG_TextRenderData *_data){
-  
   CG_OffscreenBuffer *screenBuffer = cg_get_current_off_screen_buffer();
   CG_PlatformConfig config = cg_get_platform_config();
 
@@ -1182,56 +1181,63 @@ void graphics_render_text(CG_TextRenderData *_data){
   CG_Texture* t = _data->font->texture;
   float scale = _data->fontSizeInPixels  / _data->font->glyphBoxSizePixels;
 
-  float width = font_get_text_width(_data->text, _data->fontSizeInPixels, _data->letterSpacingRelativeToSize);
-  float height = _data->fontSizeInPixels;
+  float width = font_get_text_width(_data->text, _data->fontSizeInPixels, _data->letterSpacingRelativeToSize) * scale;
+  float height = _data->fontSizeInPixels * scale;
 
+  width = graphics_screen_res_x_to_buffer_x(width);
+  height = graphics_screen_res_y_to_buffer_y(height);
+  
+  float halfWidth = width/2.0f;
+  float halfHeight = height/2.0f;
+
+  float glyphWidth = _data->fontSizeInPixels;
+  float glyphHeight = _data->fontSizeInPixels;
+
+  glyphWidth = graphics_screen_res_x_to_buffer_x(glyphWidth);
+  glyphHeight = graphics_screen_res_y_to_buffer_y(glyphHeight);
   
 
-
-  float left = _data->posRelativeToScreenCenterInPixels.x-width/2.0f;
-  float right = _data->posRelativeToScreenCenterInPixels.x+width/2.0f;
-  float top = _data->posRelativeToScreenCenterInPixels.y+height/2.0f;
-  float bottom = _data->posRelativeToScreenCenterInPixels.y-height/2.0f;
-    
   
+  float glyphHalfWidth = glyphWidth/2.0f;
+  float glyphHalfHeight = glyphHeight/2.0f;
 
-  // convert to 0,0 at bottom left
-  left+=config.HalfScreenWidth;
-  right+=config.HalfScreenWidth;
-  top+=config.HalfScreenHeight;
-  bottom+=config.HalfScreenHeight;
+  float spaceWidth = _data->letterSpacingRelativeToSize * glyphWidth;
+  float glyphWidthWithSpace = glyphWidth + spaceWidth;
   
-  float minX = Min(0, left);
-  float maxX = Max(config.ScreenWidth, right);
-
-  float minY = Min(0, bottom);
-  float maxY = Max(config.ScreenHeight, top);
-
+  Vec2 stringCenter = graphics_center_coords_to_screen(_data->posRelativeToScreenCenterInPixels);
+  stringCenter = graphics_screen_res_to_buffer_coordinates(stringCenter);
+  Vec2 stringLeft = stringCenter;
+  stringLeft.x-=halfWidth;
   
-  /* left = graphics_screen_x_to_buffer_x(left); */
-  /* right = graphics_screen_x_to_buffer_x(right); */
-  /* Vec2 centerBufferPos = graphics_screen_to_buffer_coordinates(_posRelativeToScreenInPixels); */
-
-
   u32 numChars = strlen(_data->text);
 
-  float spacing = _data->letterSpacingRelativeToSize * _data->fontSizeInPixels;
-  for(int c=0;c<numChars;c++){
-    float startX = left + c * spacing;
-    float startY = bottom;
-    for(int y=0;y<_data->fontSizeInPixels;y++){
-      for(int x=0;x<_data->fontSizeInPixels;x++){
-	//@last
-      }
-    }
-    
+  u32 firstCharIndex=0, lastCharIndex = numChars -1;
+
+  float leftLeak = -stringLeft.x;
+  if(leftLeak > 0){
+    firstCharIndex = ceil(leftLeak / glyphWidthWithSpace);
   }
 
-  /* for(int y=minY;y<maxY;y++){ */
-  /*   for(int x=minX;x<maxX;x++){ */
-  /*    float sampleX =  */
-  /*   } */
-  /* } */
+  
+  for(int i=firstCharIndex;i<=lastCharIndex;i++){
+    Vec2 center = stringCenter;
+    center.x += stringLeft.x * i*glyphWidth;
+
+    Vec2 leftBottom = center;
+    leftBottom.y -= glyphHalfHeight;
+    leftBottom.x -= glyphHalfWidth;
+
+    // @TODO
+    // generate uv based on character
+    for(int y=0;y<glyphHeight;y++){
+      for(int x=0;x<glyphWidth;x++){
+	// @TODO
+	// sample using generated uv
+      }
+    }
+  }
+  
+
 }
 
 
@@ -1243,4 +1249,13 @@ float graphics_get_text_width(char *text,float _fontSizeInPixels, float _letterS
 
 
   return totalWidth;
+}
+Vec2 graphics_center_coords_to_screen(Vec2 _center){
+  CG_PlatformConfig config = cg_get_platform_config();
+  
+  _center.x+=config.HalfScreenWidth;
+  _center.y+= config.HalfScreenHeight;
+
+
+  return _center;
 }
