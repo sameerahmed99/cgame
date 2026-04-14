@@ -72,6 +72,8 @@ const Vec3 Vec3Down = {0,-1,0};
 const Vec4 Vec4Zero = {0,0,0,0};
 const Vec4 Vec4One = {1,1,1,1};
 
+const Vec2 Vec2Zero = {0,0};
+const Vec2 Vec2One = {1,1};
 
 float math_lerp(float _a, float _b, float _t);
 void math_get_rotated_point(float *x, float *y, float _sinRot, float _cosRot,float _pivotX, float _pivotY);

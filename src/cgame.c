@@ -84,8 +84,8 @@ CG_PlatformConfig cg_get_requested_platform_config(){
     .HalfScreenHeight=0,
     .RequestedScreenWidth = 1920,
     .RequestedScreenHeight = 1080,
-    .RenderResolutionWidth = 400,
-    .RenderResolutionHeight = 400,
+    .RenderResolutionWidth = 800,
+    .RenderResolutionHeight = 450,
     .BaseScreenWidth = 1280,
     .BaseScreenHeight = 720,
     .BasePixelsPerWorldUnit = 5

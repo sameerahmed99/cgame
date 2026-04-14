@@ -5,10 +5,10 @@
 
 static size_t get_gltf_mesh_vert_count(cgltf_mesh *_m);
 static size_t get_gltf_mesh_indices_count(cgltf_mesh *_m);
-static CG_Mesh *mesh_from_node(cgltf_node _node, b32 _convertFromBlender);
+static CG_Mesh *mesh_from_node(cgltf_node _node, b32 _convertFromBlender, b32 _flipTexCoordY);
 static size_t get_gltf_primitive_vert_count(cgltf_primitive *_p);
 
-CG_Model *model_loader_load_gltf(const char *_path, b32 _convertFromBlenderCoordinates)
+CG_Model *model_loader_load_gltf(const char *_path, b32 _convertFromBlenderCoordinates, b32 _flipTexCoordY)
 {
     cgltf_options opts = {0};
 
@@ -52,7 +52,7 @@ CG_Model *model_loader_load_gltf(const char *_path, b32 _convertFromBlenderCoord
         {
             if (data->nodes[i].mesh != NULL)
             {
-	      CG_Mesh *m = mesh_from_node(data->nodes[i], _convertFromBlenderCoordinates);
+	      CG_Mesh *m = mesh_from_node(data->nodes[i], _convertFromBlenderCoordinates, _flipTexCoordY);
                 meshes[meshIndex] = *m;
                 free(m);
                 meshIndex++;
@@ -94,7 +94,7 @@ CG_Model *model_loader_load_gltf(const char *_path, b32 _convertFromBlenderCoord
 
 
 
-static CG_Mesh *mesh_from_node(cgltf_node _node, b32 _convertFromBlenderCoordinates)
+static CG_Mesh *mesh_from_node(cgltf_node _node, b32 _convertFromBlenderCoordinates, b32 _flipTexCoordY)
 {
     size_t trisCount = get_gltf_mesh_indices_count(_node.mesh);
     size_t vertCount = get_gltf_mesh_vert_count(_node.mesh);
@@ -213,6 +213,10 @@ static CG_Mesh *mesh_from_node(cgltf_node _node, b32 _convertFromBlenderCoordina
 
                     cgltf_accessor_read_float(atrib->data, k, &v.texCoord.x, 2);
 
+
+		    if(_flipTexCoordY){
+		      v.texCoord.y = 1- v.texCoord.y;
+		    }
                     vertices[vindex] = v;
                 }
             }

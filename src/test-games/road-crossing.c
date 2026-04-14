@@ -87,14 +87,14 @@ void cg_active_game_init(){
   rg.ProjectionMatrix=   math_mat4x4_create_perspective_projection(80, false, aspect, rg.NearPlaneDistance, rg.FarPlaneDistance);
 
   // MODELS
-  rg.TrainModel=  model_loader_load_gltf("../assets/prop_packs/railway_bridge_prop_pack/train_cab.glb", true);
+  rg.TrainModel=  model_loader_load_gltf("../assets/prop_packs/railway_bridge_prop_pack/train_cab.glb", true, true);
 
-  rg.RailwayTrackModel=  model_loader_load_gltf("../assets/prop_packs/railway_bridge_prop_pack/railway_track.glb", true);
+  rg.RailwayTrackModel=  model_loader_load_gltf("../assets/prop_packs/railway_bridge_prop_pack/railway_track.glb", true, true);
 
-  rg.TerrainModel=  model_loader_load_gltf("../assets/prop_packs/railway_bridge_prop_pack/terrain.glb", true);
-  rg.BridgeModel=  model_loader_load_gltf("../assets/prop_packs/railway_bridge_prop_pack/bridge.glb", true);
-  rg.WaterModel=  model_loader_load_gltf("../assets/prop_packs/railway_bridge_prop_pack/water.glb", true);
-  rg.AppleTreesModel=  model_loader_load_gltf("../assets/prop_packs/railway_bridge_prop_pack/apple_trees.glb", true);
+  rg.TerrainModel=  model_loader_load_gltf("../assets/prop_packs/railway_bridge_prop_pack/terrain.glb", true, true);
+  rg.BridgeModel=  model_loader_load_gltf("../assets/prop_packs/railway_bridge_prop_pack/bridge.glb", true, true);
+  rg.WaterModel=  model_loader_load_gltf("../assets/prop_packs/railway_bridge_prop_pack/water.glb", true, true);
+  rg.AppleTreesModel=  model_loader_load_gltf("../assets/prop_packs/railway_bridge_prop_pack/apple_trees.glb", true, true);
 
   CG_Font* testFont = asset_load_font(rg.Assets, CG_ASSID("fonts/default/default.cgfont"));
 

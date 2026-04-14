@@ -780,7 +780,7 @@ Vec4 lerp_vert_vec4(Vec4 _vala, Vec4 _valb, Vec4 _valc,float za, float zb, float
 }
 
 
-internal CG_Color graphics_sample_texture(CG_Texture *tex, float uvx, float uvy, Vec2 _tiling, float width, float height){
+CG_Color graphics_sample_texture(CG_Texture *tex, float uvx, float uvy, Vec2 _tiling, float width, float height){
 
   // @TODO - Handle negative uvs
   u32 coordinateX = (u32)((uvx*width) *_tiling.x ) % (u32)width;
@@ -1015,6 +1015,10 @@ void draw3d_triangle_rasterize(CG_VertRasterData a, CG_VertRasterData b, CG_Vert
 
 	  litCol = math_vec4_lerp(litCol, fogColor, fogAmount);
 
+
+
+
+	  
 	  depthRow[x] = depth;
 	  u8* p = (u8*) (row + x);
 
@@ -1031,7 +1035,8 @@ void draw3d_triangle_rasterize(CG_VertRasterData a, CG_VertRasterData b, CG_Vert
 	  /* p[2] = litCol.w*255; */
 	  /* p[3] = litCol.z*255; */
 	  u32 col = platform_convert_color(litCol);
-
+	  
+	  
 	  u32* p32 = (u32*)p;
 	  p32[0] = col;
 
@@ -1184,8 +1189,8 @@ void graphics_render_text(CG_TextRenderData *_data){
   float width = font_get_text_width(_data->text, _data->fontSizeInPixels, _data->letterSpacingRelativeToSize) * scale;
   float height = _data->fontSizeInPixels * scale;
 
-  width = graphics_screen_res_x_to_buffer_x(width);
-  height = graphics_screen_res_y_to_buffer_y(height);
+  /* width = graphics_screen_res_x_to_buffer_x(width); */
+  /* height = graphics_screen_res_y_to_buffer_y(height); */
   
   float halfWidth = width/2.0f;
   float halfHeight = height/2.0f;
@@ -1193,8 +1198,8 @@ void graphics_render_text(CG_TextRenderData *_data){
   float glyphWidth = _data->fontSizeInPixels;
   float glyphHeight = _data->fontSizeInPixels;
 
-  glyphWidth = graphics_screen_res_x_to_buffer_x(glyphWidth);
-  glyphHeight = graphics_screen_res_y_to_buffer_y(glyphHeight);
+  /* glyphWidth = graphics_screen_res_x_to_buffer_x(glyphWidth); */
+  /* glyphHeight = graphics_screen_res_y_to_buffer_y(glyphHeight); */
   
 
   
@@ -1205,7 +1210,7 @@ void graphics_render_text(CG_TextRenderData *_data){
   float glyphWidthWithSpace = glyphWidth + spaceWidth;
   
   Vec2 stringCenter = graphics_center_coords_to_screen(_data->posRelativeToScreenCenterInPixels);
-  stringCenter = graphics_screen_res_to_buffer_coordinates(stringCenter);
+  //  stringCenter = graphics_screen_res_to_buffer_coordinates(stringCenter);
   Vec2 stringLeft = stringCenter;
   stringLeft.x-=halfWidth;
   
@@ -1214,11 +1219,14 @@ void graphics_render_text(CG_TextRenderData *_data){
   u32 firstCharIndex=0, lastCharIndex = numChars -1;
 
   float leftLeak = -stringLeft.x;
+
+  char *renderString = _data->text;
+  CG_Font *fontPtr = _data->font;
   if(leftLeak > 0){
     firstCharIndex = ceil(leftLeak / glyphWidthWithSpace);
   }
 
-  
+
   for(int i=firstCharIndex;i<=lastCharIndex;i++){
     Vec2 center = stringCenter;
     center.x += stringLeft.x * i*glyphWidth;
@@ -1229,16 +1237,26 @@ void graphics_render_text(CG_TextRenderData *_data){
 
     // @TODO
     // generate uv based on character
+    
+    char c = renderString[i];
+    u32 charIndex = font_get_char_index(c);
     for(int y=0;y<glyphHeight;y++){
       for(int x=0;x<glyphWidth;x++){
-	// @TODO
-	// sample using generated uv
+	Vec2 localUV;
+	localUV.x = (float)x / (glyphWidth-1);
+	localUV.y = (float)y / (glyphHeight-1);
+
+	CG_Color col = font_sample_texture_from_local_uv(fontPtr,charIndex, localUV);
+
       }
     }
   }
   
 
 }
+
+
+
 
 
 float graphics_get_text_width(char *text,float _fontSizeInPixels, float _letterSpacingRelativeToSize){

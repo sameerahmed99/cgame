@@ -8,8 +8,12 @@ internal CG_Texture *__WhiteTexture;
 internal b32 cg_texture_white_init = false;
 internal u32 cg_texture_bytes_per_pixel = 4;
 CG_Texture *texture_load_from_file(const char* _path, Arena *_arena){
+
+
   i32 x, y, n;
 
+
+  stbi_set_flip_vertically_on_load(true);
   b32 ok = stbi_info(_path, &x, &y, &n);
   ASSERT_NO_EVAL(ok);
 

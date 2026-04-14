@@ -100,7 +100,7 @@ float graphics_screen_res_y_to_buffer_y(float y);
 
 Vec2 graphics_center_coords_to_screen(Vec2 center);
 
-
+CG_Color graphics_sample_texture(CG_Texture *tex, float uvx, float uvy, Vec2 _tiling, float width, float height);
 // text stuff
 
 void graphics_submit_text( CG_Font* _font,char *text,float _fontSizeInPixels, Vec2 _posRelativeToScreenCenterInPixels, CG_Color _color, float _letterSpacingRelativeToSize);
