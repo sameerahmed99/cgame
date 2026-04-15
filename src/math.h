@@ -109,6 +109,7 @@ Vec4 math_mul_vec4_mat4x4(Vec4 _vec, Mat4x4 _mat);
 
 
 Vec4 math_vec4_lerp(Vec4 _a, Vec4 _b, float _t);
+
 Vec4 math_vec4_inverse_lerp(Vec4 _a, Vec4 _b, float _t);
 Vec4 math_vec4_create(float x, float y, float z, float w);
 float math_vec4_dot(Vec4 _a, Vec4 _b);
@@ -142,6 +143,7 @@ Vec3 math_mul_vec3_mat3x3(Vec3 _vec, Mat3x3 _mat);
 
 Vec3 math_vec4_to_vec3(Vec4 vec);
 Vec4 math_vec3_to_vec4(Vec3 vec, float wVal);
+
 
 
 // Quaternion

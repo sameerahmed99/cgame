@@ -1,6 +1,9 @@
 #include "../cgame.h"
+#include "../color.h"
 #define _RG_MAX_LANES_PER_LEVEL 32
 typedef struct RoadGame{
+  CG_Font* DefaultFont;
+  
   Mat4x4 ProjectionMatrix;
   float NearPlaneDistance;
   float FarPlaneDistance;
@@ -10,7 +13,7 @@ typedef struct RoadGame{
   CG_Model* BridgeModel;
   CG_Model* WaterModel;
   CG_Model* AppleTreesModel;
-  
+
 
   float CameraSpeed;
   float CameraSlowSpeed;
@@ -96,7 +99,7 @@ void cg_active_game_init(){
   rg.WaterModel=  model_loader_load_gltf("../assets/prop_packs/railway_bridge_prop_pack/water.glb", true, true);
   rg.AppleTreesModel=  model_loader_load_gltf("../assets/prop_packs/railway_bridge_prop_pack/apple_trees.glb", true, true);
 
-  CG_Font* testFont = asset_load_font(rg.Assets, CG_ASSID("fonts/default/default.cgfont"));
+  rg.DefaultFont = asset_load_font(rg.Assets, CG_ASSID("fonts/default/default.cgfont"));
 
   // TEXTURES
   rg.TrainModel->materialPerMesh[0]->texture =   asset_load_texture(rg.Assets,CG_ASSID("prop_packs/railway_bridge_prop_pack/train_cab_color.png"));
@@ -214,6 +217,11 @@ void rg_update_free_cam(CG_Input input, float _dt){
 }
 void cg_active_game_update(float dt, CG_Input input){
 
+
+  Vec2 pos = {0,0};
+
+      graphics_submit_text(rg.DefaultFont,"AaBbCcDdEgHhIiJjKkLlMmNnOoPpQqRrSsTt",24, pos,ColorWhite, 1);
+  //    graphics_submit_text(rg.DefaultFont,"a",24, pos,ColorWhite, 1);
   rg.Input = input;  
 
   rg_update_free_cam(input,dt);

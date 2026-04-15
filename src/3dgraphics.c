@@ -836,6 +836,7 @@ void draw3d_triangle_rasterize(CG_VertRasterData a, CG_VertRasterData b, CG_Vert
 
   CG_OffscreenBuffer *screenBuffer = cg_get_current_off_screen_buffer();
   CG_Buffer *depthBuffer = cg_get_current_depth_buffer();
+  int size = 16;
   
 
   
@@ -1178,15 +1179,40 @@ void graphics_submit_text(CG_Font* _font,char *_text,float _fontSizeInPixels, Ve
   *p = data;
   
 }
+
+void graphics_draw_test_quad_in_middle_of_screen(){
+    CG_OffscreenBuffer *screenBuffer = cg_get_current_off_screen_buffer();
+    CG_PlatformConfig config = cg_get_platform_config();
+
+  int size = 16;
+  for(int y= screenBuffer->Height/2 - size/2; y < screenBuffer->Height/2 + size/2;y++){
+    u32 rowIndex =  y;
+    u32* row = (u32*)screenBuffer->Memory + rowIndex * screenBuffer->Width;
+  for(int x= screenBuffer->Width/2 - size/2; x < screenBuffer->Width/2 + size/2;x++){
+
+      CG_Color col = ColorWhite;
+
+      u32 converted = platform_convert_color(col);
+	  	  
+      u32 pixelIndex = rowIndex + x;
+      u32 *pixel = row + x;
+      *pixel = converted;
+
+    }
+  }
+}
 void graphics_render_text(CG_TextRenderData *_data){
+
+
   CG_OffscreenBuffer *screenBuffer = cg_get_current_off_screen_buffer();
   CG_PlatformConfig config = cg_get_platform_config();
 
+  
 
   CG_Texture* t = _data->font->texture;
-  float scale = _data->fontSizeInPixels  / _data->font->glyphBoxSizePixels;
+  float scale = _data->fontSizeInPixels  / _data->font->glyphBoxWidthPixels;
 
-  float width = font_get_text_width(_data->text, _data->fontSizeInPixels, _data->letterSpacingRelativeToSize) * scale;
+  float width = font_get_text_width(_data->text, _data->fontSizeInPixels, _data->letterSpacingRelativeToSize);
   float height = _data->fontSizeInPixels * scale;
 
   /* width = graphics_screen_res_x_to_buffer_x(width); */
@@ -1206,14 +1232,16 @@ void graphics_render_text(CG_TextRenderData *_data){
   float glyphHalfWidth = glyphWidth/2.0f;
   float glyphHalfHeight = glyphHeight/2.0f;
 
-  float spaceWidth = _data->letterSpacingRelativeToSize * glyphWidth;
-  float glyphWidthWithSpace = glyphWidth + spaceWidth;
+
+
   
-  Vec2 stringCenter = graphics_center_coords_to_screen(_data->posRelativeToScreenCenterInPixels);
+  Vec2 stringCenter = _data->posRelativeToScreenCenterInPixels;
+  stringCenter.x+=config.HalfRenderBufferWidth;
+  stringCenter.y+=config.HalfRenderBufferHeight;
   //  stringCenter = graphics_screen_res_to_buffer_coordinates(stringCenter);
   Vec2 stringLeft = stringCenter;
   stringLeft.x-=halfWidth;
-  
+
   u32 numChars = strlen(_data->text);
 
   u32 firstCharIndex=0, lastCharIndex = numChars -1;
@@ -1222,34 +1250,65 @@ void graphics_render_text(CG_TextRenderData *_data){
 
   char *renderString = _data->text;
   CG_Font *fontPtr = _data->font;
-  if(leftLeak > 0){
-    firstCharIndex = ceil(leftLeak / glyphWidthWithSpace);
-  }
 
 
+  //@LAST, @TODO, simply test rendering a box at the location of the glyph first
   for(int i=firstCharIndex;i<=lastCharIndex;i++){
     Vec2 center = stringCenter;
-    center.x += stringLeft.x * i*glyphWidth;
+    center.x = stringLeft.x +  i*glyphWidth + glyphHalfWidth;
 
     Vec2 leftBottom = center;
     leftBottom.y -= glyphHalfHeight;
     leftBottom.x -= glyphHalfWidth;
 
-    // @TODO
-    // generate uv based on character
     
     char c = renderString[i];
     u32 charIndex = font_get_char_index(c);
-    for(int y=0;y<glyphHeight;y++){
-      for(int x=0;x<glyphWidth;x++){
-	Vec2 localUV;
-	localUV.x = (float)x / (glyphWidth-1);
-	localUV.y = (float)y / (glyphHeight-1);
 
+    u32 bottomLeftPixelIndex = (u32)round(leftBottom.y) * screenBuffer->Width + (u32)round(leftBottom.x);
+    for(int y=0;y<glyphHeight;y++){
+
+      float globalY = leftBottom.y +y;
+
+      if(globalY < 0 || globalY > screenBuffer->Height-1) continue;
+
+      u32 startIndex = bottomLeftPixelIndex + y*screenBuffer->Width;
+      u32 rowFirstPixelIndex = y*screenBuffer->Width;
+      for(int x=0;x<glyphWidth;x++){
+
+
+	float globalX = leftBottom.x + x;
+
+	if(globalX < 0 || globalX > screenBuffer->Width-1 ) {
+	  continue;
+	};
+	/* u32 *pixel =  (u32*)screenBuffer->Memory  + startIndex + x; */
+	/* u32 converted = platform_convert_color(ColorWhite); */
+	/* *pixel = converted; */
+	
+	Vec2 localUV;
+
+	// use glyphWidth instead of glyphWidth-1
+	// because x needs to be equal to glyphWidth at the end of the last pixel
+	// not the start so that x / glyphWidth at that point equals 1
+	localUV.x = (float)x / (glyphWidth);
+	localUV.y = (float)y / (glyphHeight);
 	CG_Color col = font_sample_texture_from_local_uv(fontPtr,charIndex, localUV);
+
+	u32 *pixel =  (u32*)screenBuffer->Memory  + startIndex + x;
+	if(col.w == 0) {
+	  //  	  continue;
+	  col = ColorBlack;
+	}
+
+
+	u32 converted = platform_convert_color(col);
+	*pixel = converted;
 
       }
     }
+
+
   }
   
 
@@ -1259,21 +1318,3 @@ void graphics_render_text(CG_TextRenderData *_data){
 
 
 
-float graphics_get_text_width(char *text,float _fontSizeInPixels, float _letterSpacingRelativeToSize){
-
-
-  float widthPerGlyph =_fontSizeInPixels*_letterSpacingRelativeToSize;
-  float totalWidth = widthPerGlyph * strlen(text);
-
-
-  return totalWidth;
-}
-Vec2 graphics_center_coords_to_screen(Vec2 _center){
-  CG_PlatformConfig config = cg_get_platform_config();
-  
-  _center.x+=config.HalfScreenWidth;
-  _center.y+= config.HalfScreenHeight;
-
-
-  return _center;
-}

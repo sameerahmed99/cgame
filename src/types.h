@@ -17,6 +17,6 @@ typedef i32 b32;
 
 
 struct Vec4;
-typedef struct Vec4 CG_Color;
+
 
 #endif 

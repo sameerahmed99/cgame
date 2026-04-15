@@ -44,14 +44,22 @@ CG_Font* font_load_from_cg_font_file(const char* _filePath, b32 _loadTexture)
       //      ASSERT_NO_EVAL(nullCheck == NULL);
       font->numGlyphs = value;
     }
-    else if(strcmp(line, "glyph_box_size")==0){
+    else if(strcmp(line, "glyph_box_height")==0){
       delim = lineBreak;
       line = strtok(NULL, delim);
       char* nullCheck=NULL;
       u32 value = (u32)strtoul(line, &nullCheck, 10);
       //      ASSERT_NO_EVAL(nullCheck == NULL);
-      font->glyphBoxSizePixels = value;
+      font->glyphBoxHeightPixels = value;
     }
+    else if(strcmp(line, "glyph_box_width")==0){
+      delim = lineBreak;
+      line = strtok(NULL, delim);
+      char* nullCheck=NULL;
+      u32 value = (u32)strtoul(line, &nullCheck, 10);
+      //      ASSERT_NO_EVAL(nullCheck == NULL);
+      font->glyphBoxWidthPixels = value;
+    } 
     else if(strcmp(line, "columns")==0){
       delim = lineBreak;
       line = strtok(NULL, delim);
@@ -98,8 +106,9 @@ CG_Font* font_load_from_cg_font_file(const char* _filePath, b32 _loadTexture)
   }
 
 
-  font->glyphBoxHalfSizePixelsFloat = font->glyphBoxSizePixels/2.0f;
-  printf("loaded font: %s, glyph size: %lu, glyph count: %lu, language: %s\n", font->name, font->glyphBoxSizePixels, font->numGlyphs, font->language == CG_LANGUAGE_ENGLISH ? "English" : "Unrecognized");
+  font->glyphBoxHalfWidth = font->glyphBoxWidthPixels/2.0f;
+  font->glyphBoxHalfHeight = font->glyphBoxHeightPixels/2.0f;
+  printf("loaded font: %s, glyph width: %lu, glyph height: %lu, glyph count: %lu, language: %s\n", font->name, font->glyphBoxWidthPixels,font->glyphBoxHeightPixels, font->numGlyphs, font->language == CG_LANGUAGE_ENGLISH ? "English" : "Unrecognized");
 
   //@TEMP_FREE_USED
   platform_free_file_memory(data, fileSize);
@@ -119,7 +128,7 @@ void font_draw(CG_Font* _font,char *text,float _fontSizeInPixels, Vec2 _posRelat
   CG_PlatformConfig config = cg_get_platform_config();
   
   CG_Texture* t = _font->texture;
-  float scale = _fontSizeInPixels  / _font->glyphBoxSizePixels;
+  float scale = _fontSizeInPixels  / _font->glyphBoxWidthPixels;
 
   float width = font_get_text_width(text, _fontSizeInPixels, _letterSpacingRelativeToSize);
 
@@ -148,13 +157,15 @@ float font_get_text_width(char *text,float _fontSizeInPixels, float _letterSpaci
 
 
   float widthPerGlyph =_fontSizeInPixels*_letterSpacingRelativeToSize;
-  float totalWidth = widthPerGlyph * strlen(text);
+
+  // don't consider letter spacing for last letter, just use glyph width (font size in pixels)
+  float totalWidth = widthPerGlyph * strlen(text) - widthPerGlyph + _fontSizeInPixels;
 
 
   return totalWidth;
 }
 
-CG_Color graphics_sample_texture(CG_Texture *tex, float uvx, float uvy, Vec2 _tiling, float width, float height);
+
 
 u32 font_get_char_index(char c){
   switch(c) {
@@ -196,202 +207,202 @@ u32 font_get_char_index(char c){
     } break;
   case 'E':
     {
-      return 0;
+      return 8;
     } break;
 
   case 'e':
     {
-      return 1;
+      return 9;
     } break;
   case 'F':
     {
-      return 2;
+      return 10;
     } break;
 
   case 'f':
     {
-      return 3;
+      return 11;
     } break;
   case 'G':
     {
-      return 4;
+      return 12;
     } break;
 
   case 'g':
     {
-      return 5;
+      return 13;
     } break;
   case 'H':
     {
-      return 6;
+      return 14;
     } break;
 
   case 'h':
     {
-      return 7;
+      return 15;
     } break;
 
   case 'I':
     {
-      return 1;
+      return 16;
     } break;
   case 'i':
     {
-      return 2;
+      return 17;
     } break;
 
   case 'J':
     {
-      return 3;
+      return 18;
     } break;
   case 'j':
     {
-      return 4;
+      return 19;
     } break;
 
   case 'K':
     {
-      return 5;
+      return 20;
     } break;
   case 'k':
     {
-      return 6;
+      return 21;
     } break;
 
   case 'L':
     {
-      return 7;
+      return 22;
     } break;
   case 'l':
     {
-      return 0;
+      return 23;
     } break;
 
   case 'M':
     {
-      return 1;
+      return 24;
     } break;
   case 'm':
     {
-      return 2;
+      return 25;
     } break;
 
   case 'N':
     {
-      return 3;
+      return 26;
     } break;
   case 'n':
     {
-      return 4;
+      return 27;
     } break;
 
   case 'O':
     {
-      return 5;
+      return 28;
     } break;
   case 'o':
     {
-      return 6;
+      return 29;
     } break;
 
   case 'P':
     {
-      return 7;
+      return 30;
     } break;
   case 'p':
     {
-      return 0;
+      return 31;
     } break;
 
   case 'Q':
     {
-      return 1;
+      return 32;
     } break;
   case 'q':
     {
-      return 2;
+      return 33;
     } break;
 
   case 'R':
     {
-      return 3;
+      return 34;
     } break;
   case 'r':
     {
-      return 4;
+      return 35;
     } break;
 
   case 'S':
     {
-      return 5;
+      return 36;
     } break;
   case 's':
     {
-      return 6;
+      return 37;
     } break;
 
   case 'T':
     {
-      return 7;
+      return 38;
     } break;
   case 't':
     {
-      return 0;
+      return 39;
     } break;
 
   case 'U':
     {
-      return 1;
+      return 40;
     } break;
   case 'u':
     {
-      return 2;
+      return 41;
     } break;
 
   case 'V':
     {
-      return 3;
+      return 42;
     } break;
   case 'v':
     {
-      return 4;
+      return 43;
     } break;
 
   case 'W':
     {
-      return 5;
+      return 44;
     } break;
   case 'w':
     {
-      return 6;
+      return 45;
     } break;
 
   case 'X':
     {
-      return 7;
+      return 46;
     } break;
     
   case 'x':
     {
-      return 3;
+      return 47;
     } break;
   case 'Y':
     {
-      return 4;
+      return 48;
     } break;
 
   case 'y':
     {
-      return 5;
+      return 49;
     } break;
   case 'Z':
     {
-      return 6;
+      return 50;
     } break;
 
   case 'z':
     {
-      return 7;
+      return 51;
     } break;
   default:
     {
@@ -409,13 +420,14 @@ CG_Color font_sample_texture_from_local_uv(CG_Font *font,u32 _charIndex, Vec2 _l
   float uvx,  uvy;
   u32 column = _charIndex % font->columns;
   u32 row = _charIndex / font->columns;
-  float uvStartx = font->texture->Width * column * font->glyphBoxSizePixels;
-  float uvStarty = font->texture->Height * row * font->glyphBoxSizePixels;
+  float uvStartx = column / (float)font->columns;
+  float uvStarty = row / (float)font->rows;
 
-  uvx = uvStartx + _localUV.x;
-  uvy = uvStarty + _localUV.y;
+  uvx = uvStartx + _localUV.x/font->columns;
+  uvy = uvStarty + _localUV.y/font->rows;
 
   CG_Color col =  graphics_sample_texture(font->texture, uvx, uvy, Vec2One, font->texture->Width, font->texture->Height);
+
 
   return col;
 

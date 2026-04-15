@@ -13,9 +13,10 @@ typedef struct CG_Font{
   char name[CG_MAX_FONT_NAME_CHARS];
   CG_AssetId assetId;
   u32 numGlyphs;
-  u32 glyphBoxSizePixels;
+  u32 glyphBoxWidthPixels;
+  u32 glyphBoxHeightPixels;
   u32 columns, rows;
-  float glyphBoxHalfSizePixelsFloat;
+  float glyphBoxHalfWidth, glyphBoxHalfHeight;
   enum CG_Language language;
   CG_AssetId textureAssetId;
   struct CG_Texture *texture;

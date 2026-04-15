@@ -7,6 +7,7 @@
 #include "./types.h"
 #include "./memory.h"
 #include "asset.h"
+#include "color.h"
 
 // Importante not about Assert
 // you shouldn't call functions or compute things in the paramter if you expect to use the result later
@@ -51,6 +52,7 @@ typedef struct CG_PlatformConfig{
   uint32_t ScreenHeight;
   float HalfScreenWidth;
   float HalfScreenHeight;
+  float HalfRenderBufferWidth, HalfRenderBufferHeight;
 
   float BaseScreenWidth, BaseScreenHeight;
   float BasePixelsPerWorldUnit;
@@ -116,7 +118,7 @@ CG_Buffer *cg_get_current_depth_buffer();
 
 CG_DebugSettings cg_get_debug_settings();
 
-internal void cg_init(CG_OffscreenBuffer *buffer);
+internal void cg_init(CG_OffscreenBuffer *buffer, CG_PlatformConfig config);
 internal void cg_update(CG_Memory* _memory, CG_Input *_platformInput, float _deltaTime);
 internal uint32_t cg_create_color_from_channels(uint8_t r, uint8_t g, uint8_t b, u8 a);
 internal CG_Color cg_clamp_color(CG_Color color);

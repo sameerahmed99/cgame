@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "types.h"
-
+#include "color.h"
 typedef struct CG_InputKey{
   bool WasDownedThisFrame;
   bool IsPressed;

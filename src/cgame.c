@@ -154,8 +154,10 @@ void create_player(){
 
 
 
-internal void cg_init(CG_OffscreenBuffer *offscreenBuffer){
+internal void cg_init(CG_OffscreenBuffer *offscreenBuffer, CG_PlatformConfig config){
 
+
+  PlatformConfig = config;
 
   // @TODO, only if write assets argument passed
   asset_write_assets(cg_get_raw_assets_dir_relative(), "./assets.bin");
@@ -172,11 +174,7 @@ internal void cg_init(CG_OffscreenBuffer *offscreenBuffer){
 
 
   srand(time(NULL));
-  PlatformConfig = cg_get_platform_config();
-  PlatformConfig.ScreenWidth = platform_get_client_screen_width();
-  PlatformConfig.ScreenHeight = platform_get_client_screen_height();
-  PlatformConfig.HalfScreenWidth = platform_get_client_screen_width()/2.0f;
-  PlatformConfig.HalfScreenHeight = platform_get_client_screen_height()/2.0f;
+
 
 
   DebugSettings.RenderDepthTexture = false;
