@@ -1,0 +1,10 @@
+name CGame Minogram
+glyph_count 96
+glyph_box_height 10
+glyph_box_width 6
+language english
+columns 13
+rows 7
+texture fonts/third_party/pixel_fonts/minogram_6x10.png
+top_left_is_origin 1
+order ABCDEFGHIJKLMNOPQRSTUVQXYZabcdefghijklmnopqrstuvwxyz0123456789+-=()[]{}<>/*:#%!?.,'"@&$

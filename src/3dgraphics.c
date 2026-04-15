@@ -1221,8 +1221,8 @@ void graphics_render_text(CG_TextRenderData *_data){
   float halfWidth = width/2.0f;
   float halfHeight = height/2.0f;
 
-  float glyphWidth = _data->fontSizeInPixels;
-  float glyphHeight = _data->fontSizeInPixels;
+  float glyphWidth = scale * _data->font->glyphBoxWidthPixels;
+  float glyphHeight =scale* _data->font->glyphBoxHeightPixels;
 
   /* glyphWidth = graphics_screen_res_x_to_buffer_x(glyphWidth); */
   /* glyphHeight = graphics_screen_res_y_to_buffer_y(glyphHeight); */
@@ -1263,7 +1263,7 @@ void graphics_render_text(CG_TextRenderData *_data){
 
     
     char c = renderString[i];
-    u32 charIndex = font_get_char_index(c);
+    u32 charIndex = font_get_char_index(_data->font, c);
 
     u32 bottomLeftPixelIndex = (u32)round(leftBottom.y) * screenBuffer->Width + (u32)round(leftBottom.x);
     for(int y=0;y<glyphHeight;y++){

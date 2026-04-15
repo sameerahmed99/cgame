@@ -20,6 +20,8 @@ typedef struct CG_Font{
   enum CG_Language language;
   CG_AssetId textureAssetId;
   struct CG_Texture *texture;
+  b32 topLeftIsOrigin;
+  char *order;
 }CG_Font;
 
 
@@ -27,6 +29,6 @@ typedef struct CG_Font{
 CG_Font* font_load_from_cg_font_file(const char* _filePath, b32 _loadTexture);
 void font_free_cg_font(CG_Font* font);
 float font_get_text_width(char *text,float _fontSizeInPixels, float _letterSpacingRelativeToSize);
-u32 font_get_char_index(char c);
+u32 font_get_char_index(CG_Font *font, char c);
 CG_Color font_sample_texture_from_local_uv(CG_Font *font,u32 _charIndex, Vec2 _localUV);
 #endif

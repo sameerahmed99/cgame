@@ -91,9 +91,17 @@ void asset_recursive_read_callback(int index, const char *_relativePath, const c
     CG_Font* font = font_load_from_cg_font_file(_relativePath,false);
     font->assetId = hash;
     u64 totalWriteSize = sizeof(*font);
+
+    // +1 for the null terminator
+    u64 orderWriteSize = sizeof(char)*font->numGlyphs + 1;
     u8* dest = (u8*)CG_Asset_CurrentPack.data;
+
     dest+=CG_Asset_CurrentPackWritePosFromDataPointer;
     memcpy(dest, font, totalWriteSize);
+    dest+=totalWriteSize;
+
+    memcpy(dest, font->order, orderWriteSize);
+    totalWriteSize+=orderWriteSize;
     
     CG_AssetTableEntry entry;
     entry.id = hash;
@@ -250,6 +258,8 @@ CG_Font *asset_load_font(CG_RuntimeAssets *_assets, CG_AssetId id){
   CG_RuntimeAsset *asset = asset_load_from_id(_assets, id, CG_ASSET_TYPE_FONT,false);
   CG_Font *font = (CG_Font*)asset->data;
   font->texture = asset_load_texture(_assets, font->textureAssetId);
+  u8* orderLocation = (u8*)font + sizeof(*font);
+  font->order = orderLocation;
 
   return font;
 }
@@ -307,6 +317,8 @@ CG_RuntimeAsset *asset_load_from_id(CG_RuntimeAssets *_assets, CG_AssetId _id, e
     }
   }
 
+  printf("ASSET WARNING: Not found\n");
+  ASSERT_NO_EVAL(false);
   return NULL;
 }
 CG_RuntimeAsset *asset_load(CG_RuntimeAssets *_assets, const char* _stringPath, enum CG_AssetType _type, b32 _returnRegardlessOfType){

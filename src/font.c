@@ -87,6 +87,25 @@ CG_Font* font_load_from_cg_font_file(const char* _filePath, b32 _loadTexture)
 	font->language = CG_LANGUAGE_UNRECOGNIZED;
       }
     }
+    else if(strcmp(line, "top_left_is_origin")==0){
+      delim = lineBreak;
+      line = strtok(NULL, delim);
+      if(strcmp(line, "1")==0){
+	font->topLeftIsOrigin = true;
+      }
+      else{
+	font->topLeftIsOrigin = false;
+      }
+    }
+    else if(strcmp(line, "order")==0){
+      delim = lineBreak;
+      line = strtok(NULL, delim);
+      //@TEMP_ALLOC_USED
+      font->order = malloc(sizeof(char)* strlen(line)+1) ;
+      memcpy(font->order, line, strlen(line)+1);
+      
+      
+    }
     else if(strcmp(line, "texture")==0){
       delim = lineBreak;
       line = strtok(NULL, delim);
@@ -108,7 +127,7 @@ CG_Font* font_load_from_cg_font_file(const char* _filePath, b32 _loadTexture)
 
   font->glyphBoxHalfWidth = font->glyphBoxWidthPixels/2.0f;
   font->glyphBoxHalfHeight = font->glyphBoxHeightPixels/2.0f;
-  printf("loaded font: %s, glyph width: %lu, glyph height: %lu, glyph count: %lu, language: %s\n", font->name, font->glyphBoxWidthPixels,font->glyphBoxHeightPixels, font->numGlyphs, font->language == CG_LANGUAGE_ENGLISH ? "English" : "Unrecognized");
+  printf("loaded font: %s, glyph width: %lu, glyph height: %lu, glyph count: %lu, language: %s, top-left is origin: %s, order: %s\n", font->name, font->glyphBoxWidthPixels,font->glyphBoxHeightPixels, font->numGlyphs, font->language == CG_LANGUAGE_ENGLISH ? "English" : "Unrecognized", font->topLeftIsOrigin ? "true" : "false", font->order);
 
   //@TEMP_FREE_USED
   platform_free_file_memory(data, fileSize);
@@ -120,6 +139,7 @@ CG_Font* font_load_from_cg_font_file(const char* _filePath, b32 _loadTexture)
 
 void font_free_cg_font(CG_Font* font){
   //@TEMP_FREE_USED
+  free(font->order);
   free(font);
 }
 void font_draw(CG_Font* _font,char *text,float _fontSizeInPixels, Vec2 _posRelativeToScreenCenterInPixels, CG_Color _color, float _letterSpacingRelativeToSize){
@@ -167,249 +187,20 @@ float font_get_text_width(char *text,float _fontSizeInPixels, float _letterSpaci
 
 
 
-u32 font_get_char_index(char c){
-  switch(c) {
-  case 'A':
-    {
-      return 0;
-    } break;
-
-  case 'a':
-    {
-      return 1;
-    } break;
-  case 'B':
-    {
-      return 2;
-    } break;
-
-  case 'b':
-    {
-      return 3;
-    } break;
-  case 'C':
-    {
-      return 4;
-    } break;
-
-  case 'c':
-    {
-      return 5;
-    } break;
-  case 'D':
-    {
-      return 6;
-    } break;
-
-  case 'd':
-    {
-      return 7;
-    } break;
-  case 'E':
-    {
-      return 8;
-    } break;
-
-  case 'e':
-    {
-      return 9;
-    } break;
-  case 'F':
-    {
-      return 10;
-    } break;
-
-  case 'f':
-    {
-      return 11;
-    } break;
-  case 'G':
-    {
-      return 12;
-    } break;
-
-  case 'g':
-    {
-      return 13;
-    } break;
-  case 'H':
-    {
-      return 14;
-    } break;
-
-  case 'h':
-    {
-      return 15;
-    } break;
-
-  case 'I':
-    {
-      return 16;
-    } break;
-  case 'i':
-    {
-      return 17;
-    } break;
-
-  case 'J':
-    {
-      return 18;
-    } break;
-  case 'j':
-    {
-      return 19;
-    } break;
-
-  case 'K':
-    {
-      return 20;
-    } break;
-  case 'k':
-    {
-      return 21;
-    } break;
-
-  case 'L':
-    {
-      return 22;
-    } break;
-  case 'l':
-    {
-      return 23;
-    } break;
-
-  case 'M':
-    {
-      return 24;
-    } break;
-  case 'm':
-    {
-      return 25;
-    } break;
-
-  case 'N':
-    {
-      return 26;
-    } break;
-  case 'n':
-    {
-      return 27;
-    } break;
-
-  case 'O':
-    {
-      return 28;
-    } break;
-  case 'o':
-    {
-      return 29;
-    } break;
-
-  case 'P':
-    {
-      return 30;
-    } break;
-  case 'p':
-    {
-      return 31;
-    } break;
-
-  case 'Q':
-    {
-      return 32;
-    } break;
-  case 'q':
-    {
-      return 33;
-    } break;
-
-  case 'R':
-    {
-      return 34;
-    } break;
-  case 'r':
-    {
-      return 35;
-    } break;
-
-  case 'S':
-    {
-      return 36;
-    } break;
-  case 's':
-    {
-      return 37;
-    } break;
-
-  case 'T':
-    {
-      return 38;
-    } break;
-  case 't':
-    {
-      return 39;
-    } break;
-
-  case 'U':
-    {
-      return 40;
-    } break;
-  case 'u':
-    {
-      return 41;
-    } break;
-
-  case 'V':
-    {
-      return 42;
-    } break;
-  case 'v':
-    {
-      return 43;
-    } break;
-
-  case 'W':
-    {
-      return 44;
-    } break;
-  case 'w':
-    {
-      return 45;
-    } break;
-
-  case 'X':
-    {
-      return 46;
-    } break;
+u32 font_get_char_index(CG_Font *font, char c){
+  char *e = strchr(font->order,c);
+  if(e == NULL) return CG_FONT_ERROR_INDEX;
+  u32 index = (u32)(e-font->order);
+  if(font->topLeftIsOrigin){
+    u32 topLeftIndex = font->numGlyphs - 1;
+    u32 row = index / font->columns;
+    row = font->rows - row - 1;
     
-  case 'x':
-    {
-      return 47;
-    } break;
-  case 'Y':
-    {
-      return 48;
-    } break;
+    u32 column = index % font->columns;
+    index = font->columns * row + column;
 
-  case 'y':
-    {
-      return 49;
-    } break;
-  case 'Z':
-    {
-      return 50;
-    } break;
-
-  case 'z':
-    {
-      return 51;
-    } break;
-  default:
-    {
-      return CG_FONT_ERROR_INDEX;
-    } break;
   }
-  return CG_FONT_ERROR_INDEX;
+  return index;
 }
 
 CG_Color font_sample_texture_from_local_uv(CG_Font *font,u32 _charIndex, Vec2 _localUV){
