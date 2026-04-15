@@ -1,7 +1,7 @@
 ## Software rendered 3D game engine written in C99
 Purely software rendered, no graphics APIs and no external dependencies.  
 
-This project is currently in very early development, I've recently implemented triangle rasterization. I will refactor the codebase once some other fundamental features, such as triangle clipping, are finished.
+This project is currently in very early development, currently working on font rendering. Check out the ``font`` branch to see how that's progressing.
 
 ## Images
 
