@@ -1,4 +1,4 @@
-#include "3dgraphics.h"
+#include "graphics.h"
 #include "cgame.h"
 #include "draw.h"
 #include "font.h"
@@ -146,6 +146,7 @@ internal const Vec4 clip_plane_far ={0,0,-1,1};
 
 
 internal const Vec4 all_clip_planes[6] = {clip_plane_left, clip_plane_right, clip_plane_top, clip_plane_bottom, clip_plane_near, clip_plane_far};
+
 
 
 internal const u32 NUM_CLIPPING_PLANES = 6;
@@ -781,8 +782,13 @@ Vec4 lerp_vert_vec4(Vec4 _vala, Vec4 _valb, Vec4 _valc,float za, float zb, float
 
 
 CG_Color graphics_sample_texture(CG_Texture *tex, float uvx, float uvy, Vec2 _tiling, float width, float height){
-
   // @TODO - Handle negative uvs
+  if(uvx<0){
+    uvx = 1 + uvx;
+  }
+  if(uvy<0){
+    uvy = 1 + uvy;
+  }
   u32 coordinateX = (u32)((uvx*width) *_tiling.x ) % (u32)width;
   u32 coordinateY = (u32)((uvy*height) * _tiling.y) % (u32)height;
   return texture_read_pixel(tex, coordinateX, coordinateY);
@@ -992,6 +998,7 @@ void draw3d_triangle_rasterize(CG_VertRasterData a, CG_VertRasterData b, CG_Vert
 	  Vec2 frag_tex_coord = lerp_vert_vec2(a.localTexCoord, b.localTexCoord, c.localTexCoord, a.wVal, b.wVal, c.wVal,nw0,nw1,nw2, depth);
 
 	  Vec4 frag_color = graphics_sample_texture(texture, frag_tex_coord.x, frag_tex_coord.y, tiling, texFloatWidth, texFloatHeight);
+
 	  //	  Vec4 frag_color = {0.5f,0.5f,0.5f,1.0f}
 
 	  Vec3 worldNormal = lerp_vert_vec3(a.worldNormal, b.worldNormal, c.worldNormal, a.wVal, b.wVal, c.wVal, nw0, nw1, nw2, depth);
@@ -1035,12 +1042,10 @@ void draw3d_triangle_rasterize(CG_VertRasterData a, CG_VertRasterData b, CG_Vert
 	  /* p[1] = litCol.y*255; */
 	  /* p[2] = litCol.w*255; */
 	  /* p[3] = litCol.z*255; */
-	  u32 col = platform_convert_color(litCol);
-	  
+
 	  
 	  u32* p32 = (u32*)p;
-	  p32[0] = col;
-
+	  platform_set_pixel_color(p32, litCol);	  
 
 	  /* p[0] = Clamp01(worldNormal.z) * 255; */
 	  /* p[1] = Clamp01(worldNormal.y) * 255; */
@@ -1091,7 +1096,7 @@ void graphics_renderer_init(Arena* _renderList,Arena *_textRenderList,CG_Texture
 }
 
 void graphics_renderer_render_list(){
-  //  PLATFORM_BEGIN_FUNCTION_MEASUREMENT();
+  PLATFORM_BEGIN_FUNCTION_MEASUREMENT();
   size_t entrySize = sizeof(CG_RenderItem);
   u32 count = arena_get_num_items(Renderer.renderList, entrySize);
   for(int i=0;i<count;i++){
@@ -1100,15 +1105,16 @@ void graphics_renderer_render_list(){
   }
   arena_clear(Renderer.renderList);
 
-  entrySize = sizeof(CG_TextRenderData);
-  count = arena_get_num_items(Renderer.textRenderList, entrySize);
+
+}
+void graphics_render_text_list(){
+  size_t entrySize = sizeof(CG_TextRenderData);
+  u32 count = arena_get_num_items(Renderer.textRenderList, entrySize);
   for(int i=0;i<count;i++){
     CG_TextRenderData *d= arena_get_at(Renderer.textRenderList, i, entrySize);
     graphics_render_text(d);
   }
   arena_clear(Renderer.textRenderList);
-
-  //  PLATFORM_STOP_FUNCTION_MEASUREMENT();
 }
 
 void graphics_renderer_submit_mesh(CG_Mesh *mesh, CG_Material *material,Mat4x4 _modelMatrix, Mat4x4 _inversedCameraMatrix, Mat4x4 _projection){
@@ -1254,6 +1260,8 @@ void graphics_render_text(CG_TextRenderData *_data){
 
   //@LAST, @TODO, simply test rendering a box at the location of the glyph first
   for(int i=firstCharIndex;i<=lastCharIndex;i++){
+    char c = renderString[i];
+    if(c == ' ') continue;
     Vec2 center = stringCenter;
     center.x = stringLeft.x +  i*glyphWidth + glyphHalfWidth;
 
@@ -1262,7 +1270,7 @@ void graphics_render_text(CG_TextRenderData *_data){
     leftBottom.x -= glyphHalfWidth;
 
     
-    char c = renderString[i];
+
     u32 charIndex = font_get_char_index(_data->font, c);
 
     u32 bottomLeftPixelIndex = (u32)round(leftBottom.y) * screenBuffer->Width + (u32)round(leftBottom.x);
@@ -1294,16 +1302,18 @@ void graphics_render_text(CG_TextRenderData *_data){
 	localUV.x = (float)x / (glyphWidth);
 	localUV.y = (float)y / (glyphHeight);
 	CG_Color col = font_sample_texture_from_local_uv(fontPtr,charIndex, localUV);
+	col.x = _data->color.x;
+	col.y = _data->color.y;
+	col.z = _data->color.z;
+
 
 	u32 *pixel =  (u32*)screenBuffer->Memory  + startIndex + x;
 	if(col.w == 0) {
-	  //  	  continue;
-	  col = ColorBlack;
+	  continue;
+	  //	  col = ColorBlack;
 	}
 
-
-	u32 converted = platform_convert_color(col);
-	*pixel = converted;
+	platform_set_pixel_color(pixel, col);
 
       }
     }

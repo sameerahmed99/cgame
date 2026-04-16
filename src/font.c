@@ -4,7 +4,7 @@
 #include "math.h"
 #include "asset.h"
 #include "language.h"
-#include "3dgraphics.h"
+#include "graphics.h"
 
 const u32 CG_FONT_ERROR_INDEX = 99999999;
 CG_Font* font_load_from_cg_font_file(const char* _filePath, b32 _loadTexture)
@@ -142,36 +142,6 @@ void font_free_cg_font(CG_Font* font){
   free(font->order);
   free(font);
 }
-void font_draw(CG_Font* _font,char *text,float _fontSizeInPixels, Vec2 _posRelativeToScreenCenterInPixels, CG_Color _color, float _letterSpacingRelativeToSize){
-  
-  CG_OffscreenBuffer *screenBuffer = cg_get_current_off_screen_buffer();
-  CG_PlatformConfig config = cg_get_platform_config();
-  
-  CG_Texture* t = _font->texture;
-  float scale = _fontSizeInPixels  / _font->glyphBoxWidthPixels;
-
-  float width = font_get_text_width(text, _fontSizeInPixels, _letterSpacingRelativeToSize);
-
-
-  float left = _posRelativeToScreenCenterInPixels.x-width/2.0f;
-  float right = _posRelativeToScreenCenterInPixels.x+width/2.0f;
-  
-  
-
-  // convert to 0,0 at bottom left
-  left+=config.HalfScreenWidth;
-  right+=config.HalfScreenWidth;
-
-  float minX = Min(0, left);
-  float maxX = Max(config.ScreenWidth, right);
-  
-  left = graphics_screen_res_x_to_buffer_x(left);
-  right = graphics_screen_res_x_to_buffer_x(right);
-  Vec2 centerBufferPos = graphics_screen_res_to_buffer_coordinates(_posRelativeToScreenCenterInPixels);
-  
-  // draw/submit
-}
-
 
 float font_get_text_width(char *text,float _fontSizeInPixels, float _letterSpacingRelativeToSize){
 

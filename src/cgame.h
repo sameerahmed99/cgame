@@ -138,7 +138,7 @@ Arena* cg_get_entities();
 Arena* TEMP_cg_get_temp_assets_arena();
 
 CG_RuntimeAssets *cg_get_assets();
-
+void cg_submit_debug_text(char *text);
 
 #endif // CG_
 

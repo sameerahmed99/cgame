@@ -1105,7 +1105,14 @@ CG_Color platform_convert_to_color(u32 _rgba){
   CG_Color col = {r,g,b,a};
   return col;
 }
+void platform_set_pixel_color(u32* _pixel, CG_Color _color){
+  u8* channel = (u8*)_pixel;
 
+  channel[3] = _color.w * 255;
+  channel[2] = _color.x * 255;
+  channel[1] = _color.y * 255;
+  channel[0] = _color.z * 255;
+}
 
 LARGE_INTEGER PlatformMeasurementLast;
 void platform_begin_measurement()

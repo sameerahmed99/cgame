@@ -32,6 +32,8 @@ typedef struct RoadGame{
   CG_Entity* AppleTreesEntity;
   
   CG_RuntimeAssets *Assets;
+
+  char FpsString[64];
 } RoadGame;
 
 
@@ -215,12 +217,20 @@ void rg_update_free_cam(CG_Input input, float _dt){
   entity_set_world_rotation(rg.FreeCam,world);
     // free cam
 }
+
+
+void rg_draw_debug_info(float dt){
+  
+  float fps = 1/dt;
+  sprintf(rg.FpsString, "FPS:%d",(int)fps);
+  cg_submit_debug_text(rg.FpsString);
+}
 void cg_active_game_update(float dt, CG_Input input){
 
 
-  Vec2 pos = {0,0};
+  rg_draw_debug_info(dt);
 
-      graphics_submit_text(rg.DefaultFont,"Hello!",24, pos,ColorWhite, 1);
+
   //    graphics_submit_text(rg.DefaultFont,"a",24, pos,ColorWhite, 1);
   rg.Input = input;  
 

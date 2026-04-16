@@ -23,7 +23,7 @@ CG_Texture *texture_load_from_file(const char* _path, Arena *_arena){
   CG_Texture *texture;
   texture = (CG_Texture*)arena_push(_arena, sizeof(*texture) + imageSizeBytes, false);
   u8* pixelsStart = (u8*)texture + sizeof(*texture);
-  texture->Pixels = (u32*)pixelsStart;
+  texture->Pixels = (CG_Color*)pixelsStart;
   u8* data=  (u8*)(stbi_load(_path, &x, &y, &n, 4));
 
   
@@ -43,8 +43,12 @@ CG_Texture *texture_load_from_file(const char* _path, Arena *_arena){
     u8 g = pixel[1];
     u8 b = pixel[2];
     u8 a = pixel[3];
-    u32 col = cg_create_color_from_channels(r,g,b,a);
-    texture->Pixels[i] = col;
+    CG_Color color;
+    color.x = r/255.0f;
+    color.y = g/255.0f;
+    color.z = b/255.0f;
+    color.w = a/255.0f;
+    texture->Pixels[i] = color;
     pixel+=4;
   }
   stbi_image_free(data);
@@ -61,17 +65,13 @@ u32 texture_get_pixel_data_size_in_bytes(CG_Texture* tex){
 }
 
 CG_Color texture_read_pixel(CG_Texture* tex, int x, int y){
+  CG_Color col = tex->Pixels[y*tex->Width + x];
+  return col;
+}
 
-
-  u32 col = tex->Pixels[y*tex->Width + x];
-
-  CG_Color color = platform_convert_to_color(col);
-
-  /* color.x = 1; */
-  /* color.y = .2f; */
-  /* color.z = 0.2f; */
-  /* color.w = 1; */
-  return color;
+CG_Color texture_read_pixel_at_index(CG_Texture* tex, int index){
+  CG_Color col = tex->Pixels[index];
+  return col;
 }
 CG_Texture *texture_get_white(){
 
@@ -84,7 +84,7 @@ CG_Texture *texture_get_white(){
     __WhiteTexture->Height =height;
     __WhiteTexture->BytesPerPixel = cg_texture_bytes_per_pixel;
     for(int i=0;i<numPixels;i++){
-      __WhiteTexture->Pixels[i] = 0xFFFFFFFF;
+      __WhiteTexture->Pixels[i] = ColorWhite;
     }
 
     cg_texture_white_init = true;

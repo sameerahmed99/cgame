@@ -92,6 +92,7 @@ void graphics_render_text(CG_TextRenderData *_data);
 void graphics_renderer_init(Arena* _renderList,Arena *_textRenderList,CG_Texture* _defaultTexture, CG_Material *_defaultMaterial);
 
 void graphics_renderer_render_list();
+void graphics_render_text_list();
 
 Vec2 graphics_screen_res_to_buffer_coordinates(Vec2 screen);
 float graphics_screen_res_x_to_buffer_x(float x);

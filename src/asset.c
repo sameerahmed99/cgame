@@ -249,7 +249,7 @@ CG_Texture *asset_load_texture(CG_RuntimeAssets *_assets, CG_AssetId id){
   CG_RuntimeAsset *asset=  asset_load_from_id(_assets, id, CG_ASSET_TYPE_TEXTURE,false);
   CG_Texture *texture = (CG_Texture*)asset->data;
   u8* pixelsLocation = (u8*)texture + sizeof(CG_Texture);
-  texture->Pixels = (u32*)pixelsLocation;
+  texture->Pixels = (CG_Color*)pixelsLocation;
   return texture;
 }
 
