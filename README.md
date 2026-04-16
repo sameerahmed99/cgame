@@ -1,8 +1,8 @@
 ## Software rendered 3D game engine written in C99
 Purely software rendered, no graphics APIs and no external dependencies.  
 
-This project is currently in very early development, currently working on font rendering. Check out the ``font`` branch to see how that's progressing.
-
+This project is in very early development, currently working on improving the rendering performance. 
+ 
 ## Images
 
 ![alt text](./assets/github-images/3d-scene-textured.png "textured pistol 3d model")
