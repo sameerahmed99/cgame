@@ -813,6 +813,296 @@ CG_Color graphics_sample_texture(CG_Texture *tex, float uvx, float uvy, Vec2 _ti
   /* coordinateY = Clamp(coordinateY, 0, height-1); */
   return texture_read_pixel(tex, coordinateX, coordinateY);
 }
+void adraw3d_triangle_rasterize(CG_VertRasterData a, CG_VertRasterData b, CG_VertRasterData c, CG_Material *_material){
+
+
+  /* a.pos.x = round(a.pos.x); */
+  /* a.pos.y = round(a.pos.y); */
+
+  /* b.pos.x = round(b.pos.x); */
+  /* b.pos.y = round(b.pos.y); */
+  
+  /* c.pos.x = round(c.pos.x); */
+  /* c.pos.y = round(c.pos.y); */
+
+  Vec4 lineCol = {0,0,125,0};
+
+
+
+  Vec2 triA = {a.screenPos.x,a.screenPos.y};
+  Vec2 triB = {b.screenPos.x, b.screenPos.y};
+  Vec2 triC = {c.screenPos.x, c.screenPos.y};
+
+  /* triA.x=round(triA.x); */
+  /* triA.y=round(triA.y); */
+
+
+  /* triB.x=round(triB.x); */
+  /* triB.y=round(triB.y); */
+
+
+  /* triC.x=round(triC.x); */
+  /* triC.y=round(triC.y); */
+
+    
+  
+  float totalArea = triangle_edge_function(triA, triB, triC);
+
+  /* maxX = Clamp(maxX,0, screenBuffer->Width-1); */
+  /* minX = Clamp(minX,0, screenBuffer->Width-1); */
+
+  /* maxY = Clamp(maxY ,0, screenBuffer->Height-1); */
+  /* minY = Clamp(minY,0, screenBuffer->Height-1); */
+
+
+  // winding order is counter clockwise, it's facing away from cam
+  // so cull it
+  if(totalArea<0) return;
+
+  CG_OffscreenBuffer *screenBuffer = cg_get_current_off_screen_buffer();
+  CG_Buffer *depthBuffer = cg_get_current_depth_buffer();
+  int size = 16;
+  
+
+  
+  float minX = Min(a.screenPos.x, b.screenPos.x);
+  minX = Min(minX, c.screenPos.x);
+
+  float maxX = Max(a.screenPos.x, b.screenPos.x);
+  maxX = Max(maxX, c.screenPos.x);
+
+
+  float minY = Min(a.screenPos.y, b.screenPos.y);
+  minY = Min(minY, c.screenPos.y);
+
+  float maxY = Max(a.screenPos.y, b.screenPos.y);
+  maxY = Max(maxY, c.screenPos.y);
+  maxX = Clamp(ceilf(maxX),0, screenBuffer->Width-1);
+  minX = Clamp(floorf(minX),0, screenBuffer->Width-1);
+
+  maxY = Clamp(ceilf(maxY) ,0, screenBuffer->Height-1);
+  minY = Clamp(floorf(minY),0, screenBuffer->Height-1);
+
+  float* depthBufferData = (float*)depthBuffer->Data;
+
+  float inverseDepthA = (1.0f/a.wVal);
+  float inverseDepthB = (1.0f/b.wVal);
+  float inverseDepthC = (1.0f/c.wVal);
+  float check = 0.0f;
+  
+  b32 renderDepth = cg_get_debug_settings().RenderDepthTexture;
+  CG_Color lightCol = cg_get_debug_settings().lightColor;
+  CG_Color ambientCol = cg_get_debug_settings().ambientLightColor;
+  Vec3 lightDir = cg_get_debug_settings().lightDirection;
+  Vec4 fogColor =cg_get_debug_settings().fogColor;
+  Vec2 a_ = triA;
+  Vec2 b_ = triB;
+  Vec2 c_ = triC;
+
+
+  CG_Color vLitCola = {1,1,1,1};
+  CG_Color vLitColb = {1,1,1,1};
+  CG_Color vLitColc = {1,1,1,1};
+  float nDota = math_vec3_dot(a.worldNormal, lightDir);
+  nDota*=-1;
+  float nDotb = math_vec3_dot(b.worldNormal, lightDir);
+  nDotb*=-1;
+  float nDotc = math_vec3_dot(c.worldNormal, lightDir);
+  nDotc*=-1;
+  nDota = Clamp01(nDota);
+  nDotb = Clamp01(nDotb);
+  nDotc = Clamp01(nDotc);
+  vLitCola = math_vec4_scale3(vLitCola, nDota);
+  vLitColb = math_vec4_scale3(vLitColb, nDotb);
+  vLitColc = math_vec4_scale3(vLitColc, nDotc);
+  
+  /* Vec2 ra = a_; */
+  /* Vec2 rb = b_; */
+  /* Vec2 rc = c_; */
+  /* ra.x = round(a_.x); */
+  /* ra.y = round(a_.y); */
+  
+  /* rb.x = round(b_.x); */
+  /* rb.y = round(b_.y); */
+  
+  /* rc.x = round(c_.x); */
+  /* rc.y = round(c_.y); */
+  
+
+
+  Vec2 edge0 = math_vec2_subtract(triC, triB);
+  Vec2 edge1 = math_vec2_subtract(triA, triC);
+  Vec2 edge2 = math_vec2_subtract(triB, triA);
+  CG_Texture* texture=_material->texture;
+  float texFloatWidth = (float)texture->Width;
+  float texFloatHeight = (float)texture->Height;
+  Vec2 tiling = _material->textureTiling;
+  for(int y = minY; y <= maxY; y++){
+
+    u32 rowCoordinate = y*(screenBuffer->Width);
+    u32* row = (u32*)(screenBuffer->Memory) + rowCoordinate;
+    float* depthRow = depthBufferData + rowCoordinate;
+
+    for(int x = minX; x <= maxX; x++){
+      Vec2 pVec = {(float)x, (float)y};
+
+
+      float w0 = triangle_edge_function(b_,c_,pVec);
+      float w1 = triangle_edge_function(c_, a_, pVec);
+      float w2 = triangle_edge_function(a_, b_, pVec);
+
+
+
+
+
+      b32 overlaps = true;
+
+
+      
+      // if area == 0 check if top edge or letft edge
+      /* overlaps &= (w0 == 0 ?  ((edge0.y == 0  && edge0.x > 0) || edge0.y > 0) : (w0 > 0)); */
+      /* overlaps &= (w1 == 0 ?  ((edge1.y == 0  && edge1.x > 0) || edge1.y > 0) : (w1 > 0)); */
+      /* overlaps &= (w2 == 0 ?  ((edge2.y == 0  && edge2.x > 0) || edge2.y > 0) : (w2 > 0)); */
+
+      overlaps = w0 >= check && w1 >= check && w2 >= check;
+      
+      //      local_persist i32 num = 0;
+      /* if((x==0 || y ==0) && !overlaps){ */
+      /* 	printf("0\n", x, y); */
+      /* } */
+      if(overlaps){
+           
+
+
+	// normalized weights nw
+	float nw0 = w0/totalArea;
+	float nw1 = w1/totalArea;
+	float nw2 = w2/totalArea;
+
+	float width = 550;
+
+
+
+	// this create from channels thing is slow
+	//      u32 color = cg_create_color_from_channels(255 * w1, 255 *w2, 255*w3,0);
+	//color = platform_convert_color(color);
+	
+
+	float storedDepth=depthRow[x];
+	float inverseDepth = inverseDepthA * nw0 + inverseDepthB*nw1 + inverseDepthC*nw2;
+	float depth = 1/inverseDepth;
+
+	// @NOTE ndcDepth, which is -1 to 1, when used for depth comparisons creates problems when looking at objects even just a few meters away, pixel holes start appearing. Might be because of the small -1 to 1 range, precision issues
+	
+	//	float ndcDepth = a.screenPos.z*nw0 + b.screenPos.z*nw1 + c.screenPos.z*nw2;
+
+	float nDot = lerp_vert_float(nDota, nDotb, nDotc, a.wVal, b.wVal, c.wVal, nw0, nw1,nw2, depth);
+
+	//	float wVal = lerp_vert_float(a.wVal, b.wVal, c.wVal, a.wVal, b.wVal, c.wVal, nw0, nw1,nw2, depth);
+	if(depth < storedDepth){
+
+
+	  float fogAmount =depth;
+	  fogAmount/=180.0f;
+
+
+	  fogAmount = Clamp01(fogAmount);
+
+
+
+
+	  /* Vec4 frag_color = lerp_vert_vec4(a.color, b.color, c.color, a.wVal, b.wVal, c.wVal,w1,w2,w3, depth); */
+
+
+	  /* Vec2 frag_tex_coord = lerp_vert_vec2(a.localTexCoord, b.localTexCoord, c.localTexCoord, a.wVal, b.wVal, c.wVal,nw0,nw1,nw2, depth); */
+
+	  /* Vec4 frag_color = graphics_sample_texture(texture, frag_tex_coord.x, frag_tex_coord.y, tiling, texFloatWidth, texFloatHeight); */
+
+	  /* //	  Vec4 frag_color = {0.5f,0.5f,0.5f,1.0f} */
+
+	  /* Vec3 worldNormal = lerp_vert_vec3(a.worldNormal, b.worldNormal, c.worldNormal, a.wVal, b.wVal, c.wVal, nw0, nw1, nw2, depth); */
+
+	  /* Vec4 litCol =  lerp_vert_vec4(vLitCola, vLitColb,vLitColc, a.wVal, b.wVal, c.wVal, nw0, nw1, nw2, depth); */
+
+	  /* litCol.x*=lightCol.x; */
+	  /* litCol.y*=lightCol.y; */
+	  /* litCol.z*=lightCol.z; */
+	  
+	  /* litCol.x=frag_color.x*litCol.x; */
+	  /* litCol.y=frag_color.y*litCol.y; */
+	  /* litCol.z=frag_color.z*litCol.z; */
+
+	  /* //	  frag_color = math_vec4_lerp(frag_color, fogColor, fogAmount); */
+
+	  /* litCol.x+= ambientCol.x*frag_color.x; */
+	  /* litCol.y+= ambientCol.y*frag_color.y; */
+	  /* litCol.z+= ambientCol.z*frag_color.z; */
+
+	  /* litCol = cg_clamp_color(litCol); */
+
+	  /* litCol = math_vec4_lerp(litCol, fogColor, fogAmount); */
+
+
+
+
+	  
+	  depthRow[x] = depth;
+	  u8* p = (u8*) (row + x);
+
+
+	  /* p[0] = frag_color.z*255; */
+	  /* p[1] = frag_color.y*255; */
+	  /* p[2] = frag_color.x*255; */
+	  /* p[3] = frag_color.w*255; */
+
+
+	  
+	  /* p[0] = litCol.z*255; */
+	  /* p[1] = litCol.y*255; */
+	  /* p[2] = litCol.w*255; */
+	  /* p[3] = litCol.z*255; */
+
+	  
+	  u32* p32 = (u32*)p;
+	  //	  platform_set_pixel_color(p32, litCol);
+
+	  /* p[0] = Clamp01(worldNormal.z) * 255; */
+	  /* p[1] = Clamp01(worldNormal.y) * 255; */
+	  /* p[2] = Clamp01(worldNormal.x) * 255; */
+
+
+	  //p[3] = 1 * 255;
+
+	  p[0] = nw0*255;
+	  p[1] = nw1*255;
+	  p[2] = nw2*255;
+	  /* p[3] = 0; */
+	
+	  /* if(renderDepth){ */
+	    /* p[0] =Min(255,255*ndcDepth*fogAmount); */
+	    /* p[1] =Min(255,255*ndcDepth*fogAmount); */
+	    /* p[2] =Min(255,255*ndcDepth*fogAmount); */
+	    /* p[3] =Min(255,255*ndcDepth*fogAmount); */
+	  /* } */
+
+	
+	  /* p[0] = col.z; */
+	  /* p[1] = col.y; */
+	  /* p[2] = col.x; */
+	  /* p[3] = col.w; */
+	}
+
+
+      
+      }
+    }
+  }
+
+  /* line_temp(a.screenPos.x,b.screenPos.x,a.screenPos.y,b.screenPos.y); */
+  /* line_temp(b.screenPos.x,c.screenPos.x,b.screenPos.y,c.screenPos.y); */
+  /* line_temp(c.screenPos.x,a.screenPos.x,c.screenPos.y,a.screenPos.y); */
+  
+}
 // https://www.scratchapixel.com/lessons/3d-basic-rendering/rasterization-practical-implementation/rasterization-stage.html
 void draw3d_triangle_rasterize(CG_VertRasterData a, CG_VertRasterData b, CG_VertRasterData c, CG_Material *_material){
 
@@ -1051,7 +1341,7 @@ void draw3d_triangle_rasterize(CG_VertRasterData a, CG_VertRasterData b, CG_Vert
 
 	// this create from channels thing is slow
 	//      u32 color = cg_create_color_from_channels(255 * w1, 255 *w2, 255*w3,0);
-	//color = platform_convert_color(color); 
+	//color = platform_convert_color(color);
 	
 
 	float storedDepth=depthRow[x];
@@ -1134,7 +1424,7 @@ void draw3d_triangle_rasterize(CG_VertRasterData a, CG_VertRasterData b, CG_Vert
 
 	  
 	  u32* p32 = (u32*)p;
-	  //	  platform_set_pixel_color(p32, litCol);	  
+	  platform_set_pixel_color(p32, litCol);
 
 	  /* p[0] = Clamp01(worldNormal.z) * 255; */
 	  /* p[1] = Clamp01(worldNormal.y) * 255; */
