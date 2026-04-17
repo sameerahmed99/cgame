@@ -5,18 +5,18 @@ This project is in very early development, currently working on improving the re
  
 ## Images
 
-![alt text](./assets/github-images/3d-scene-textured.png "textured pistol 3d model")
+![alt text](./github-images/3d-scene-textured.png "textured pistol 3d model")
 
 
-![alt text](./assets/github-images/pistol-textures.png "textured pistol 3d model")
+![alt text](./github-images/pistol-textures.png "textured pistol 3d model")
 
 ### Barycentric coordinates visualization 
 
-![alt text](./assets/github-images/suzanne-barycentric-weights.png "Blender's suzanne 3d model colored with barycentric weights")
+![alt text](./github-images/suzanne-barycentric-weights.png "Blender's suzanne 3d model colored with barycentric weights")
 
 ### Depth buffer visualization
 
-![alt text](./assets/github-images/suzanne-depth.png "Blender's suzanne 3d model depth buffer debug view")
+![alt text](./github-images/suzanne-depth.png "Blender's suzanne 3d model depth buffer debug view")
 
 ## Current engine goals
 - Shading pipeline  

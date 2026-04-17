@@ -941,7 +941,7 @@ gameMemory.AudioBufferCurrentWritePositionFrames =
 
 // printf("Buffer write pos/padding/num write frames: %d/%d/%d\n", gameMemory.AudioBufferCurrentWritePositionFrames, wasapiNumFramesPadding, gameMemory.AudioBufferCurrentWriteLengthFrames);
  if(GlobalDeltaTime >= Win32PlatformConfig.AudioBufferSizeInSeconds){
-   printf("BIG MASSIVE FAT DANGEROUS BLACK HOLE LEVEL WARNING: Going to miss audio thing, dt: %f, audio buffer size seconds: %f\n", GlobalDeltaTime, Win32PlatformConfig.AudioBufferSizeInSeconds);
+   //   printf("BIG MASSIVE FAT DANGEROUS BLACK HOLE LEVEL WARNING: Going to miss audio thing, dt: %f, audio buffer size seconds: %f\n", GlobalDeltaTime, Win32PlatformConfig.AudioBufferSizeInSeconds);
  }
     ReleaseDC(hwnd, DeviceContext);
    // temp_print_time_stamp(perfTimeStamp);

@@ -28,7 +28,7 @@ internal CG_RuntimeAssets CG_GameAssets;
 
 internal u32 CG_NumDebugTexts = 0;
 
-char CG_DebugTextList[128][32];
+char CG_DebugTextList[32][128];
 
 CG_Font* CG_DefaultFont;
 /* internal CG_Model* TestCubeModel; */
@@ -106,7 +106,7 @@ void cg_update_debug_text(float _deltaTime){
 
   for(int i=0;i<CG_NumDebugTexts;i++){
     CG_PlatformConfig c = cg_get_platform_config();
-    float fontSize=8;
+    float fontSize=12;
     float letterSpacing=1;
     Vec2 fpsPos = Vec2Zero;
     float width = font_get_text_width(CG_DebugTextList[i], fontSize, letterSpacing);
@@ -704,12 +704,13 @@ dbuffer[i] = 99999999999;
   update_entities(_deltaTime);
 
 
-  PLATFORM_BEGIN_FUNCTION_MEASUREMENT();
+
+  //  PLATFORM_BEGIN_FUNCTION_MEASUREMENT();
   graphics_renderer_render_list();
-  double ms = PLATFORM_STOP_FUNCTION_MEASUREMENT();
-  char buf[128];
-  sprintf(buf, "[Measured: %s] Elapsed milliseconds: %lf", "graphics_render_list", ms);
-  cg_submit_debug_text(buf);
+  /* double ms = PLATFORM_STOP_FUNCTION_MEASUREMENT(); */
+  /* char buf[128]; */
+  /* sprintf(buf, "[Measured: %s] Elapsed milliseconds: %lf", "graphics_render_list", ms); */
+  /* cg_submit_debug_text(buf); */
 
   cg_update_debug_text(_deltaTime);
   
@@ -776,7 +777,10 @@ const char* cg_get_raw_assets_dir_relative(){
   return "../assets";
 }
 void cg_submit_debug_text(char *text){
-  memcpy(CG_DebugTextList[CG_NumDebugTexts], text, strlen(text) +1);
+  memcpy(CG_DebugTextList[CG_NumDebugTexts], text, strlen(text));
+  CG_DebugTextList[CG_NumDebugTexts][strlen(text)] = '\0';
+
+  u32 len = strlen(  CG_DebugTextList[CG_NumDebugTexts]);
   CG_NumDebugTexts++;
 }
 

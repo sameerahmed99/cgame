@@ -76,7 +76,8 @@ void cg_active_game_init(){
   Arena* ent=cg_get_entities();
   rg.FreeCam = entity_create(ent, ENTITY_TYPE_CAMERA);
   rg.ActiveCam = rg.FreeCam;
-  Vec3 camSpawnPos = {4,5.5f, -35};
+  Vec3 camSpawnPos = {0,0,-.05f};
+ 
   entity_set_world_pos(rg.ActiveCam, camSpawnPos);
 
   // ENTITIES
@@ -236,18 +237,24 @@ void cg_active_game_update(float dt, CG_Input input){
 
   rg_update_free_cam(input,dt);
   
-  
+    /* CG_Mesh trimesh = graphics_get_triangle_mesh(); */
+    /* draw3d_mesh(&trimesh, math_mat4x4_create_identity(), rg.ActiveCam->viewMatrix,rg.ProjectionMatrix, &DefaultMaterial); */
+    
   graphics_renderer_submit_model(rg.TrainModel,rg.TrainEntity->worldMatrix, rg.ActiveCam->viewMatrix, rg.ProjectionMatrix);
 
   graphics_renderer_submit_model(rg.RailwayTrackModel,rg.RailwayTrackEntity->worldMatrix, rg.ActiveCam->viewMatrix, rg.ProjectionMatrix);
+  graphics_renderer_submit_model(rg.WaterModel,rg.WaterEntity->worldMatrix, rg.ActiveCam->viewMatrix, rg.ProjectionMatrix);
 
-  graphics_renderer_submit_model(rg.TerrainModel,rg.TerrainEntity->worldMatrix, rg.ActiveCam->viewMatrix, rg.ProjectionMatrix);
 
   graphics_renderer_submit_model(rg.BridgeModel,rg.BridgeEntity->worldMatrix, rg.ActiveCam->viewMatrix, rg.ProjectionMatrix);
 
-  graphics_renderer_submit_model(rg.WaterModel,rg.WaterEntity->worldMatrix, rg.ActiveCam->viewMatrix, rg.ProjectionMatrix);
 
-  graphics_renderer_submit_model(rg.AppleTreesModel,rg.AppleTreesEntity->worldMatrix, rg.ActiveCam->viewMatrix, rg.ProjectionMatrix);    
+
+  graphics_renderer_submit_model(rg.AppleTreesModel,rg.AppleTreesEntity->worldMatrix, rg.ActiveCam->viewMatrix, rg.ProjectionMatrix);
+
+
+  
+    graphics_renderer_submit_model(rg.TerrainModel,rg.TerrainEntity->worldMatrix, rg.ActiveCam->viewMatrix, rg.ProjectionMatrix);
 }
 void cg_active_game_fixed_update(float dt){
   

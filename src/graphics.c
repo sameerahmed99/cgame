@@ -429,7 +429,10 @@ void draw3d_mesh(CG_Mesh* _mesh,Mat4x4 _model, Mat4x4 _inversedCameraMatrix, Mat
 
 
   CG_OffscreenBuffer *screenBuffer = cg_get_current_off_screen_buffer();
+
+  
   for(int i=0;i<_mesh->numIndices;i+=3){
+
     Vec3 worldPos;
 
   
@@ -565,6 +568,8 @@ void draw3d_mesh(CG_Mesh* _mesh,Mat4x4 _model, Mat4x4 _inversedCameraMatrix, Mat
     Vec4 col = {.2,.8,.2,0};
 
     for(int ct=0;ct<clippedTriangles;ct++){
+
+
       Vec3 ss1 = clip_to_ndc(math_vec3_to_vec4(newTriangles[ct].a.pos, newTriangles[ct].a.wVal));
       Vec3 ss2 = clip_to_ndc(math_vec3_to_vec4(newTriangles[ct].b.pos, newTriangles[ct].b.wVal));
       Vec3 ss3 = clip_to_ndc(math_vec3_to_vec4(newTriangles[ct].c.pos, newTriangles[ct].c.wVal));
@@ -601,14 +606,20 @@ void draw3d_mesh(CG_Mesh* _mesh,Mat4x4 _model, Mat4x4 _inversedCameraMatrix, Mat
 
       CG_VertRasterData rc = {.screenPos = ss3, .wVal = newTriangles[ct].c.wVal, .localNormal = newTriangles[ct].c.normal,worldNormC, .localTexCoord=newTriangles[ct].c.texCoord, .vertColor=newTriangles[ct].c.color};
 
+      
+
       draw3d_triangle_rasterize(ra,rb,rc,_material);
 
     }
 
 
-  
+
 
   }
+
+
+  
+
 
 }
 
@@ -731,6 +742,8 @@ float triangle_edge_function(Vec2 a, Vec2 b, Vec2 p){
 }
 
 
+
+
 internal void draw_screen_line_temp(Vec3 from, Vec3 to, CG_Color col){
   CG_OffscreenBuffer *screenBuffer = cg_get_current_off_screen_buffer();
 
@@ -782,7 +795,7 @@ Vec4 lerp_vert_vec4(Vec4 _vala, Vec4 _valb, Vec4 _valc,float za, float zb, float
 
 
 CG_Color graphics_sample_texture(CG_Texture *tex, float uvx, float uvy, Vec2 _tiling, float width, float height){
-  // @TODO - Handle negative uvs
+
   if(uvx<0){
     uvx = 1 + uvx;
   }
@@ -791,6 +804,13 @@ CG_Color graphics_sample_texture(CG_Texture *tex, float uvx, float uvy, Vec2 _ti
   }
   u32 coordinateX = (u32)((uvx*width) *_tiling.x ) % (u32)width;
   u32 coordinateY = (u32)((uvy*height) * _tiling.y) % (u32)height;
+
+
+  /* u32 coordinateX = (u32)((uvx*width) *_tiling.x ); */
+  /* u32 coordinateY = (u32)((uvy*height) * _tiling.y); */
+
+  /* coordinateX = Clamp(coordinateX, 0, width-1); */
+  /* coordinateY = Clamp(coordinateY, 0, height-1); */
   return texture_read_pixel(tex, coordinateX, coordinateY);
 }
 // https://www.scratchapixel.com/lessons/3d-basic-rendering/rasterization-practical-implementation/rasterization-stage.html
@@ -840,6 +860,7 @@ void draw3d_triangle_rasterize(CG_VertRasterData a, CG_VertRasterData b, CG_Vert
   // so cull it
   if(totalArea<0) return;
 
+  float inverseTotalArea = 1/totalArea;
   CG_OffscreenBuffer *screenBuffer = cg_get_current_off_screen_buffer();
   CG_Buffer *depthBuffer = cg_get_current_depth_buffer();
   int size = 16;
@@ -918,24 +939,85 @@ void draw3d_triangle_rasterize(CG_VertRasterData a, CG_VertRasterData b, CG_Vert
   float texFloatWidth = (float)texture->Width;
   float texFloatHeight = (float)texture->Height;
   Vec2 tiling = _material->textureTiling;
+
+
+
+  // @EXPLANATION
+  // these A, B and C values come from expanding the edge function:
+  //  ( (p.x - a.x) * (b.y - a.y) - (p.y - a.y) * (b.x - a.x));
+  // = p.x * (b.y - a.y) - (a.x * (b.y - a.y)) - (p.y * (b.x - a.x) - a.y * (b.x - a.x));
+  // A = the value in parentheses that's getting multiplied by p.x
+  // B = the value in parentheses that's getting multiplied by p.y
+  // These two are values that change as p.x or p.y change
+  // then we have the constant value C, which is whatever else is left.
+  // A = (b.y - a.y)
+  // B = (b.x - a.x)
+  // C = - a.x * (b.y - a.y) + a.y * (b.x - a.x)
+
+  // using A, B and C terms for the whole function:
+  // edge_function = A * p.x - B * p.y + C
+  
+  // now, consider the values of A and B at some point p1 which as at (p0.x+1, p0.y)
+  // edge_function(p1) = A * (p.x + 1) - B*p.y + C
+  // = A*p.x + A - B*p.y + C
+  // = A*p.x - B*p.y + C + A
+  // = edge_function(p0) + A
+
+  // which means, whenever we move 1 unit right, the area is equal to the area at the previous point + (b.y - a.y)
+  // and whenever we move 1 unit up, the area is equal to the area at the previous point + (b.x - a.x)
+  // therefore, we can calculate the area only once for at some point and then do a simple add/subtract operations to get the area at all the other points
+  // Reference:https://www.scratchapixel.com/lessons/3d-basic-rendering/rasterization-practical-implementation/rasterization-stage.html
+  // Reference (the "Geometric meaning" section):https://en.wikipedia.org/wiki/Determinant#2.C2.A0.C3.97.C2.A02_matrices
+
+  float A_bc = c_.y - b_.y;
+  float B_bc = -(c_.x - b_.x);
+  float C_bc = b_.y*(c_.x - b_.x) - b_.x*(c_.y -b_.y);
+
+  float A_ca = a_.y - c_.y;
+  float B_ca = -(a_.x - c_.x);
+  float C_ca = c_.y*(a_.x - c_.x) - c_.x*(a_.y -c_.y);
+  
+  
+  float A_ab = b_.y - a_.y;
+  float B_ab = -(b_.x - a_.x);
+  float C_ab = a_.y*(b_.x - a_.x) - a_.x*(b_.y -a_.y);
+
+  
+
+  Vec2 startPoint = {minX, minY};
+  float edge_bc_areaForPointOnA = triangle_edge_function(b_, c_, startPoint);
+  float edge_ca_areaForPointOnA = triangle_edge_function(c_, a_, startPoint);
+  float edge_ab_areaForPointOnA = triangle_edge_function(a_, b_, startPoint);
+  
+  
+  // @TODO
+  // See if other values in the rasterization loop can be optimized the same way we are doing the edge function, by calculating a base value
+  // only once and then incrementing only
+
+
+  float edge_bc_starting_area = edge_bc_areaForPointOnA;
+  float edge_ca_starting_area = edge_ca_areaForPointOnA;
+  float edge_ab_starting_area = edge_ab_areaForPointOnA;
+  
   for(int y = minY; y <= maxY; y++){
 
     u32 rowCoordinate = y*(screenBuffer->Width);
     u32* row = (u32*)(screenBuffer->Memory) + rowCoordinate;
     float* depthRow = depthBufferData + rowCoordinate;
 
+    float area_bc = edge_bc_starting_area;
+    float area_ca = edge_ca_starting_area;
+    float area_ab = edge_ab_starting_area;
+
     for(int x = minX; x <= maxX; x++){
-      Vec2 pVec = {(float)x, (float)y};
-
-
-      float w0 = triangle_edge_function(b_,c_,pVec);
-      float w1 = triangle_edge_function(c_, a_, pVec);
-      float w2 = triangle_edge_function(a_, b_, pVec);
 
 
 
 
 
+
+      
+      
       b32 overlaps = true;
 
 
@@ -945,22 +1027,25 @@ void draw3d_triangle_rasterize(CG_VertRasterData a, CG_VertRasterData b, CG_Vert
       /* overlaps &= (w1 == 0 ?  ((edge1.y == 0  && edge1.x > 0) || edge1.y > 0) : (w1 > 0)); */
       /* overlaps &= (w2 == 0 ?  ((edge2.y == 0  && edge2.x > 0) || edge2.y > 0) : (w2 > 0)); */
 
-      overlaps = w0 >= check && w1 >= check && w2 >= check;
+      float a0 = area_bc;
+      float a1 = area_ca;
+      float a2 = area_ab;
+      overlaps = a0 >= check && a1 >= check && a2 >= check;
       
       //      local_persist i32 num = 0;
       /* if((x==0 || y ==0) && !overlaps){ */
       /* 	printf("0\n", x, y); */
       /* } */
-      if(overlaps){
-           
+
+      if(overlaps) {
+     
 
 
 	// normalized weights nw
-	float nw0 = w0/totalArea;
-	float nw1 = w1/totalArea;
-	float nw2 = w2/totalArea;
+	float nw0 = a0*inverseTotalArea;
+	float nw1 = a1*inverseTotalArea;
+	float nw2 = a2*inverseTotalArea;
 
-	float width = 550;
 
 
 
@@ -977,10 +1062,13 @@ void draw3d_triangle_rasterize(CG_VertRasterData a, CG_VertRasterData b, CG_Vert
 	
 	//	float ndcDepth = a.screenPos.z*nw0 + b.screenPos.z*nw1 + c.screenPos.z*nw2;
 
-	float nDot = lerp_vert_float(nDota, nDotb, nDotc, a.wVal, b.wVal, c.wVal, nw0, nw1,nw2, depth);
+
 
 	//	float wVal = lerp_vert_float(a.wVal, b.wVal, c.wVal, a.wVal, b.wVal, c.wVal, nw0, nw1,nw2, depth);
-	if(depth < storedDepth){
+
+	if(depth<storedDepth){
+
+	  //		float nDot = lerp_vert_float(nDota, nDotb, nDotc, a.wVal, b.wVal, c.wVal, nw0, nw1,nw2, depth);
 
 
 	  float fogAmount =depth;
@@ -992,16 +1080,16 @@ void draw3d_triangle_rasterize(CG_VertRasterData a, CG_VertRasterData b, CG_Vert
 
 
 
-	  /* Vec4 frag_color = lerp_vert_vec4(a.color, b.color, c.color, a.wVal, b.wVal, c.wVal,w1,w2,w3, depth); */
+	  //	  Vec4 frag_color = lerp_vert_vec4(a.color, b.color, c.color, a.wVal, b.wVal, c.wVal,w1,w2,w3, depth);
 
 
 	  Vec2 frag_tex_coord = lerp_vert_vec2(a.localTexCoord, b.localTexCoord, c.localTexCoord, a.wVal, b.wVal, c.wVal,nw0,nw1,nw2, depth);
 
 	  Vec4 frag_color = graphics_sample_texture(texture, frag_tex_coord.x, frag_tex_coord.y, tiling, texFloatWidth, texFloatHeight);
+	  //	  Vec4 frag_color = ColorWhite;
 
-	  //	  Vec4 frag_color = {0.5f,0.5f,0.5f,1.0f}
 
-	  Vec3 worldNormal = lerp_vert_vec3(a.worldNormal, b.worldNormal, c.worldNormal, a.wVal, b.wVal, c.wVal, nw0, nw1, nw2, depth);
+	  //	  Vec3 worldNormal = lerp_vert_vec3(a.worldNormal, b.worldNormal, c.worldNormal, a.wVal, b.wVal, c.wVal, nw0, nw1, nw2, depth);
 
 	  Vec4 litCol =  lerp_vert_vec4(vLitCola, vLitColb,vLitColc, a.wVal, b.wVal, c.wVal, nw0, nw1, nw2, depth);
 
@@ -1043,9 +1131,10 @@ void draw3d_triangle_rasterize(CG_VertRasterData a, CG_VertRasterData b, CG_Vert
 	  /* p[2] = litCol.w*255; */
 	  /* p[3] = litCol.z*255; */
 
+
 	  
 	  u32* p32 = (u32*)p;
-	  platform_set_pixel_color(p32, litCol);	  
+	  //	  platform_set_pixel_color(p32, litCol);	  
 
 	  /* p[0] = Clamp01(worldNormal.z) * 255; */
 	  /* p[1] = Clamp01(worldNormal.y) * 255; */
@@ -1054,16 +1143,16 @@ void draw3d_triangle_rasterize(CG_VertRasterData a, CG_VertRasterData b, CG_Vert
 
 	  //p[3] = 1 * 255;
 
-	  /* p[0] = nw0*255; */
-	  /* p[1] = nw1*255; */
-	  /* p[2] = nw2*255; */
-	  /* p[3] = 0; */
+	  p[0] = nw0*255;
+	  p[1] = nw1*255;
+	  p[2] = nw2*255;
+	  p[3] = 0;
 	
 	  /* if(renderDepth){ */
-	    /* p[0] =Min(255,255*ndcDepth*fogAmount); */
-	    /* p[1] =Min(255,255*ndcDepth*fogAmount); */
-	    /* p[2] =Min(255,255*ndcDepth*fogAmount); */
-	    /* p[3] =Min(255,255*ndcDepth*fogAmount); */
+	  /* p[0] =Min(255,255*ndcDepth*fogAmount); */
+	  /* p[1] =Min(255,255*ndcDepth*fogAmount); */
+	  /* p[2] =Min(255,255*ndcDepth*fogAmount); */
+	  /* p[3] =Min(255,255*ndcDepth*fogAmount); */
 	  /* } */
 
 	
@@ -1071,12 +1160,20 @@ void draw3d_triangle_rasterize(CG_VertRasterData a, CG_VertRasterData b, CG_Vert
 	  /* p[1] = col.y; */
 	  /* p[2] = col.x; */
 	  /* p[3] = col.w; */
-	}
 
+	}
+      }
 
       
-      }
+
+      area_bc+=A_bc;
+      area_ca+=A_ca;
+      area_ab+=A_ab;
     }
+
+    edge_bc_starting_area+=B_bc;
+    edge_ca_starting_area+=B_ca;
+    edge_ab_starting_area+=B_ab;
   }
 
   /* line_temp(a.screenPos.x,b.screenPos.x,a.screenPos.y,b.screenPos.y); */
@@ -1096,12 +1193,26 @@ void graphics_renderer_init(Arena* _renderList,Arena *_textRenderList,CG_Texture
 }
 
 void graphics_renderer_render_list(){
-  PLATFORM_BEGIN_FUNCTION_MEASUREMENT();
   size_t entrySize = sizeof(CG_RenderItem);
   u32 count = arena_get_num_items(Renderer.renderList, entrySize);
+
+
   for(int i=0;i<count;i++){
-    CG_RenderItem *e = arena_get_at(Renderer.renderList, i, entrySize);
-    draw3d_mesh(e->mesh,e->modelMatrix, e->inversedCameraMatrix, e->projectionMatrix, e->material);    
+    
+    {
+      PLATFORM_BEGIN_FUNCTION_MEASUREMENT();
+
+      CG_RenderItem *e = arena_get_at(Renderer.renderList, i, entrySize);
+      draw3d_mesh(e->mesh,e->modelMatrix, e->inversedCameraMatrix, e->projectionMatrix, e->material);
+
+      double ms = PLATFORM_STOP_FUNCTION_MEASUREMENT();
+      char buf[128];
+      sprintf(buf, "[%s] took: %lf ms", "draw mesh", ms);
+      cg_submit_debug_text(buf);
+    }
+    
+  
+
   }
   arena_clear(Renderer.renderList);
 

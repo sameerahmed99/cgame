@@ -1,7 +1,5 @@
-1. Re-work texture sampling and CG_Color so that the platform color conversion doesn't happen at the rasterization stage. Conversion should happen at the texture loading stage or only when pixels are updated.
+. think about redesigning the rendering pipeline. Maybe the render list should be a complete list of all triangles to be rendered for the frame. Will make parallel processing easier
 
-2. Font rendering
+. Use pre-allocated game memory instead of mallocs and arenas everywhere, search for @TEMP_ALLOC_USED and @TEMP_FREE_USED
 
-3. Use pre-allocated game memory instead of mallocs and arenas everywhere, search for @TEMP_ALLOC_USED and @TEMP_FREE_USED
-
-4. Create rule for overlapping triangle edges such that no two triangles try to color the same pixel
+. Create rule for overlapping triangle edges such that no two triangles try to color the same pixel
