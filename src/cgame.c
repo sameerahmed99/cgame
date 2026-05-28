@@ -597,6 +597,8 @@ internal void cg_update(CG_Memory* _memory, CG_Input *_playerInput, float _delta
 
 
   GameInput = *_playerInput;
+
+
   //  printf("Dif den: %f\n", CurrentDifficultyDenominator);
 
 
@@ -637,18 +639,23 @@ dbuffer[i] = 99999999999;
       cg_lock_cursor();
     }
   }
-  if(k.space.IsPressed){
-  // test
+  /* if(k.space.IsPressed){ */
+  /* // test */
 
-    {
-      Vec3 force = {0,520,0};
-      Vec3 pos = CubeEntity->worldPos;
-      pos.x-=1.0f;
-      //  phys_rb_apply_force(CubeEntity->rb, force, pos);
+  /*   { */
+  /*     Vec3 force = {0,520,0}; */
+  /*     Vec3 pos = CubeEntity->worldPos; */
+  /*     pos.x-=1.0f; */
+  /*     //  phys_rb_apply_force(CubeEntity->rb, force, pos); */
 
-      Vec3 torque = {0,600,1500};
-      phys_rb_apply_torque(CubeEntity->rb, torque);
-    }
+  /*     Vec3 torque = {0,600,1500}; */
+  /*     phys_rb_apply_torque(CubeEntity->rb, torque); */
+  /*   } */
+  /* } */
+
+  if(k.space.WasDownedThisFrame){
+    DebugSettings.DrawWireFrames = !DebugSettings.DrawWireFrames;
+    
   }
 
   
@@ -714,7 +721,7 @@ dbuffer[i] = 99999999999;
 
   cg_update_debug_text(_deltaTime);
   
-  graphics_render_text_list();
+  //  graphics_render_text_list();
 
 }
 void write_sound_test(){

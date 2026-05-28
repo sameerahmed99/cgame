@@ -13,7 +13,7 @@ typedef struct RoadGame{
   CG_Model* BridgeModel;
   CG_Model* WaterModel;
   CG_Model* AppleTreesModel;
-
+  CG_Model* DenseCubeModel;
 
   float CameraSpeed;
   float CameraSlowSpeed;
@@ -32,6 +32,7 @@ typedef struct RoadGame{
   CG_Entity* AppleTreesEntity;
   
   CG_RuntimeAssets *Assets;
+
 
   char FpsString[64];
 } RoadGame;
@@ -102,6 +103,8 @@ void cg_active_game_init(){
   rg.WaterModel=  model_loader_load_gltf("../assets/prop_packs/railway_bridge_prop_pack/water.glb", true, true);
   rg.AppleTreesModel=  model_loader_load_gltf("../assets/prop_packs/railway_bridge_prop_pack/apple_trees.glb", true, true);
 
+  rg.DenseCubeModel=  model_loader_load_gltf("../assets/models/cube-dense.glb", true, true);
+  
   rg.DefaultFont = asset_load_font(rg.Assets, CG_ASSID("fonts/third_party/pixel_fonts/minogram.cgfont"));
 
   // TEXTURES
@@ -239,22 +242,24 @@ void cg_active_game_update(float dt, CG_Input input){
   
     /* CG_Mesh trimesh = graphics_get_triangle_mesh(); */
     /* draw3d_mesh(&trimesh, math_mat4x4_create_identity(), rg.ActiveCam->viewMatrix,rg.ProjectionMatrix, &DefaultMaterial); */
+  graphics_renderer_submit_model(rg.DenseCubeModel,rg.TrainEntity->worldMatrix, rg.ActiveCam->viewMatrix, rg.ProjectionMatrix);
+
     
-  graphics_renderer_submit_model(rg.TrainModel,rg.TrainEntity->worldMatrix, rg.ActiveCam->viewMatrix, rg.ProjectionMatrix);
+  /* graphics_renderer_submit_model(rg.TrainModel,rg.TrainEntity->worldMatrix, rg.ActiveCam->viewMatrix, rg.ProjectionMatrix); */
 
-  graphics_renderer_submit_model(rg.RailwayTrackModel,rg.RailwayTrackEntity->worldMatrix, rg.ActiveCam->viewMatrix, rg.ProjectionMatrix);
-  graphics_renderer_submit_model(rg.WaterModel,rg.WaterEntity->worldMatrix, rg.ActiveCam->viewMatrix, rg.ProjectionMatrix);
-
-
-  graphics_renderer_submit_model(rg.BridgeModel,rg.BridgeEntity->worldMatrix, rg.ActiveCam->viewMatrix, rg.ProjectionMatrix);
+  /* graphics_renderer_submit_model(rg.RailwayTrackModel,rg.RailwayTrackEntity->worldMatrix, rg.ActiveCam->viewMatrix, rg.ProjectionMatrix); */
+  /* graphics_renderer_submit_model(rg.WaterModel,rg.WaterEntity->worldMatrix, rg.ActiveCam->viewMatrix, rg.ProjectionMatrix); */
 
 
+  /* graphics_renderer_submit_model(rg.BridgeModel,rg.BridgeEntity->worldMatrix, rg.ActiveCam->viewMatrix, rg.ProjectionMatrix); */
 
-  graphics_renderer_submit_model(rg.AppleTreesModel,rg.AppleTreesEntity->worldMatrix, rg.ActiveCam->viewMatrix, rg.ProjectionMatrix);
+
+
+  /* graphics_renderer_submit_model(rg.AppleTreesModel,rg.AppleTreesEntity->worldMatrix, rg.ActiveCam->viewMatrix, rg.ProjectionMatrix); */
 
 
   
-    graphics_renderer_submit_model(rg.TerrainModel,rg.TerrainEntity->worldMatrix, rg.ActiveCam->viewMatrix, rg.ProjectionMatrix);
+  /*   graphics_renderer_submit_model(rg.TerrainModel,rg.TerrainEntity->worldMatrix, rg.ActiveCam->viewMatrix, rg.ProjectionMatrix); */
 }
 void cg_active_game_fixed_update(float dt){
   
